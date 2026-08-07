@@ -1,31 +1,41 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond, Jost } from "next/font/google";
 import { AuthSessionProvider } from "@/components/AuthSessionProvider";
+import { LanguageProvider } from "@/components/LanguageProvider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Serif elegante per titoli, numeri di lezione e nome sull'attestato;
+// sans geometrica per tutto il resto (§6). I font vengono impacchettati nel
+// build: nessuna chiamata a un CDN mentre la pagina si carica.
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
   subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jost = Jost({
+  variable: "--font-jost",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Corso di Avvicinamento al Vino",
-  description: "L'Angolo del Vino — corso amatoriale di avvicinamento al vino",
+  description:
+    "L'Angolo del Vino — corso amatoriale di avvicinamento al vino, serata dopo serata.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="it"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${cormorant.variable} ${jost.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <AuthSessionProvider>{children}</AuthSessionProvider>
+        <AuthSessionProvider>
+          <LanguageProvider>{children}</LanguageProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );

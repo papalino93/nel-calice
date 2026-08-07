@@ -437,8 +437,12 @@ export type SafeQuestion = {
 export type AttemptView = {
   attemptId: string;
   lessonId: number;
+  startedAt: string;
   expiresAt: string;
   secondsRemaining: number;
+  /** Durata piena del quiz: serve alla barra del timer per sapere a che
+      punto colorarsi di rosso, anche riprendendo a metà. */
+  totalSeconds: number;
   questions: SafeQuestion[];
 };
 
@@ -457,6 +461,7 @@ export async function attemptView(
     select: {
       id: true,
       lessonId: true,
+      startedAt: true,
       expiresAt: true,
       answers: { select: { questionId: true, selectedOptionId: true } },
     },
@@ -484,8 +489,12 @@ export async function attemptView(
   return {
     attemptId: attempt.id,
     lessonId: attempt.lessonId,
+    startedAt: attempt.startedAt.toISOString(),
     expiresAt: attempt.expiresAt.toISOString(),
     secondsRemaining: secondsRemaining(attempt.expiresAt, new Date()),
+    totalSeconds: Math.round(
+      (attempt.expiresAt.getTime() - attempt.startedAt.getTime()) / 1000,
+    ),
     questions: questions.map((q) => ({
       id: q.id,
       textIt: q.textIt,
