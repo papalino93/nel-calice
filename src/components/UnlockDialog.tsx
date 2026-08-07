@@ -90,12 +90,18 @@ export function UnlockDialog({
           <input
             ref={inputRef}
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={(e) => {
+              setCode(e.target.value);
+              // L'errore del tentativo precedente sparisce appena si
+              // ricomincia a scrivere: lasciarlo lì fa credere che il
+              // nuovo codice sia già stato rifiutato.
+              if (error) setError(null);
+            }}
             placeholder={t.unlockPlaceholder}
             autoComplete="off"
             autoCapitalize="characters"
             spellCheck={false}
-            className="w-full rounded-xl border border-gold/25 bg-charcoal/60 px-4 py-3 text-center font-serif text-xl tracking-[0.2em] text-cream uppercase placeholder:font-sans placeholder:text-sm placeholder:tracking-normal placeholder:text-cream/30 focus:border-gold/60 focus:outline-none"
+            className="w-full rounded-xl border border-gold/25 bg-charcoal/60 px-4 py-3 text-center font-serif text-xl tracking-[0.2em] text-cream uppercase placeholder:font-sans placeholder:text-sm placeholder:normal-case placeholder:tracking-normal placeholder:text-cream/30 focus:border-gold/60 focus:outline-none"
           />
 
           {error && (
