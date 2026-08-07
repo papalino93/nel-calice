@@ -74,7 +74,17 @@ export function MaterialsSection({ lessonId }: { lessonId: number }) {
               className="card flex items-center justify-between gap-3 p-4"
             >
               <span className="min-w-0">
-                <span className="block truncate text-cream">{m.titleIt}</span>
+                {/* Il relatore deve poter aprire ciò che ha caricato: è il
+                    solo modo di accorgersi di aver messo il file sbagliato
+                    prima che lo scarichi la classe. */}
+                <a
+                  href={m.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block truncate text-cream underline decoration-cream/25 underline-offset-4 hover:decoration-gold"
+                >
+                  {m.titleIt}
+                </a>
                 {m.notes && (
                   <span className="block truncate text-xs text-cream/45">
                     {m.notes}
