@@ -1,0 +1,256 @@
+// Schema del "Corso di Avvicinamento al Vino".
+//
+// Principi guida (vedi RICOSTRUZIONE-PROMPT.md §7 per i difetti che questo
+// modello risolve):
+//
+// - Contenuto condiviso del corso (Lesson, Question, Option, Material,
+//   Settings) vive in tabelle proprie, MAI dentro il record di un utente.
+// - `Lesson.id` è l'unico numero di lezione che esiste: è stabile per
+//   costruzione (autoincrement, mai riassegnato), quindi funge sia da
+//   identificatore sia da "numero" mostrato ("Lezione 4") sia da criterio
+//   per individuare l'esame finale (= la lezione con id più alto). Non c'è
+//   un campo "posizione" separato da tenere sincronizzato: cancellare una
+//   lezione in mezzo non fa scorrere le altre.
+// - `Lesson.unlockCodeHash` e `Option.isCorrect` non hanno equivalenti nel
+//   contratto API pubblico: sono per definizione dati che il server usa
+//   per validare, mai da restituire al client prima del momento giusto.
+// - Il ruolo "relatore" NON è un campo di User: è calcolato ad ogni
+//   richiesta confrontando `User.email` con l'allowlist in env
+//   (ADMIN_EMAILS), lato server. Niente PIN condiviso, niente flag
+//   falsificabile dal client.
+// - Lo sblocco di una lezione per un utente ha un'unica fonte di verità:
+//   `LessonUnlock` (per utente) OPPURE `Lesson.globallyUnlocked` (per
+//   tutti). Nessuno stato locale lato client.
+// - Il punteggio totale (sempre 100) non è un campo salvato da nessuna
+//   parte: è una funzione pura calcolata da (numero lezioni normali,
+//   domande per lezione), usata sia per mostrare "8 punti" nel pannello
+//   sia per assegnare `AttemptAnswer.pointsAwarded` alla consegna. Vedi
+//   src/lib/scoring.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// ---------------------------------------------------------------------------
+// Utenti
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String   @id @default(cuid())
+  googleId  String   @unique
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  language  String   @default("it") // "it" | "en" — persistito per ritrovare le preferenze da qualunque dispositivo
+  createdAt DateTime @default(now())
+
+  attempts       QuizAttempt[]
+  unlocks        LessonUnlock[]
+  unlockAttempts UnlockAttempt[]
+}
+
+// ---------------------------------------------------------------------------
+// Contenuto del corso — condiviso, gestito dal relatore, mai per-utente
+// ---------------------------------------------------------------------------
+
+model Lesson {
+  id         Int     @id @default(autoincrement())
+  titleIt    String
+  titleEn    String
+  subtitleIt String?
+  subtitleEn String?
+
+  // Hash del codice di sblocco (es. bcrypt/scrypt) — mai il codice in chiaro.
+  // Il confronto avviene sempre lato server.
+  unlockCodeHash String @unique
+
+  // Override del relatore: se true, la lezione è aperta per tutti a
+  // prescindere da codice o LessonUnlock individuali.
+  globallyUnlocked Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  questions Question[]
+  materials Material[]
+  unlocks   LessonUnlock[]
+  attempts  QuizAttempt[]
+
+  @@index([createdAt])
+}
+
+model Question {
+  id       Int    @id @default(autoincrement())
+  lessonId Int
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  textIt String
+  textEn String
+
+  // Ordine di visualizzazione all'interno della lezione (non l'id).
+  position Int
+
+  options        Option[]
+  attemptAnswers AttemptAnswer[]
+
+  @@index([lessonId, position])
+}
+
+model Option {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  textIt String
+  textEn String
+
+  // Ordine "canonico" di inserimento — l'ordine mostrato al corsista viene
+  // rimescolato lato client/risposta ad ogni tentativo, ma la persistenza
+  // resta stabile per poter editare la domanda dal pannello.
+  position Int
+
+  // Mai esposto dall'API di quiz prima della correzione.
+  isCorrect Boolean @default(false)
+
+  chosenIn AttemptAnswer[]
+
+  @@index([questionId, position])
+}
+
+enum MaterialType {
+  PDF
+  SLIDE
+  IMAGE
+  VIDEO
+  SCROLL // pergamena / materiale celebrativo
+}
+
+model Material {
+  id       String  @id @default(cuid())
+  // null = materiale "generale", non legato a una lezione specifica.
+  // Un materiale legato a una lezione eredita il blocco di quella lezione
+  // (calcolato a runtime, non duplicato qui).
+  lessonId Int?
+  lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  type    MaterialType
+  titleIt String
+  titleEn String?
+  url     String
+  notes   String?
+
+  viewCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([lessonId])
+}
+
+// Singleton (id fisso = 1) per le durate dei timer, modificabili dal
+// pannello relatore senza toccare il codice.
+model Settings {
+  id                 Int      @id @default(1)
+  lessonTimerMinutes Int      @default(15)
+  examTimerMinutes   Int      @default(45)
+  updatedAt          DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Sblocco lezioni — un'unica fonte di verità per utente
+// ---------------------------------------------------------------------------
+
+enum UnlockMethod {
+  CODE // il corsista ha digitato il codice corretto
+  ADMIN // sblocco manuale dal pannello relatore per quel singolo utente
+}
+
+model LessonUnlock {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId Int
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  method     UnlockMethod
+  unlockedAt DateTime     @default(now())
+
+  // Un utente sblocca una lezione al più una volta: la seconda volta è un
+  // no-op, non una riga duplicata.
+  @@unique([userId, lessonId])
+}
+
+// Traccia ogni tentativo di inserimento codice (riuscito o no), per
+// applicare un limite di frequenza lato server (difetto §7.6: nessun
+// rate-limit sul PIN/codice nell'implementazione attuale).
+model UnlockAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  Int
+  succeeded Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId, lessonId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Tentativi di quiz — timer e punteggio vivono sul server, non sul client
+// ---------------------------------------------------------------------------
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+}
+
+model QuizAttempt {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId Int
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  // Scadenza scritta dal server alla creazione (startedAt + durata da
+  // Settings), MAI dal client. Un refresh rilegge questo stesso valore.
+  startedAt   DateTime      @default(now())
+  expiresAt   DateTime
+  submittedAt DateTime?
+  status      AttemptStatus @default(IN_PROGRESS)
+
+  // Valorizzati solo alla consegna (submit o scadenza), dal server.
+  // maxScore è "fotografato" al momento della consegna: se il relatore
+  // aggiunge domande dopo, i tentativi passati restano coerenti con se
+  // stessi invece di essere ricalcolati a sorpresa.
+  score    Int?
+  maxScore Int?
+  timedOut Boolean @default(false)
+
+  answers AttemptAnswer[]
+
+  @@index([userId, lessonId])
+  @@index([lessonId])
+}
+
+model AttemptAnswer {
+  id        String      @id @default(cuid())
+  attemptId String
+  attempt   QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  questionId Int
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  // null = lasciata in bianco (vale zero punti, non un errore).
+  selectedOptionId Int?
+  selectedOption   Option? @relation(fields: [selectedOptionId], references: [id])
+
+  isCorrect     Boolean   @default(false)
+  pointsAwarded Int       @default(0)
+  answeredAt    DateTime?
+
+  // Una risposta per domanda per tentativo.
+  @@unique([attemptId, questionId])
+}
