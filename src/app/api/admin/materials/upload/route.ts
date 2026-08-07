@@ -57,6 +57,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
+    // Il messaggio va nei log del server e non solo al browser: qui gli
+    // errori arrivano dallo storage e senza traccia sono introvabili.
+    console.error("[materiali/upload]", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "caricamento fallito" },
       { status: 400 },
