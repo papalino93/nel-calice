@@ -164,7 +164,8 @@ export type UnlockOutcome =
 
 /**
  * Verifica il codice sul server e registra lo sblocco. Il codice in chiaro
- * non viene mai restituito, nemmeno al relatore: esiste solo l'hash.
+ * non entra mai in una risposta rivolta ai corsisti: viaggia solo in entrata,
+ * e il server risponde sì o no.
  */
 export async function unlockWithCode(
   userId: string,
@@ -173,7 +174,7 @@ export async function unlockWithCode(
 ): Promise<UnlockOutcome> {
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
-    select: { unlockCodeHash: true },
+    select: { unlockCodeEncrypted: true },
   });
   if (!lesson) return { ok: false, reason: "not_found" };
 
@@ -193,7 +194,7 @@ export async function unlockWithCode(
     return { ok: false, reason: "rate_limited" };
   }
 
-  const succeeded = verifyCode(code, lesson.unlockCodeHash);
+  const succeeded = verifyCode(code, lesson.unlockCodeEncrypted);
   await prisma.unlockAttempt.create({
     data: { userId, lessonId, succeeded },
   });

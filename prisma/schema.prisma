@@ -66,9 +66,15 @@ model Lesson {
   subtitleIt String?
   subtitleEn String?
 
-  // Hash del codice di sblocco (es. bcrypt/scrypt) — mai il codice in chiaro.
-  // Il confronto avviene sempre lato server.
-  unlockCodeHash String @unique
+  // Codice di sblocco cifrato (AES-256-GCM, chiave in UNLOCK_CODE_KEY).
+  // Cifrato e non hashato perché il relatore deve poterlo rileggere per
+  // dirlo a voce in aula — vedi src/lib/codes.ts. Non esce mai dall'API
+  // pubblica: solo il pannello del relatore lo decifra.
+  //
+  // Niente @unique: due cifrature dello stesso codice danno testi diversi
+  // (IV casuale), quindi un vincolo sul cifrato non garantirebbe nulla.
+  // L'unicità è verificata a livello applicativo, sui codici in chiaro.
+  unlockCodeEncrypted String
 
   // Override del relatore: se true, la lezione è aperta per tutti a
   // prescindere da codice o LessonUnlock individuali.

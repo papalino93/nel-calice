@@ -8,7 +8,7 @@ import {
   shuffle,
   type GradableQuestion,
 } from "./quiz";
-import { hashCode, normalizeCode, verifyCode } from "./codes";
+import { decryptCode, encryptCode, normalizeCode, verifyCode } from "./codes";
 
 describe("timer del tentativo", () => {
   const start = new Date("2026-08-07T18:00:00.000Z");
@@ -133,33 +133,51 @@ describe("correzione", () => {
 
 describe("codici di sblocco", () => {
   it("accetta il codice giusto scritto come capita", () => {
-    const stored = hashCode("ARCHETTI");
+    const stored = encryptCode("ARCHETTI");
     expect(verifyCode("ARCHETTI", stored)).toBe(true);
     expect(verifyCode("archetti", stored)).toBe(true);
     expect(verifyCode("  Archetti  ", stored)).toBe(true);
   });
 
   it("rifiuta un codice sbagliato", () => {
-    const stored = hashCode("ARCHETTI");
+    const stored = encryptCode("ARCHETTI");
     expect(verifyCode("BARRIQUE", stored)).toBe(false);
     expect(verifyCode("ARCHETT", stored)).toBe(false);
     expect(verifyCode("", stored)).toBe(false);
   });
 
-  it("non conserva il codice in chiaro", () => {
-    const stored = hashCode("ARCHETTI");
+  it("nel database il codice non è leggibile in chiaro", () => {
+    const stored = encryptCode("ARCHETTI");
     expect(stored).not.toContain("ARCHETTI");
     expect(stored.toUpperCase()).not.toContain("ARCHETTI");
   });
 
-  it("produce hash diversi per lo stesso codice, grazie al salt", () => {
-    expect(hashCode("TANNINO")).not.toBe(hashCode("TANNINO"));
+  it("il relatore può però rileggerlo, per dirlo a voce in aula", () => {
+    expect(decryptCode(encryptCode("archetti"))).toBe("ARCHETTI");
   });
 
-  it("non esplode su un hash malformato", () => {
+  it("produce cifrati diversi per lo stesso codice, grazie all'IV casuale", () => {
+    expect(encryptCode("TANNINO")).not.toBe(encryptCode("TANNINO"));
+  });
+
+  it("rifiuta un valore manomesso nel database", () => {
+    const stored = encryptCode("ARCHETTI");
+    const [iv, tag, data] = stored.split(":");
+    // Cambia un carattere del testo cifrato: il tag di autenticazione
+    // di GCM se ne accorge e la decifratura fallisce invece di
+    // restituire spazzatura.
+    const flipped = data[0] === "a" ? `b${data.slice(1)}` : `a${data.slice(1)}`;
+    const tampered = [iv, tag, flipped].join(":");
+
+    expect(decryptCode(tampered)).toBeNull();
+    expect(verifyCode("ARCHETTI", tampered)).toBe(false);
+  });
+
+  it("non esplode su un valore malformato", () => {
     expect(verifyCode("ARCHETTI", "spazzatura")).toBe(false);
     expect(verifyCode("ARCHETTI", "")).toBe(false);
     expect(verifyCode("ARCHETTI", "abc:def")).toBe(false);
+    expect(decryptCode("abc:def:ghi")).toBeNull();
   });
 
   it("normalizza come lo si detta a voce", () => {

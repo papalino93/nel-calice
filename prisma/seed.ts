@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { hashCode } from "../src/lib/codes";
+import { encryptCode } from "../src/lib/codes";
 
 const prisma = new PrismaClient();
 
@@ -112,7 +112,7 @@ async function main() {
         titleEn: lesson.titleEn,
         subtitleIt: lesson.subtitleIt,
         subtitleEn: lesson.subtitleEn,
-        unlockCodeHash: hashCode(lesson.code),
+        unlockCodeEncrypted: encryptCode(lesson.code),
       },
     });
     console.log(`Lezione ${created.id}: ${created.titleIt}`);
