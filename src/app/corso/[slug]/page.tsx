@@ -194,11 +194,12 @@ export default function CoursePage({
     </section>
   );
 
-  // App sorella (§9). Fondo pieno e pulsante in oro pieno: non è una nota a
-  // margine ma un invito ad andarci, e deve reggere il confronto con la card
-  // dei punti che le sta sopra.
+  // App sorella (§9). Fondo scuro come le altre card: il blocco bordeaux
+  // resta uno solo — quello dei punti — perché spiccava proprio in quanto
+  // unica macchia di colore. Il richiamo qui viene dal pulsante in oro
+  // pieno, che è la cosa su cui si clicca.
   const sorsoBlock = (
-    <section className="rise-in overflow-hidden rounded-[16px] border border-gold/45 bg-bordeaux-deep">
+    <section className="rise-in overflow-hidden rounded-[16px] border border-gold/40 bg-charcoal-soft/70">
       <div className="p-5">
         <div className="flex items-center gap-3">
           <Seal size={48} />
