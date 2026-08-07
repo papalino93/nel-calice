@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@/lib/session";
+import { isDenied, requireEnrollment } from "@/lib/guard";
 import { recordAnswer } from "@/lib/quiz";
 
 /**
@@ -10,12 +10,12 @@ import { recordAnswer } from "@/lib/quiz";
  */
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ slug: string; id: string }> },
 ) {
-  const user = await currentUser();
-  if (!user) {
-    return NextResponse.json({ error: "non autenticato" }, { status: 401 });
-  }
+  const { slug, id } = await params;
+
+  const ctx = await requireEnrollment(slug);
+  if (isDenied(ctx)) return ctx.response;
 
   const body = await request.json().catch(() => null);
   const questionId = Number(body?.questionId);
@@ -30,8 +30,8 @@ export async function POST(
   }
 
   const outcome = await recordAnswer(
-    (await params).id,
-    user.id,
+    id,
+    ctx.enrollment,
     questionId,
     selectedOptionId,
   );

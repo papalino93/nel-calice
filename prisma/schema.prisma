@@ -1,31 +1,67 @@
 // Schema del "Corso di Avvicinamento al Vino".
 //
-// Principi guida (vedi RICOSTRUZIONE-PROMPT.md §7 per i difetti che questo
-// modello risolve):
+// ===========================================================================
+// I TRE LIVELLI
+// ===========================================================================
 //
-// - Contenuto condiviso del corso (Lesson, Question, Option, Material,
-//   Settings) vive in tabelle proprie, MAI dentro il record di un utente.
-// - `Lesson.id` è l'unico numero di lezione che esiste: è stabile per
-//   costruzione (autoincrement, mai riassegnato), quindi funge sia da
-//   identificatore sia da "numero" mostrato ("Lezione 4") sia da criterio
-//   per individuare l'esame finale (= la lezione con id più alto). Non c'è
-//   un campo "posizione" separato da tenere sincronizzato: cancellare una
-//   lezione in mezzo non fa scorrere le altre.
-// - `Lesson.unlockCodeHash` e `Option.isCorrect` non hanno equivalenti nel
-//   contratto API pubblico: sono per definizione dati che il server usa
-//   per validare, mai da restituire al client prima del momento giusto.
-// - Il ruolo "relatore" NON è un campo di User: è calcolato ad ogni
-//   richiesta confrontando `User.email` con l'allowlist in env
-//   (ADMIN_EMAILS), lato server. Niente PIN condiviso, niente flag
-//   falsificabile dal client.
-// - Lo sblocco di una lezione per un utente ha un'unica fonte di verità:
-//   `LessonUnlock` (per utente) OPPURE `Lesson.globallyUnlocked` (per
-//   tutti). Nessuno stato locale lato client.
-// - Il punteggio totale (sempre 100) non è un campo salvato da nessuna
-//   parte: è una funzione pura calcolata da (numero lezioni normali,
-//   domande per lezione), usata sia per mostrare "8 punti" nel pannello
-//   sia per assegnare `AttemptAnswer.pointsAwarded` alla consegna. Vedi
-//   src/lib/scoring.ts.
+// Il modello è diviso in tre strati, e la separazione è la scelta portante
+// di tutta l'applicazione:
+//
+//   1. CATALOGO   — Lesson, Question, Option, Material.
+//                   Il materiale didattico, scritto una volta e riusabile
+//                   per sempre. Non sa nulla dei corsi, dei corsisti, dei
+//                   punteggi. Cancellare un corso non intacca il catalogo.
+//
+//   2. CORSO      — Course, CourseLesson.
+//                   Un'edizione concreta: sceglie dal catalogo quali lezioni
+//                   fare, in che ordine, con quali codici e quale prova
+//                   finale. Un corso breve ne prende due, uno approfondito
+//                   tutte, uno tematico una sola.
+//
+//   3. ISCRIZIONE — Enrollment, LessonUnlock, QuizAttempt, AttemptAnswer.
+//                   Il percorso di una persona dentro un corso. Tutti i
+//                   progressi stanno qui, mai sul catalogo e mai sull'utente.
+//
+// La regola che tiene insieme tutto: **il progresso appartiene
+// all'iscrizione, non all'utente e non alla lezione.** Da qui discende che
+// ogni corso ha i suoi 100 punti e il suo attestato, e che la stessa lezione
+// seguita in due corsi diversi produce due percorsi indipendenti.
+//
+// ===========================================================================
+// INVARIANTI GARANTITE DAL DATABASE, NON DAL CODICE
+// ===========================================================================
+//
+// Alcune regole non sono affidate ai controlli applicativi ma rese
+// *impossibili da violare* a livello di vincoli:
+//
+//   · Un tentativo non può mescolare corsi diversi. `QuizAttempt` e
+//     `LessonUnlock` portano `courseId` e usano chiavi esterne composite:
+//     l'iscrizione e la lezione devono appartenere allo STESSO corso, o
+//     l'inserimento fallisce. Senza questo, un errore di programmazione
+//     potrebbe registrare i punti di Mario nel corso sbagliato — un bug
+//     silenzioso e quasi impossibile da trovare a posteriori.
+//
+//   · Una lezione compare al più una volta per corso, e due lezioni non
+//     possono avere lo stesso numero nello stesso corso.
+//
+//   · Una lezione del catalogo non è cancellabile finché un corso la usa
+//     (onDelete: Restrict): toglierla distruggerebbe i tentativi già svolti.
+//     Per "toglierla da un corso" si cancella la CourseLesson, non la Lesson.
+//
+//   · Un'iscrizione per persona per corso; un tentativo per lezione per
+//     iscrizione; una risposta per domanda per tentativo.
+//
+// ===========================================================================
+// COSA NON ESCE MAI DAL SERVER
+// ===========================================================================
+//
+//   · `Option.isCorrect`   — non compare nel payload del quiz in corso.
+//   · `*.unlockCodeEncrypted` e `Course.enrollmentCodeEncrypted` — cifrati
+//     con la chiave in UNLOCK_CODE_KEY, decifrati solo per il relatore.
+//   · Il ruolo di relatore non è un campo: si calcola ad ogni richiesta
+//     dall'allowlist ADMIN_EMAILS. Vedi src/lib/roles.ts.
+//   · I punti di ogni domanda non sono salvati: sono una funzione pura
+//     della forma del corso. Vedi src/lib/scoring.ts.
 
 generator client {
   provider = "prisma-client-js"
@@ -37,9 +73,9 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
-// ---------------------------------------------------------------------------
-// Utenti
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// PERSONE
+// ===========================================================================
 
 model User {
   id        String   @id @default(cuid())
@@ -47,17 +83,17 @@ model User {
   email     String   @unique
   name      String
   avatarUrl String?
-  language  String   @default("it") // "it" | "en" — persistito per ritrovare le preferenze da qualunque dispositivo
+  /// Preferenza della persona, non del corso: la ritrova su ogni dispositivo.
+  language  String   @default("it")
   createdAt DateTime @default(now())
 
-  attempts       QuizAttempt[]
-  unlocks        LessonUnlock[]
-  unlockAttempts UnlockAttempt[]
+  enrollments       Enrollment[]
+  enrollmentAttempts EnrollmentAttempt[]
 }
 
-// ---------------------------------------------------------------------------
-// Contenuto del corso — condiviso, gestito dal relatore, mai per-utente
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// 1. CATALOGO — contenuto didattico, indipendente da corsi e corsisti
+// ===========================================================================
 
 model Lesson {
   id         Int     @id @default(autoincrement())
@@ -65,27 +101,16 @@ model Lesson {
   titleEn    String
   subtitleIt String?
   subtitleEn String?
-
-  // Codice di sblocco cifrato (AES-256-GCM, chiave in UNLOCK_CODE_KEY).
-  // Cifrato e non hashato perché il relatore deve poterlo rileggere per
-  // dirlo a voce in aula — vedi src/lib/codes.ts. Non esce mai dall'API
-  // pubblica: solo il pannello del relatore lo decifra.
-  //
-  // Niente @unique: due cifrature dello stesso codice danno testi diversi
-  // (IV casuale), quindi un vincolo sul cifrato non garantirebbe nulla.
-  // L'unicità è verificata a livello applicativo, sui codici in chiaro.
-  unlockCodeEncrypted String
-
-  // Override del relatore: se true, la lezione è aperta per tutti a
-  // prescindere da codice o LessonUnlock individuali.
-  globallyUnlocked Boolean @default(false)
+  /// Nota interna del relatore sul contenuto della lezione. Mai mostrata.
+  notes      String?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   questions Question[]
   materials Material[]
-  unlocks   LessonUnlock[]
-  attempts  QuizAttempt[]
+  /// I corsi che la usano. Finché non è vuota, la lezione non si cancella.
+  usedIn    CourseLesson[]
 
   @@index([createdAt])
 }
@@ -98,13 +123,14 @@ model Question {
   textIt String
   textEn String
 
-  // Ordine di visualizzazione all'interno della lezione (non l'id).
+  /// Ordine dentro la lezione. Non è l'id: riordinare non cambia identità.
   position Int
 
   options        Option[]
   attemptAnswers AttemptAnswer[]
 
-  @@index([lessonId, position])
+  @@unique([lessonId, position])
+  @@index([lessonId])
 }
 
 model Option {
@@ -115,17 +141,18 @@ model Option {
   textIt String
   textEn String
 
-  // Ordine "canonico" di inserimento — l'ordine mostrato al corsista viene
-  // rimescolato lato client/risposta ad ogni tentativo, ma la persistenza
-  // resta stabile per poter editare la domanda dal pannello.
+  /// Ordine di inserimento. Al corsista le opzioni arrivano mescolate, ma
+  /// la persistenza resta stabile perché il relatore possa modificarle.
   position Int
 
-  // Mai esposto dall'API di quiz prima della correzione.
+  /// Esattamente una per domanda deve essere true — verificato al
+  /// salvataggio dal pannello, perché nessun vincolo SQL sa esprimerlo.
   isCorrect Boolean @default(false)
 
   chosenIn AttemptAnswer[]
 
-  @@index([questionId, position])
+  @@unique([questionId, position])
+  @@index([questionId])
 }
 
 enum MaterialType {
@@ -133,16 +160,21 @@ enum MaterialType {
   SLIDE
   IMAGE
   VIDEO
-  SCROLL // pergamena / materiale celebrativo
+  SCROLL
 }
 
+/// Dispensa. È legata a UNA lezione del catalogo (e allora la segue in ogni
+/// corso che la usa), OPPURE a un corso intero (materiale "generale" di
+/// quell'edizione). Mai a entrambi, mai a nessuno dei due: un vincolo CHECK
+/// nella migrazione lo impedisce.
 model Material {
-  id       String  @id @default(cuid())
-  // null = materiale "generale", non legato a una lezione specifica.
-  // Un materiale legato a una lezione eredita il blocco di quella lezione
-  // (calcolato a runtime, non duplicato qui).
+  id String @id @default(cuid())
+
   lessonId Int?
   lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  courseId String?
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   type    MaterialType
   titleIt String
@@ -154,91 +186,253 @@ model Material {
   createdAt DateTime @default(now())
 
   @@index([lessonId])
+  @@index([courseId])
 }
 
-// Singleton (id fisso = 1) per le durate dei timer, modificabili dal
-// pannello relatore senza toccare il codice.
-model Settings {
-  id                 Int      @id @default(1)
-  lessonTimerMinutes Int      @default(15)
-  examTimerMinutes   Int      @default(45)
-  updatedAt          DateTime @updatedAt
+// ===========================================================================
+// 2. CORSO — un'edizione concreta, che pesca dal catalogo
+// ===========================================================================
+
+enum CourseStatus {
+  /// In preparazione: non visibile ai corsisti.
+  DRAFT
+  /// In corso.
+  ACTIVE
+  /// Concluso: resta consultabile, ma non accetta nuove iscrizioni.
+  ARCHIVED
 }
 
-// ---------------------------------------------------------------------------
-// Sblocco lezioni — un'unica fonte di verità per utente
-// ---------------------------------------------------------------------------
+model Course {
+  id   String @id @default(cuid())
+  /// Compare nell'indirizzo: /corso/bollicine-2026
+  slug String @unique
 
-enum UnlockMethod {
-  CODE // il corsista ha digitato il codice corretto
-  ADMIN // sblocco manuale dal pannello relatore per quel singolo utente
+  titleIt    String
+  titleEn    String
+  subtitleIt String?
+  subtitleEn String?
+
+  status         CourseStatus @default(DRAFT)
+  /// Indipendente dallo stato: un corso può essere attivo ma chiuso a
+  /// nuove iscrizioni dopo la prima serata.
+  enrollmentOpen Boolean      @default(true)
+
+  /// Codice detto a voce alla prima serata per iscriversi. Cifrato: il
+  /// relatore deve poterlo rileggere dal pannello.
+  enrollmentCodeEncrypted String
+  /// Impronta deterministica dello stesso codice (HMAC, vedi src/lib/codes.ts).
+  /// È **unica su tutti i corsi**: senza questo vincolo due edizioni
+  /// potrebbero avere lo stesso codice e un corsista finirebbe nel corso
+  /// sbagliato. Permette anche di trovare il corso da un codice digitato
+  /// senza sapere a quale appartiene.
+  enrollmentCodeLookup    String @unique
+
+  /// Le durate dei quiz stanno sul corso, non in un'impostazione globale:
+  /// un corso serale da due lezioni può volere tempi diversi da uno lungo.
+  lessonTimerMinutes Int @default(15)
+  examTimerMinutes   Int @default(45)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessons     CourseLesson[]
+  enrollments Enrollment[]
+  materials   Material[]
+  attempts    QuizAttempt[]
+  unlocks     LessonUnlock[]
+  enrollmentAttempts EnrollmentAttempt[]
+  unlockAttempts     UnlockAttempt[]
+
+  @@index([status])
 }
 
-model LessonUnlock {
+/// La lezione così come appare *dentro un corso*: con il suo numero, il suo
+/// codice serata e l'eventuale ruolo di prova finale.
+///
+/// È qui che si decide "quali lezioni fa questo corso": un corso sulle
+/// bollicine ne avrà una sola, un corso completo tutte quante.
+model CourseLesson {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessonId Int
+  /// Restrict, non Cascade: una lezione del catalogo usata da un corso non
+  /// si cancella: porterebbe con sé i tentativi già svolti dai corsisti.
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+
+  /// Il numero mostrato ("Lezione 3"), che vale solo dentro questo corso.
+  /// Separarlo da Lesson.id è ciò che permette alla stessa lezione di
+  /// essere la 1ª in un corso e la 4ª in un altro.
+  position Int
+
+  /// Codice della serata, cifrato. Diverso per ogni corso, anche a parità
+  /// di lezione: due edizioni non condividono i codici.
+  unlockCodeEncrypted String
+  /// Impronta deterministica, unica **dentro il corso**: due serate dello
+  /// stesso corso non possono condividere il codice, o sbloccarne una
+  /// aprirebbe anche l'altra. Fra corsi diversi la ripetizione è ammessa.
+  unlockCodeLookup    String
+
+  /// Apertura immediata per tutti gli iscritti a questo corso, senza codice.
+  globallyUnlocked Boolean @default(false)
+
+  /// La prova finale, se il corso ne ha una. Non più "la lezione con id più
+  /// alto": con un catalogo condiviso quella regola non avrebbe senso, e un
+  /// corso tematico può benissimo non avere un esame.
+  isExam Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  attempts QuizAttempt[]
+  unlocks  LessonUnlock[]
+
+  /// Una lezione al più una volta per corso.
+  @@unique([courseId, lessonId])
+  /// Due lezioni non possono avere lo stesso numero nello stesso corso.
+  @@unique([courseId, position])
+  /// Né lo stesso codice della serata.
+  @@unique([courseId, unlockCodeLookup])
+  /// Bersaglio delle chiavi esterne composite: garantisce che chi punta a
+  /// questa riga stia parlando davvero del corso che dichiara.
+  @@unique([id, courseId])
+  @@index([courseId])
+  @@index([lessonId])
+}
+
+// ===========================================================================
+// 3. ISCRIZIONE — il percorso di una persona dentro un corso
+// ===========================================================================
+
+model Enrollment {
   id       String @id @default(cuid())
   userId   String
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lessonId Int
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  enrolledAt DateTime @default(now())
+
+  unlocks  LessonUnlock[]
+  attempts QuizAttempt[]
+
+  /// Una persona si iscrive una volta sola a un dato corso.
+  @@unique([userId, courseId])
+  /// Bersaglio delle chiavi esterne composite (vedi QuizAttempt).
+  @@unique([id, courseId])
+  @@index([courseId])
+}
+
+/// Tentativi di inserimento del codice d'iscrizione, per limitare la forza
+/// bruta (§7.6). Vive sull'utente e non sull'iscrizione, perché serve
+/// proprio a chi un'iscrizione non ce l'ha ancora.
+model EnrollmentAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  succeeded Boolean
+  createdAt DateTime @default(now())
+
+  @@index([userId, courseId, createdAt])
+}
+
+enum UnlockMethod {
+  /// Il corsista ha digitato il codice della serata.
+  CODE
+  /// Aperta dal relatore per questo singolo corsista.
+  ADMIN
+}
+
+/// Sblocco di una lezione per un iscritto. Unica fonte di verità insieme a
+/// `CourseLesson.globallyUnlocked`: non esiste nessuno stato di sblocco
+/// salvato nel browser (difetto §7.9, dove tre meccanismi si sovrapponevano).
+model LessonUnlock {
+  id String @id @default(cuid())
+
+  /// Ridondante di per sé — l'iscrizione conosce già il suo corso — ma è la
+  /// colonna che permette alle due chiavi esterne composite qui sotto di
+  /// obbligare iscrizione e lezione a stare nello STESSO corso.
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId, courseId], references: [id, courseId], onDelete: Cascade)
+
+  courseLessonId String
+  courseLesson   CourseLesson @relation(fields: [courseLessonId, courseId], references: [id, courseId], onDelete: Cascade)
 
   method     UnlockMethod
   unlockedAt DateTime     @default(now())
 
-  // Un utente sblocca una lezione al più una volta: la seconda volta è un
-  // no-op, non una riga duplicata.
-  @@unique([userId, lessonId])
+  /// Sbloccare due volte è un non-evento, non una riga in più.
+  @@unique([enrollmentId, courseLessonId])
+  @@index([courseId])
 }
 
-// Traccia ogni tentativo di inserimento codice (riuscito o no), per
-// applicare un limite di frequenza lato server (difetto §7.6: nessun
-// rate-limit sul PIN/codice nell'implementazione attuale).
+/// Tentativi di inserimento del codice della serata, per il limite di
+/// frequenza. Separato da LessonUnlock perché registra anche i fallimenti.
 model UnlockAttempt {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lessonId  Int
+  id String @id @default(cuid())
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  enrollmentId   String
+  courseLessonId String
+
   succeeded Boolean
   createdAt DateTime @default(now())
 
-  @@index([userId, lessonId, createdAt])
+  @@index([enrollmentId, courseLessonId, createdAt])
+  @@index([courseId])
 }
-
-// ---------------------------------------------------------------------------
-// Tentativi di quiz — timer e punteggio vivono sul server, non sul client
-// ---------------------------------------------------------------------------
 
 enum AttemptStatus {
   IN_PROGRESS
   SUBMITTED
+  /// Chiuso dallo scadere del tempo anziché dalla consegna.
   EXPIRED
 }
 
 model QuizAttempt {
-  id       String @id @default(cuid())
-  userId   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lessonId Int
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  id String @id @default(cuid())
 
-  // Scadenza scritta dal server alla creazione (startedAt + durata da
-  // Settings), MAI dal client. Un refresh rilegge questo stesso valore.
+  /// Stessa ragione di LessonUnlock: è la colonna che rende impossibile
+  /// registrare i progressi di un'iscrizione su una lezione di un altro
+  /// corso. Non è una comodità di lettura, è un vincolo.
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId, courseId], references: [id, courseId], onDelete: Cascade)
+
+  courseLessonId String
+  courseLesson   CourseLesson @relation(fields: [courseLessonId, courseId], references: [id, courseId], onDelete: Cascade)
+
+  /// Scadenza scritta dal server all'avvio (startedAt + durata del corso),
+  /// MAI dal client. Un refresh rilegge questo stesso valore: è ciò che
+  /// rende il timer non aggirabile (difetto §7.5).
   startedAt   DateTime      @default(now())
   expiresAt   DateTime
   submittedAt DateTime?
   status      AttemptStatus @default(IN_PROGRESS)
 
-  // Valorizzati solo alla consegna (submit o scadenza), dal server.
-  // maxScore è "fotografato" al momento della consegna: se il relatore
-  // aggiunge domande dopo, i tentativi passati restano coerenti con se
-  // stessi invece di essere ricalcolati a sorpresa.
+  /// Scritti solo alla chiusura, solo dal server. `maxScore` fotografa il
+  /// massimo di allora: se il relatore aggiunge domande dopo, i tentativi
+  /// già chiusi restano coerenti con se stessi.
   score    Int?
   maxScore Int?
   timedOut Boolean @default(false)
 
   answers AttemptAnswer[]
 
-  @@index([userId, lessonId])
-  @@index([lessonId])
+  /// Una lezione si svolge una volta per iscrizione. Abbandonare cancella
+  /// il tentativo, quindi si può ricominciare; consegnare no.
+  @@unique([enrollmentId, courseLessonId])
+  @@index([courseId])
+  @@index([courseLessonId])
 }
 
 model AttemptAnswer {
@@ -249,14 +443,15 @@ model AttemptAnswer {
   questionId Int
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
-  // null = lasciata in bianco (vale zero punti, non un errore).
+  /// null = lasciata in bianco. Vale zero punti e non è un errore (§3.5).
   selectedOptionId Int?
   selectedOption   Option? @relation(fields: [selectedOptionId], references: [id])
 
+  /// Scritti dal server alla correzione. Il client non li propone mai.
   isCorrect     Boolean   @default(false)
   pointsAwarded Int       @default(0)
   answeredAt    DateTime?
 
-  // Una risposta per domanda per tentativo.
   @@unique([attemptId, questionId])
+  @@index([questionId])
 }

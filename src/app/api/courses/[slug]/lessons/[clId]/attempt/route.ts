@@ -1,27 +1,22 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@/lib/session";
+import { isDenied, requireEnrollment } from "@/lib/guard";
 import { attemptView, startAttempt } from "@/lib/quiz";
 
 /**
  * Avvia il quiz di una lezione, o riprende quello già in corso.
  * La scadenza viene decisa qui e salvata: il client la riceve, ma non la
- * stabilisce e non può spostarla.
+ * stabilisce e non può spostarla (§7.5).
  */
 export async function POST(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ slug: string; clId: string }> },
 ) {
-  const user = await currentUser();
-  if (!user) {
-    return NextResponse.json({ error: "non autenticato" }, { status: 401 });
-  }
+  const { slug, clId } = await params;
 
-  const lessonId = Number((await params).id);
-  if (!Number.isInteger(lessonId)) {
-    return NextResponse.json({ error: "lezione non valida" }, { status: 400 });
-  }
+  const ctx = await requireEnrollment(slug);
+  if (isDenied(ctx)) return ctx.response;
 
-  const outcome = await startAttempt(user.id, lessonId);
+  const outcome = await startAttempt(ctx.enrollment, clId);
 
   if (!outcome.ok) {
     const status = {
@@ -41,6 +36,6 @@ export async function POST(
     return NextResponse.json({ error: message }, { status });
   }
 
-  const view = await attemptView(outcome.attemptId, user.id);
+  const view = await attemptView(outcome.attemptId, ctx.enrollment);
   return NextResponse.json({ ...view, resumed: outcome.resumed });
 }

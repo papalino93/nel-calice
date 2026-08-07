@@ -40,13 +40,25 @@ export function distributeEvenly(total: number, count: number): number[] {
   );
 }
 
+/**
+ * Una lezione così come pesa dentro un corso.
+ *
+ * `id` è l'id della CourseLesson (la lezione *in questo corso*), non quello
+ * della lezione di catalogo: gli stessi contenuti in due corsi hanno due
+ * budget indipendenti.
+ *
+ * `isExam` è un dato esplicito, non più dedotto dall'id più alto come
+ * nell'app attuale. Con un catalogo condiviso quella regola non avrebbe
+ * senso, e un corso tematico può legittimamente non avere alcun esame.
+ */
 export type LessonForScoring = {
-  id: number;
+  id: string;
+  isExam: boolean;
   questionCount: number;
 };
 
 export type LessonBudget = {
-  lessonId: number;
+  lessonId: string;
   isExam: boolean;
   questionCount: number;
   /** Punti totali della lezione (0 se non ha domande). */
@@ -54,16 +66,6 @@ export type LessonBudget = {
   /** Punti di ciascuna domanda, in ordine di posizione. Somma = budget. */
   questionPoints: number[];
 };
-
-/**
- * L'esame finale è la lezione con id più alto (§3.7b). Gli id sono stabili
- * e non vengono mai riassegnati, quindi questo criterio resta valido anche
- * cancellando una lezione in mezzo.
- */
-export function examLessonId(lessons: LessonForScoring[]): number | null {
-  if (lessons.length === 0) return null;
-  return Math.max(...lessons.map((l) => l.id));
-}
 
 /**
  * Assegna a ogni lezione il suo budget di punti e ripartisce quel budget
@@ -77,13 +79,13 @@ export function examLessonId(lessons: LessonForScoring[]): number | null {
  * Di conseguenza, quando l'esame non ha ancora domande i 100 punti vanno
  * tutti alle lezioni normali; e quando non ci sono lezioni normali con
  * domande, l'esame vale da solo 100.
+ *
+ * Un corso può anche non avere alcun esame (es. un corso tematico su una
+ * sola serata): in quel caso i 100 punti si dividono fra le sue lezioni.
  */
 export function computeBudgets(lessons: LessonForScoring[]): LessonBudget[] {
-  const examId = examLessonId(lessons);
-
   const withFlags = lessons.map((lesson) => ({
     ...lesson,
-    isExam: lesson.id === examId,
     hasQuestions: lesson.questionCount > 0,
   }));
 
@@ -113,7 +115,7 @@ export function computeBudgets(lessons: LessonForScoring[]): LessonBudget[] {
     scoredNormalLessons.length,
   );
 
-  const budgetByLessonId = new Map<number, number>();
+  const budgetByLessonId = new Map<string, number>();
   scoredNormalLessons.forEach((lesson, i) => {
     budgetByLessonId.set(lesson.id, normalBudgets[i]);
   });

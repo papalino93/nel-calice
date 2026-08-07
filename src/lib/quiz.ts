@@ -1,11 +1,15 @@
-import { AttemptStatus, UnlockMethod } from "@prisma/client";
+import { AttemptStatus } from "@prisma/client";
 import { prisma } from "./prisma";
-import { computeBudgets, examLessonId, type LessonForScoring } from "./scoring";
-import { verifyCode } from "./codes";
+import { computeBudgets, type LessonForScoring } from "./scoring";
+import type { EnrollmentRef } from "./enrollment";
+import { isLessonUnlockedFor } from "./unlock";
 
 // Tutto ciò che decide un punteggio o una scadenza vive qui, sul server.
-// Il client non manda mai punteggi (difetto §7.4) e non conosce mai la
-// risposta corretta prima della consegna (difetto §7.3).
+// Il client non manda mai punteggi (§7.4) e non conosce mai la risposta
+// corretta prima della consegna (§7.3).
+//
+// Ogni funzione parte dall'iscrizione, mai dall'utente: è l'iscrizione a
+// dire di quale corso stiamo parlando, e quindi quali lezioni sono in gioco.
 
 /**
  * Tolleranza sulla scadenza: una risposta partita in tempo può arrivare con
@@ -15,10 +19,6 @@ import { verifyCode } from "./codes";
  * aspettare apposta.
  */
 export const ANSWER_GRACE_MS = 5_000;
-
-/** Tentativi di codice sbagliato tollerati prima del blocco (§7.6). */
-export const MAX_FAILED_UNLOCKS = 5;
-export const UNLOCK_WINDOW_MS = 10 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Funzioni pure — la parte che i test coprono davvero
@@ -92,39 +92,51 @@ export function grade(
 }
 
 // ---------------------------------------------------------------------------
-// Lettura dello stato del corso
+// Forma del corso e punti delle domande
 // ---------------------------------------------------------------------------
 
-export async function getSettings() {
-  return prisma.settings.upsert({
-    where: { id: 1 },
-    create: { id: 1 },
-    update: {},
-  });
-}
-
-/** Forma del corso (quante lezioni, quante domande ciascuna) per i budget. */
-export async function loadCourseShape(): Promise<LessonForScoring[]> {
-  const lessons = await prisma.lesson.findMany({
-    select: { id: true, _count: { select: { questions: true } } },
-    orderBy: { id: "asc" },
-  });
-  return lessons.map((l) => ({ id: l.id, questionCount: l._count.questions }));
-}
-
 /**
- * Punti di ogni domanda di una lezione, mappati per id.
- * I punti dipendono dall'intero corso, non dalla singola lezione: per questo
- * si parte sempre dalla forma completa.
+ * Quante lezioni ha questo corso, quali sono d'esame e quante domande hanno.
+ * È l'unico ingresso del calcolo punti: i punti dipendono dal corso, non
+ * dalla lezione di catalogo (la stessa lezione può valere 8 punti in un
+ * corso completo e 100 in un corso tematico).
  */
+export async function loadCourseShape(
+  courseId: string,
+): Promise<LessonForScoring[]> {
+  const lessons = await prisma.courseLesson.findMany({
+    where: { courseId },
+    orderBy: { position: "asc" },
+    select: {
+      id: true,
+      isExam: true,
+      lesson: { select: { _count: { select: { questions: true } } } },
+    },
+  });
+
+  return lessons.map((cl) => ({
+    id: cl.id,
+    isExam: cl.isExam,
+    questionCount: cl.lesson._count.questions,
+  }));
+}
+
+/** Punti di ogni domanda di una lezione del corso, mappati per id domanda. */
 export async function pointsByQuestionId(
-  lessonId: number,
+  courseId: string,
+  courseLessonId: string,
 ): Promise<Map<number, number>> {
-  const shape = await loadCourseShape();
-  const budget = computeBudgets(shape).find((b) => b.lessonId === lessonId);
+  const shape = await loadCourseShape(courseId);
+  const budget = computeBudgets(shape).find((b) => b.lessonId === courseLessonId);
+
+  const courseLesson = await prisma.courseLesson.findUnique({
+    where: { id: courseLessonId },
+    select: { lessonId: true },
+  });
+  if (!courseLesson) return new Map();
 
   const questions = await prisma.question.findMany({
-    where: { lessonId },
+    where: { lessonId: courseLesson.lessonId },
     select: { id: true },
     orderBy: { position: "asc" },
   });
@@ -134,77 +146,6 @@ export async function pointsByQuestionId(
     map.set(q.id, budget?.questionPoints[i] ?? 0);
   });
   return map;
-}
-
-// ---------------------------------------------------------------------------
-// Sblocco — un'unica fonte di verità, sempre sul server
-// ---------------------------------------------------------------------------
-
-export async function isLessonUnlockedFor(
-  userId: string,
-  lessonId: number,
-): Promise<boolean> {
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: { globallyUnlocked: true },
-  });
-  if (!lesson) return false;
-  if (lesson.globallyUnlocked) return true;
-
-  const unlock = await prisma.lessonUnlock.findUnique({
-    where: { userId_lessonId: { userId, lessonId } },
-    select: { id: true },
-  });
-  return unlock !== null;
-}
-
-export type UnlockOutcome =
-  | { ok: true; alreadyUnlocked: boolean }
-  | { ok: false; reason: "not_found" | "wrong_code" | "rate_limited" };
-
-/**
- * Verifica il codice sul server e registra lo sblocco. Il codice in chiaro
- * non entra mai in una risposta rivolta ai corsisti: viaggia solo in entrata,
- * e il server risponde sì o no.
- */
-export async function unlockWithCode(
-  userId: string,
-  lessonId: number,
-  code: string,
-): Promise<UnlockOutcome> {
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: { unlockCodeEncrypted: true },
-  });
-  if (!lesson) return { ok: false, reason: "not_found" };
-
-  if (await isLessonUnlockedFor(userId, lessonId)) {
-    return { ok: true, alreadyUnlocked: true };
-  }
-
-  const recentFailures = await prisma.unlockAttempt.count({
-    where: {
-      userId,
-      lessonId,
-      succeeded: false,
-      createdAt: { gte: new Date(Date.now() - UNLOCK_WINDOW_MS) },
-    },
-  });
-  if (recentFailures >= MAX_FAILED_UNLOCKS) {
-    return { ok: false, reason: "rate_limited" };
-  }
-
-  const succeeded = verifyCode(code, lesson.unlockCodeEncrypted);
-  await prisma.unlockAttempt.create({
-    data: { userId, lessonId, succeeded },
-  });
-
-  if (!succeeded) return { ok: false, reason: "wrong_code" };
-
-  await prisma.lessonUnlock.create({
-    data: { userId, lessonId, method: UnlockMethod.CODE },
-  });
-  return { ok: true, alreadyUnlocked: false };
 }
 
 // ---------------------------------------------------------------------------
@@ -220,27 +161,40 @@ export type StartOutcome =
  *
  * Riprendere è il punto centrale: la scadenza è scritta sul database
  * all'avvio, quindi un refresh della pagina ritrova lo stesso `expiresAt` e
- * non azzera il timer (difetto §7.5, dove la scadenza viveva in memoria nel
- * browser e bastava ricaricare).
+ * non azzera il timer (§7.5, dove la scadenza viveva in memoria nel browser
+ * e bastava ricaricare).
  */
 export async function startAttempt(
-  userId: string,
-  lessonId: number,
+  enrollment: EnrollmentRef,
+  courseLessonId: string,
 ): Promise<StartOutcome> {
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    select: { id: true, _count: { select: { questions: true } } },
+  const courseLesson = await prisma.courseLesson.findFirst({
+    where: { id: courseLessonId, courseId: enrollment.courseId },
+    select: {
+      id: true,
+      isExam: true,
+      lesson: { select: { _count: { select: { questions: true } } } },
+      course: {
+        select: { lessonTimerMinutes: true, examTimerMinutes: true },
+      },
+    },
   });
-  if (!lesson) return { ok: false, reason: "not_found" };
-  if (lesson._count.questions === 0) return { ok: false, reason: "empty" };
+  if (!courseLesson) return { ok: false, reason: "not_found" };
+  if (courseLesson.lesson._count.questions === 0) {
+    return { ok: false, reason: "empty" };
+  }
 
-  if (!(await isLessonUnlockedFor(userId, lessonId))) {
+  if (!(await isLessonUnlockedFor(enrollment, courseLessonId))) {
     return { ok: false, reason: "locked" };
   }
 
-  const existing = await prisma.quizAttempt.findFirst({
-    where: { userId, lessonId },
-    orderBy: { startedAt: "desc" },
+  const existing = await prisma.quizAttempt.findUnique({
+    where: {
+      enrollmentId_courseLessonId: {
+        enrollmentId: enrollment.id,
+        courseLessonId,
+      },
+    },
   });
 
   if (existing) {
@@ -257,22 +211,22 @@ export async function startAttempt(
     }
     // Il tempo è scaduto mentre l'utente era altrove: si chiude e si corregge
     // con quello che aveva già risposto.
-    await finalizeAttempt(existing.id, userId, { timedOut: true });
+    await finalizeAttempt(existing.id, enrollment, { timedOut: true });
     return { ok: false, reason: "already_done" };
   }
 
-  const settings = await getSettings();
-  const shape = await loadCourseShape();
-  const isExam = examLessonId(shape) === lessonId;
-  const minutes = isExam
-    ? settings.examTimerMinutes
-    : settings.lessonTimerMinutes;
+  // Le durate sono del corso, non globali: un corso serale da due lezioni
+  // può volere tempi diversi da uno lungo.
+  const minutes = courseLesson.isExam
+    ? courseLesson.course.examTimerMinutes
+    : courseLesson.course.lessonTimerMinutes;
 
   const startedAt = new Date();
   const attempt = await prisma.quizAttempt.create({
     data: {
-      userId,
-      lessonId,
+      courseId: enrollment.courseId,
+      enrollmentId: enrollment.id,
+      courseLessonId,
       startedAt,
       expiresAt: attemptDeadline(startedAt, minutes),
     },
@@ -300,13 +254,18 @@ export type AnswerOutcome =
  */
 export async function recordAnswer(
   attemptId: string,
-  userId: string,
+  enrollment: EnrollmentRef,
   questionId: number,
   selectedOptionId: number | null,
 ): Promise<AnswerOutcome> {
   const attempt = await prisma.quizAttempt.findFirst({
-    where: { id: attemptId, userId },
-    select: { id: true, lessonId: true, status: true, expiresAt: true },
+    where: { id: attemptId, enrollmentId: enrollment.id },
+    select: {
+      id: true,
+      status: true,
+      expiresAt: true,
+      courseLesson: { select: { lessonId: true } },
+    },
   });
   if (!attempt) return { ok: false, reason: "not_found" };
   if (attempt.status !== AttemptStatus.IN_PROGRESS) {
@@ -320,7 +279,7 @@ export async function recordAnswer(
   // quella domanda: senza questi controlli si potrebbe rispondere a una
   // domanda di un'altra lezione, o inviare l'id di un'opzione qualsiasi.
   const question = await prisma.question.findFirst({
-    where: { id: questionId, lessonId: attempt.lessonId },
+    where: { id: questionId, lessonId: attempt.courseLesson.lessonId },
     select: { id: true },
   });
   if (!question) return { ok: false, reason: "bad_option" };
@@ -348,18 +307,21 @@ export async function recordAnswer(
 }
 
 /**
- * Chiude il tentativo e ne calcola il punteggio a partire dalle risposte
- * salvate. È l'unico punto in cui `score` viene scritto: il client non ha mai
- * voce in capitolo.
+ * Chiude il tentativo e ne calcola il punteggio dalle risposte salvate.
+ * È l'unico punto in cui `score` viene scritto: il client non ha mai voce
+ * in capitolo.
  */
 export async function finalizeAttempt(
   attemptId: string,
-  userId: string,
+  enrollment: EnrollmentRef,
   opts: { timedOut?: boolean } = {},
 ) {
   const attempt = await prisma.quizAttempt.findFirst({
-    where: { id: attemptId, userId },
-    include: { answers: true },
+    where: { id: attemptId, enrollmentId: enrollment.id },
+    include: {
+      answers: true,
+      courseLesson: { select: { id: true, lessonId: true } },
+    },
   });
   if (!attempt) return null;
   if (attempt.status !== AttemptStatus.IN_PROGRESS) return attempt;
@@ -367,11 +329,14 @@ export async function finalizeAttempt(
   const timedOut = opts.timedOut ?? isExpired(attempt.expiresAt, new Date());
 
   const questions = await prisma.question.findMany({
-    where: { lessonId: attempt.lessonId },
+    where: { lessonId: attempt.courseLesson.lessonId },
     select: { id: true, options: { select: { id: true, isCorrect: true } } },
     orderBy: { position: "asc" },
   });
-  const points = await pointsByQuestionId(attempt.lessonId);
+  const points = await pointsByQuestionId(
+    enrollment.courseId,
+    attempt.courseLesson.id,
+  );
 
   const gradable: GradableQuestion[] = questions.map((q) => ({
     questionId: q.id,
@@ -421,6 +386,21 @@ export async function finalizeAttempt(
   });
 }
 
+/** Abbandona il tentativo in corso (§3.4, pulsante "Esci"). */
+export async function abandonAttempt(
+  attemptId: string,
+  enrollment: EnrollmentRef,
+) {
+  const { count } = await prisma.quizAttempt.deleteMany({
+    where: {
+      id: attemptId,
+      enrollmentId: enrollment.id,
+      status: AttemptStatus.IN_PROGRESS,
+    },
+  });
+  return count > 0;
+}
+
 // ---------------------------------------------------------------------------
 // Cosa vede il client
 // ---------------------------------------------------------------------------
@@ -437,12 +417,11 @@ export type SafeQuestion = {
 
 export type AttemptView = {
   attemptId: string;
-  lessonId: number;
+  courseLessonId: string;
   startedAt: string;
   expiresAt: string;
   secondsRemaining: number;
-  /** Durata piena del quiz: serve alla barra del timer per sapere a che
-      punto colorarsi di rosso, anche riprendendo a metà. */
+  /** Durata piena del quiz, per sapere quando la barra si fa rossa. */
   totalSeconds: number;
   questions: SafeQuestion[];
 };
@@ -450,27 +429,32 @@ export type AttemptView = {
 /**
  * Payload del quiz in corso. È l'unico modo in cui le domande raggiungono il
  * browser, ed è costruito in modo che la risposta corretta non ci sia
- * proprio — non nascosta, non offuscata: assente (difetto §7.3, dove domande
- * e risposte erano tutte nel client e il quiz era ispezionabile in anticipo).
+ * proprio — non nascosta, non offuscata: assente (§7.3, dove domande e
+ * risposte erano tutte nel client e il quiz era ispezionabile in anticipo).
  */
 export async function attemptView(
   attemptId: string,
-  userId: string,
+  enrollment: EnrollmentRef,
 ): Promise<AttemptView | null> {
   const attempt = await prisma.quizAttempt.findFirst({
-    where: { id: attemptId, userId, status: AttemptStatus.IN_PROGRESS },
+    where: {
+      id: attemptId,
+      enrollmentId: enrollment.id,
+      status: AttemptStatus.IN_PROGRESS,
+    },
     select: {
       id: true,
-      lessonId: true,
+      courseLessonId: true,
       startedAt: true,
       expiresAt: true,
+      courseLesson: { select: { lessonId: true } },
       answers: { select: { questionId: true, selectedOptionId: true } },
     },
   });
   if (!attempt) return null;
 
   const questions = await prisma.question.findMany({
-    where: { lessonId: attempt.lessonId },
+    where: { lessonId: attempt.courseLesson.lessonId },
     select: {
       id: true,
       textIt: true,
@@ -489,7 +473,7 @@ export async function attemptView(
 
   return {
     attemptId: attempt.id,
-    lessonId: attempt.lessonId,
+    courseLessonId: attempt.courseLessonId,
     startedAt: attempt.startedAt.toISOString(),
     expiresAt: attempt.expiresAt.toISOString(),
     secondsRemaining: secondsRemaining(attempt.expiresAt, new Date()),
@@ -511,15 +495,21 @@ export async function attemptView(
  * essere mostrata, perché il punteggio è già stato scritto e non è più
  * modificabile.
  */
-export async function reviewView(attemptId: string, userId: string) {
+export async function reviewView(
+  attemptId: string,
+  enrollment: EnrollmentRef,
+) {
   const attempt = await prisma.quizAttempt.findFirst({
-    where: { id: attemptId, userId },
-    include: { answers: true },
+    where: { id: attemptId, enrollmentId: enrollment.id },
+    include: {
+      answers: true,
+      courseLesson: { select: { id: true, lessonId: true } },
+    },
   });
   if (!attempt || attempt.status === AttemptStatus.IN_PROGRESS) return null;
 
   const questions = await prisma.question.findMany({
-    where: { lessonId: attempt.lessonId },
+    where: { lessonId: attempt.courseLesson.lessonId },
     select: {
       id: true,
       textIt: true,
@@ -536,7 +526,7 @@ export async function reviewView(attemptId: string, userId: string) {
 
   return {
     attemptId: attempt.id,
-    lessonId: attempt.lessonId,
+    courseLessonId: attempt.courseLessonId,
     score: attempt.score ?? 0,
     maxScore: attempt.maxScore ?? 0,
     timedOut: attempt.timedOut,
@@ -554,12 +544,4 @@ export async function reviewView(attemptId: string, userId: string) {
       };
     }),
   };
-}
-
-/** Abbandona il tentativo in corso (§3.4, pulsante "Esci"). */
-export async function abandonAttempt(attemptId: string, userId: string) {
-  const { count } = await prisma.quizAttempt.deleteMany({
-    where: { id: attemptId, userId, status: AttemptStatus.IN_PROGRESS },
-  });
-  return count > 0;
 }

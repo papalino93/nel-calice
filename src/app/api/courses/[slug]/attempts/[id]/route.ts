@@ -1,29 +1,27 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@/lib/session";
+import { isDenied, requireEnrollment } from "@/lib/guard";
 import { abandonAttempt, attemptView, reviewView } from "@/lib/quiz";
 
 /**
  * Stato del tentativo. Serve al refresh: restituisce la stessa scadenza
- * salvata all'avvio, non una nuova (difetto §7.5).
+ * salvata all'avvio, non una nuova (§7.5).
  * Se il tentativo è già chiuso, restituisce la revisione con le soluzioni.
  */
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ slug: string; id: string }> },
 ) {
-  const user = await currentUser();
-  if (!user) {
-    return NextResponse.json({ error: "non autenticato" }, { status: 401 });
-  }
+  const { slug, id } = await params;
 
-  const attemptId = (await params).id;
+  const ctx = await requireEnrollment(slug);
+  if (isDenied(ctx)) return ctx.response;
 
-  const inProgress = await attemptView(attemptId, user.id);
+  const inProgress = await attemptView(id, ctx.enrollment);
   if (inProgress) {
     return NextResponse.json({ status: "in_corso", ...inProgress });
   }
 
-  const review = await reviewView(attemptId, user.id);
+  const review = await reviewView(id, ctx.enrollment);
   if (review) {
     return NextResponse.json({ status: "concluso", ...review });
   }
@@ -34,14 +32,14 @@ export async function GET(
 /** Abbandona il tentativo in corso (§3.4, pulsante "Esci"). */
 export async function DELETE(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ slug: string; id: string }> },
 ) {
-  const user = await currentUser();
-  if (!user) {
-    return NextResponse.json({ error: "non autenticato" }, { status: 401 });
-  }
+  const { slug, id } = await params;
 
-  const abandoned = await abandonAttempt((await params).id, user.id);
+  const ctx = await requireEnrollment(slug);
+  if (isDenied(ctx)) return ctx.response;
+
+  const abandoned = await abandonAttempt(id, ctx.enrollment);
   if (!abandoned) {
     return NextResponse.json(
       { error: "nessun tentativo da abbandonare" },

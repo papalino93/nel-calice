@@ -1,6 +1,7 @@
 import {
   createCipheriv,
   createDecipheriv,
+  createHmac,
   randomBytes,
   timingSafeEqual,
 } from "node:crypto";
@@ -77,6 +78,31 @@ export function decryptCode(stored: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Impronta deterministica del codice, da affiancare al cifrato.
+ *
+ * Serve per due cose che la cifratura non può fare, perché con un IV casuale
+ * lo stesso codice produce ogni volta un testo diverso:
+ *
+ *   1. **Unicità imposta dal database.** Due corsi non possono avere lo
+ *      stesso codice d'iscrizione, altrimenti "CALICE26" sarebbe ambiguo e
+ *      il corsista finirebbe nel corso sbagliato. Un vincolo UNIQUE
+ *      sull'impronta lo rende impossibile, invece che improbabile.
+ *
+ *   2. **Ricerca diretta.** Chi digita un codice senza sapere di quale corso
+ *      sia va trovato con una lettura sola, non decifrando tutti i corsi
+ *      esistenti per confronto.
+ *
+ * È un HMAC con la stessa chiave server della cifratura: senza quella chiave
+ * l'impronta non è riconducibile al codice, quindi vederla nel database non
+ * aiuta nessuno a indovinarlo.
+ */
+export function codeLookup(code: string): string {
+  return createHmac("sha256", key())
+    .update(normalizeCode(code))
+    .digest("hex");
 }
 
 /** Confronto a tempo costante fra il codice digitato e quello salvato. */

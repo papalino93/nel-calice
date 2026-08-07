@@ -3,22 +3,27 @@ import {
   computeBudgets,
   describeLessonScoring,
   distributeEvenly,
-  examLessonId,
   meritTitle,
   percentage,
   totalAssignablePoints,
   type LessonForScoring,
 } from "./scoring";
 
-/** L'assetto storico: 5 lezioni da 8 domande + esame finale da 30. */
-const baseCourse: LessonForScoring[] = [
-  { id: 1, questionCount: 8 },
-  { id: 2, questionCount: 8 },
-  { id: 3, questionCount: 8 },
-  { id: 4, questionCount: 8 },
-  { id: 5, questionCount: 8 },
-  { id: 6, questionCount: 30 },
-];
+/** Comodità: costruisce le lezioni di un corso con le domande indicate. */
+function course(
+  questionCounts: number[],
+  opts: { examLast?: boolean } = {},
+): LessonForScoring[] {
+  const examLast = opts.examLast ?? false;
+  return questionCounts.map((questionCount, i) => ({
+    id: `cl${i + 1}`,
+    isExam: examLast && i === questionCounts.length - 1,
+    questionCount,
+  }));
+}
+
+/** L'assetto storico: 5 lezioni da 8 domande + prova finale da 30. */
+const baseCourse = course([8, 8, 8, 8, 8, 30], { examLast: true });
 
 describe("distributeEvenly", () => {
   it("divide senza resto quando il totale è divisibile", () => {
@@ -49,22 +54,7 @@ describe("distributeEvenly", () => {
   });
 });
 
-describe("examLessonId", () => {
-  it("è la lezione con id più alto", () => {
-    expect(examLessonId(baseCourse)).toBe(6);
-  });
-
-  it("resta la stessa dopo aver cancellato una lezione in mezzo", () => {
-    const withoutFour = baseCourse.filter((l) => l.id !== 4);
-    expect(examLessonId(withoutFour)).toBe(6);
-  });
-
-  it("è null se non ci sono lezioni", () => {
-    expect(examLessonId([])).toBeNull();
-  });
-});
-
-describe("computeBudgets — assetto storico", () => {
+describe("assetto storico: 5 lezioni + prova finale", () => {
   const budgets = computeBudgets(baseCourse);
 
   it("dà 8 punti a ogni lezione normale, 1 per domanda", () => {
@@ -74,7 +64,7 @@ describe("computeBudgets — assetto storico", () => {
     }
   });
 
-  it("dà 60 punti all'esame, 2 per domanda", () => {
+  it("dà 60 punti alla prova finale, 2 per domanda", () => {
     const exam = budgets.find((b) => b.isExam)!;
     expect(exam.budget).toBe(60);
     expect(exam.questionPoints).toEqual(new Array(30).fill(2));
@@ -85,17 +75,16 @@ describe("computeBudgets — assetto storico", () => {
   });
 });
 
-describe("computeBudgets — l'invariante dei 100 punti regge sempre", () => {
-  it("con un numero qualsiasi di lezioni e di domande", () => {
+describe("l'invariante dei 100 punti regge per qualunque corso", () => {
+  it("con un numero qualsiasi di lezioni e di domande, con esame", () => {
     for (let lessonCount = 1; lessonCount <= 12; lessonCount++) {
       for (let questionsEach = 1; questionsEach <= 15; questionsEach++) {
-        const lessons: LessonForScoring[] = Array.from(
-          { length: lessonCount },
-          (_, i) => ({ id: i + 1, questionCount: questionsEach }),
+        const lessons = course(
+          new Array(lessonCount).fill(questionsEach),
+          { examLast: true },
         );
         expect(totalAssignablePoints(lessons)).toBe(100);
 
-        // Anche la ripartizione interna a ogni lezione deve essere esatta.
         for (const budget of computeBudgets(lessons)) {
           const sum = budget.questionPoints.reduce((a, b) => a + b, 0);
           expect(sum).toBe(budget.budget);
@@ -104,66 +93,84 @@ describe("computeBudgets — l'invariante dei 100 punti regge sempre", () => {
     }
   });
 
-  it("dopo aver cancellato una lezione in mezzo", () => {
-    const withoutFour = baseCourse.filter((l) => l.id !== 4);
-    expect(totalAssignablePoints(withoutFour)).toBe(100);
-
-    // Le lezioni superstiti non scorrono: gli id restano quelli di prima.
-    const ids = computeBudgets(withoutFour).map((b) => b.lessonId);
-    expect(ids).toEqual([1, 2, 3, 5, 6]);
-  });
-
-  it("dopo aver aggiunto una lezione, che diventa il nuovo esame", () => {
-    const extended = [...baseCourse, { id: 7, questionCount: 10 }];
-    const budgets = computeBudgets(extended);
-
-    expect(budgets.find((b) => b.lessonId === 7)!.isExam).toBe(true);
-    expect(budgets.find((b) => b.lessonId === 6)!.isExam).toBe(false);
-    expect(totalAssignablePoints(extended)).toBe(100);
+  it("e anche senza esame — un corso tematico può non averne", () => {
+    for (let lessonCount = 1; lessonCount <= 12; lessonCount++) {
+      for (let questionsEach = 1; questionsEach <= 15; questionsEach++) {
+        const lessons = course(new Array(lessonCount).fill(questionsEach));
+        expect(totalAssignablePoints(lessons)).toBe(100);
+      }
+    }
   });
 });
 
-describe("computeBudgets — lezioni senza domande", () => {
-  it("non assegna punti a una lezione vuota, e il totale resta 100", () => {
-    const lessons: LessonForScoring[] = [
-      { id: 1, questionCount: 8 },
-      { id: 2, questionCount: 0 }, // "in arrivo"
-      { id: 3, questionCount: 8 },
-      { id: 4, questionCount: 20 },
-    ];
-    const budgets = computeBudgets(lessons);
+describe("corsi di forma diversa dallo stesso catalogo", () => {
+  it("corso da una sola lezione: quella lezione vale 100", () => {
+    const lessons = course([10]);
+    const [only] = computeBudgets(lessons);
 
-    expect(budgets.find((b) => b.lessonId === 2)!.budget).toBe(0);
-    expect(budgets.find((b) => b.lessonId === 2)!.questionPoints).toEqual([]);
+    expect(only.budget).toBe(100);
+    expect(only.questionPoints).toEqual(new Array(10).fill(10));
     expect(totalAssignablePoints(lessons)).toBe(100);
   });
 
-  it("dà tutti i 100 punti alle lezioni quando l'esame non ha ancora domande", () => {
-    const lessons: LessonForScoring[] = [
-      { id: 1, questionCount: 5 },
-      { id: 2, questionCount: 5 },
-      { id: 3, questionCount: 0 }, // esame non ancora scritto
-    ];
+  it("corso breve da due lezioni: 50 e 50", () => {
+    const lessons = course([5, 5]);
     const budgets = computeBudgets(lessons);
 
-    expect(budgets.find((b) => b.lessonId === 3)!.budget).toBe(0);
-    expect(budgets.find((b) => b.lessonId === 1)!.budget).toBe(50);
-    expect(budgets.find((b) => b.lessonId === 2)!.budget).toBe(50);
+    expect(budgets.map((b) => b.budget)).toEqual([50, 50]);
     expect(totalAssignablePoints(lessons)).toBe(100);
   });
 
-  it("dà 100 punti all'esame quando è l'unica lezione con domande", () => {
-    const lessons: LessonForScoring[] = [
-      { id: 1, questionCount: 0 },
-      { id: 2, questionCount: 25 },
-    ];
+  it("corso da due lezioni di cui una è la prova finale: 40 e 60", () => {
+    const lessons = course([5, 20], { examLast: true });
+    const budgets = computeBudgets(lessons);
+
+    expect(budgets[0].budget).toBe(40);
+    expect(budgets[1].budget).toBe(60);
+    expect(totalAssignablePoints(lessons)).toBe(100);
+  });
+
+  it("la stessa lezione pesa diversamente a seconda del corso", () => {
+    // 8 domande, da sola in un corso tematico…
+    const alone = computeBudgets(course([8]))[0];
+    // …e dentro il corso completo.
+    const inFullCourse = computeBudgets(baseCourse)[0];
+
+    expect(alone.budget).toBe(100);
+    expect(inFullCourse.budget).toBe(8);
+    // È esattamente il motivo per cui i punti non sono salvati sulla lezione.
+  });
+});
+
+describe("lezioni senza domande", () => {
+  it("non ricevono punti, e il totale resta 100", () => {
+    const lessons = course([8, 0, 8, 20], { examLast: true });
+    const budgets = computeBudgets(lessons);
+
+    expect(budgets[1].budget).toBe(0);
+    expect(budgets[1].questionPoints).toEqual([]);
+    expect(totalAssignablePoints(lessons)).toBe(100);
+  });
+
+  it("se la prova finale non ha ancora domande, i 100 punti vanno alle lezioni", () => {
+    const lessons = course([5, 5, 0], { examLast: true });
+    const budgets = computeBudgets(lessons);
+
+    expect(budgets[2].budget).toBe(0);
+    expect(budgets[0].budget).toBe(50);
+    expect(budgets[1].budget).toBe(50);
+    expect(totalAssignablePoints(lessons)).toBe(100);
+  });
+
+  it("se solo la prova finale ha domande, vale 100 da sola", () => {
+    const lessons = course([0, 25], { examLast: true });
     expect(computeBudgets(lessons).find((b) => b.isExam)!.budget).toBe(100);
     expect(totalAssignablePoints(lessons)).toBe(100);
   });
 
-  it("assegna 0 punti a un corso ancora completamente vuoto", () => {
+  it("un corso ancora vuoto vale 0, senza fingere", () => {
     expect(totalAssignablePoints([])).toBe(0);
-    expect(totalAssignablePoints([{ id: 1, questionCount: 0 }])).toBe(0);
+    expect(totalAssignablePoints(course([0]))).toBe(0);
   });
 });
 
@@ -176,30 +183,21 @@ describe("describeLessonScoring", () => {
   });
 
   it("segnala quando le domande non valgono tutte uguale", () => {
-    const lessons: LessonForScoring[] = [
-      { id: 1, questionCount: 3 },
-      { id: 2, questionCount: 10 },
-    ];
     // 40 punti a una sola lezione normale, divisi su 3 domande: 14/13/13.
-    const [first] = computeBudgets(lessons);
+    const [first] = computeBudgets(course([3, 10], { examLast: true }));
     expect(describeLessonScoring(first)).toBe(
       "3 domande · 40 punti (14 o 13 a domanda)",
     );
   });
 
   it("è esplicito sulle lezioni ancora senza domande", () => {
-    const lessons: LessonForScoring[] = [
-      { id: 1, questionCount: 0 },
-      { id: 2, questionCount: 4 },
-    ];
-    const [empty] = computeBudgets(lessons);
+    const [empty] = computeBudgets(course([0, 4]));
     expect(describeLessonScoring(empty)).toBe("nessuna domanda · 0 punti");
   });
 });
 
 describe("fasce di merito", () => {
   it("sono calcolate in percentuale, non in punti assoluti", () => {
-    // Stesso 90%, massimi diversi: stesso titolo.
     expect(meritTitle(percentage(90, 100))).toBe("Palato d'Oro");
     expect(meritTitle(percentage(9, 10))).toBe("Palato d'Oro");
     expect(meritTitle(percentage(45, 50))).toBe("Palato d'Oro");
