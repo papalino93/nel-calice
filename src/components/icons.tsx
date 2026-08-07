@@ -32,6 +32,30 @@ export function GlassIcon(props: IconProps) {
   );
 }
 
+/**
+ * Tastevin: la coppa bassa e sbalzata con l'anello laterale, usata da sempre
+ * per guardare il vino contro la luce. Sull'attestato prende il posto del
+ * calice — che è già l'icona di tutto il resto dell'app — così la pergamena
+ * ha un emblema suo.
+ */
+export function TastevinIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      {/* Bordo della coppa */}
+      <ellipse cx="10.5" cy="8" rx="7.8" ry="2.5" />
+      {/* Corpo basso e svasato */}
+      <path d="M2.7 8c0 4.4 3.2 7.2 7.8 7.2s7.8-2.8 7.8-7.2" />
+      {/* Sbalzi: le bugne che rompono la luce sul vino */}
+      <circle cx="7" cy="10.6" r="1.15" />
+      <circle cx="10.5" cy="11.8" r="1.15" />
+      <circle cx="14" cy="10.6" r="1.15" />
+      {/* Anello per il pollice */}
+      <circle cx="20.6" cy="8.4" r="2.3" />
+      <path d="M18.3 8.4h-.6" />
+    </Icon>
+  );
+}
+
 export function GrapesIcon(props: IconProps) {
   return (
     <Icon {...props}>

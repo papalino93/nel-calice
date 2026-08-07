@@ -229,15 +229,23 @@ export function Certificate({
           strokeWidth="0.8"
           opacity="0.5"
         />
-        <g transform={`translate(${cx - 16} 96) scale(1.35)`}>
-          <path
-            d="M7 3h10v4c0 2.8-2.2 5-5 5s-5-2.2-5-5z M12 12v7 M8.5 19.5h7"
-            fill="none"
-            stroke={GOLD_LIGHT}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+        {/* Tastevin: l'emblema della degustazione, e l'unico posto
+            dell'app dove compare al posto del calice. */}
+        <g
+          transform={`translate(${cx - 15.5} 97) scale(1.32)`}
+          fill="none"
+          stroke={GOLD_LIGHT}
+          strokeWidth="1.35"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <ellipse cx="10.5" cy="8" rx="7.8" ry="2.5" />
+          <path d="M2.7 8c0 4.4 3.2 7.2 7.8 7.2s7.8-2.8 7.8-7.2" />
+          <circle cx="7" cy="10.6" r="1.15" />
+          <circle cx="10.5" cy="11.8" r="1.15" />
+          <circle cx="14" cy="10.6" r="1.15" />
+          <circle cx="20.6" cy="8.4" r="2.3" />
+          <path d="M18.3 8.4h-.6" />
         </g>
       </g>
 
