@@ -191,6 +191,16 @@ export function meritTitle(percent: number): MeritTitle {
   return "Amico del Calice";
 }
 
+/** Riga sotto il titolo sull'attestato. Volutamente leggera. */
+export function meritSubtitle(title: MeritTitle): string {
+  return {
+    "Palato d'Oro": "un naso e un palato davvero allenati",
+    "Naso Fine": "sa riconoscere quello che c'è nel calice",
+    "Bevitore Curioso": "curiosità servita, e ancora tanto da assaggiare",
+    "Amico del Calice": "il bello è che si comincia sempre da qui",
+  }[title];
+}
+
 /** Messaggio della schermata risultato, a fasce (§3.5). */
 export function resultMessage(percent: number): string {
   if (percent >= 80) return "Notevole! Hai proprio buon naso.";

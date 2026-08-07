@@ -120,3 +120,43 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* --- Stampa ---------------------------------------------------------------
+   Stampare l'attestato non ridisegna nulla: si nasconde tutto il resto e
+   resta in pagina lo stesso SVG che si sta guardando (§7.11). */
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 8mm;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  /* Fuori dalla pagina tutto ciò che non è l'attestato. */
+  .no-print,
+  header,
+  nav {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .certificate-sheet {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* I fondi colorati dell'attestato vanno stampati davvero: senza questo
+     molti browser li omettono e resta una pergamena bianca. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

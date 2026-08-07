@@ -14,6 +14,7 @@ import {
   ArrowRightIcon,
   CheckIcon,
   LockIcon,
+  MedalIcon,
   ProgressRing,
   Seal,
 } from "@/components/icons";
@@ -119,6 +120,11 @@ export default function CoursePage({
 
   const { user, course } = overview;
 
+  // Il corso è completo quando non resta nessuna lezione svolgibile da fare.
+  const doable = overview.lessons.filter((l) => l.status !== "vuoto");
+  const allDone =
+    doable.length > 0 && doable.every((l) => l.status === "fatto");
+
   return (
     <>
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 2xl:max-w-7xl">
@@ -179,6 +185,18 @@ export default function CoursePage({
                     : "Inizia il tuo percorso per scoprirla"
                   : overview.meritTitle}
               </p>
+
+              {/* Compare solo a corso completato: prima sarebbe una promessa
+                  che l'app non può ancora mantenere. */}
+              {allDone && (
+                <Link
+                  href={`/corso/${slug}/attestato`}
+                  className="press lift mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-medium text-charcoal transition-transform"
+                >
+                  <MedalIcon className="h-4 w-4" />
+                  {lang === "en" ? "Your certificate" : "Il tuo attestato"}
+                </Link>
+              )}
             </section>
 
             {/* App sorella, si apre in nuova scheda (§9) */}

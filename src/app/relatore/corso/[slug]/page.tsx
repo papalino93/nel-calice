@@ -13,6 +13,8 @@ import {
   inputClass,
 } from "@/components/admin/AdminShell";
 import { ArrowRightIcon, EyeIcon, LockIcon } from "@/components/icons";
+import type { CertificateData } from "@/components/Certificate";
+import { CertificateView } from "@/components/CertificateView";
 
 type CourseLessonRow = {
   courseLessonId: string;
@@ -131,6 +133,8 @@ export default function ManageCoursePage({
 
       <CourseSettings detail={detail} onSaved={reload} />
 
+      <CertificatePreview slug={slug} />
+
       <LessonsSection
         slug={slug}
         detail={detail}
@@ -138,6 +142,43 @@ export default function ManageCoursePage({
         onChanged={reload}
       />
     </AdminShell>
+  );
+}
+
+/** Anteprima dell'attestato con dati d'esempio (§3.7a). */
+function CertificatePreview({ slug }: { slug: string }) {
+  const [data, setData] = useState<CertificateData | null>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open || data) return;
+    let cancelled = false;
+    void (async () => {
+      const result = await api<{ data: CertificateData }>(
+        `/api/admin/courses/${slug}/certificate-preview`,
+      );
+      if (!cancelled && result.ok) setData(result.data.data);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, data, slug]);
+
+  return (
+    <AdminSection
+      title="Anteprima attestato"
+      hint="Con dati d'esempio, per controllare come verrà prima che lo riceva qualcuno. È lo stesso disegno che vedranno i corsisti: quello che scarichi qui è identico al loro."
+    >
+      {!open ? (
+        <button onClick={() => setOpen(true)} className={ghostButtonClass}>
+          Mostra anteprima
+        </button>
+      ) : data ? (
+        <CertificateView data={data} showShare={false} />
+      ) : (
+        <p className="text-sm text-cream/45">Un momento…</p>
+      )}
+    </AdminSection>
   );
 }
 
