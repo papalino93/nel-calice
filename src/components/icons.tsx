@@ -33,70 +33,58 @@ export function GlassIcon(props: IconProps) {
 }
 
 /**
- * Tastevin: la coppa bassa e sbalzata con l'anello laterale, usata da sempre
- * per guardare il vino contro la luce. Sull'attestato prende il posto del
- * calice — che è già l'icona di tutto il resto dell'app — così la pergamena
- * ha un emblema suo.
- */
-export function TastevinIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <TastevinShape />
-    </Icon>
-  );
-}
-
-/**
- * Il disegno vero e proprio, senza contenitore: serve identico anche
- * sull'attestato, dove va inserito dentro l'SVG della pergamena.
+ * Grappolo con foglia e viticcio, per il sigillo dell'attestato.
  *
- * Visto dall'alto, perché è così che un tastevin si riconosce: la cupola
- * centrale e la corona di bugne sbalzate — quelle che spezzano la luce e
- * fanno vedere il colore del vino in una coppa bassa — con l'anello per il
- * pollice sul fianco. Di profilo sembrerebbe una tazza qualsiasi.
+ * Disegnato in un riquadro 48×48 anziché 24×24 come le altre icone: qui
+ * serve spazio per acini tondi e ben separati. A dimensione da sigillo un
+ * disegno a contorno sparirebbe, quindi gli acini sono pieni e il fusto è
+ * l'unica linea.
  */
-export function TastevinShape({
-  accent = "currentColor",
-}: {
-  /** Colore delle parti piene (cupola e bugne). */
-  accent?: string;
-}) {
-  const cx = 10;
-  const cy = 12;
-  const bossRing = 5.4;
-  // Sei bugne e non otto: a dimensione da sigillo, otto diventano un
-  // tratteggio indistinto. Meglio poche e leggibili.
-  const bosses = Array.from({ length: 6 }, (_, i) => {
-    const a = (Math.PI * 2 * i) / 6 - Math.PI / 2;
-    return {
-      x: cx + bossRing * Math.cos(a),
-      y: cy + bossRing * Math.sin(a),
-    };
-  });
+export function GrapesEmblem({ accent = "currentColor" }: { accent?: string }) {
+  // Grappolo che si stringe verso il basso, come quello vero.
+  const berries = [
+    [-11, -6],
+    [0, -6],
+    [11, -6],
+    [-16.5, 3],
+    [-5.5, 3],
+    [5.5, 3],
+    [16.5, 3],
+    [-11, 12],
+    [0, 12],
+    [11, 12],
+    [-5.5, 21],
+    [5.5, 21],
+    [0, 29.5],
+  ] as const;
 
   return (
-    <>
-      {/* Anello per il pollice, agganciato al bordo */}
-      <circle cx="20.2" cy="12" r="2.6" />
-      <path d="M17.6 12h-0.8" />
-
-      {/* Bordo della coppa */}
-      <circle cx={cx} cy={cy} r="8.2" />
-
-      {/* Cupola centrale e bugne sbalzate: piene, perché a contorno
-          sparirebbero appena l'attestato viene rimpicciolito. */}
-      <circle cx={cx} cy={cy} r="2.3" fill={accent} stroke="none" />
-      {bosses.map((b, i) => (
-        <circle
-          key={i}
-          cx={b.x.toFixed(2)}
-          cy={b.y.toFixed(2)}
-          r="1.25"
-          fill={accent}
-          stroke="none"
-        />
+    <g transform="translate(24 22)">
+      {/* Fusto e viticcio */}
+      <path
+        d="M0 -14 v-8"
+        fill="none"
+        stroke={accent}
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M0 -20 c 6 -3, 9 1, 7 5 c -2 4, -8 4, -9 0 c -1 -5, 5 -8, 10 -6"
+        fill="none"
+        stroke={accent}
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      {/* Foglia */}
+      <path
+        d="M-2 -19 C -10 -27, -22 -25, -25 -18 C -28 -11, -20 -5, -12 -8 C -6 -10, -3 -15, -2 -19 Z"
+        fill={accent}
+      />
+      {/* Acini */}
+      {berries.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="5.6" fill={accent} />
       ))}
-    </>
+    </g>
   );
 }
 

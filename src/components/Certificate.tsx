@@ -16,7 +16,7 @@
 // Vincolo di contenuto (§2.2): è un attestato di *partecipazione* a un corso
 // amatoriale. Niente che suggerisca una qualifica professionale.
 
-import { TastevinShape } from "./icons";
+import { GrapesEmblem } from "./icons";
 
 export const CERTIFICATE_WIDTH = 1000;
 export const CERTIFICATE_HEIGHT = 700;
@@ -231,18 +231,10 @@ export function Certificate({
           strokeWidth="0.8"
           opacity="0.5"
         />
-        {/* Tastevin: l'emblema della degustazione, e l'unico posto dell'app
-            dove compare al posto del calice. Stesso disegno dell'icona in
-            src/components/icons.tsx — una sola forma, due usi. */}
-        <g
-          transform={`translate(${cx - 22.2} ${112 - 21}) scale(1.85)`}
-          fill="none"
-          stroke={GOLD_LIGHT}
-          strokeWidth="1.1"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <TastevinShape accent={GOLD_LIGHT} />
+        {/* Grappolo: sull'attestato al posto del calice, che è già l'icona
+            di tutto il resto dell'app. Così la pergamena ha un emblema suo. */}
+        <g transform={`translate(${cx - 24} ${112 - 26}) scale(1.05)`}>
+          <GrapesEmblem accent={GOLD_LIGHT} />
         </g>
       </g>
 
