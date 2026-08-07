@@ -5,8 +5,7 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import { DonationButton } from "@/components/DonationButton";
 import "./globals.css";
 
-/** Da sostituire con il link vero (Ko-fi, PayPal, Buy Me a Coffee…). */
-const DONATION_URL = "https://ko-fi.com/";
+const DONATION_URL = "https://buymeacoffee.com/papalino";
 
 // Serif elegante per titoli, numeri di lezione e nome sull'attestato;
 // sans geometrica per tutto il resto (§6). I font vengono impacchettati nel
