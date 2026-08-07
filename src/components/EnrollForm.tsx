@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { post } from "@/lib/api";
+import { errorMessage, post } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 
 /**
@@ -48,7 +48,7 @@ export function EnrollForm({
       onEnrolled();
       return;
     }
-    setError(result.offline ? t.networkError : result.error);
+    setError(errorMessage(result, t));
   }
 
   return (

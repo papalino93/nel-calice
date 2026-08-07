@@ -2,7 +2,7 @@
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, post } from "@/lib/api";
+import { api, errorMessage, post } from "@/lib/api";
 import { pick } from "@/lib/i18n";
 import { useLanguage } from "@/components/LanguageProvider";
 import { ClockIcon } from "@/components/icons";
@@ -69,7 +69,7 @@ export default function QuizPage({
           router.replace(`/corso/${slug}/lezione/${clId}/risultato`);
           return;
         }
-        setError(result.offline ? t.networkError : result.error);
+        setError(errorMessage(result, t));
         return;
       }
 

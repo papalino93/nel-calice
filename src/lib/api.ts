@@ -44,3 +44,21 @@ export function post<T>(url: string, body?: unknown) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
+
+/**
+ * Messaggio da mostrare per un errore.
+ *
+ * Il server manda testi già pronti per i casi che sa spiegare (codice
+ * sbagliato, troppi tentativi…). Per tutto il resto — un 500, una risposta
+ * senza corpo — non si mostra la chiave tecnica: quella non dice nulla a
+ * chi legge. Serve una frase, e per capire davvero cos'è successo ci sono
+ * i log del server.
+ */
+export function errorMessage(
+  result: { error: string; offline: boolean },
+  t: { genericError: string; networkError: string },
+): string {
+  if (result.offline) return t.networkError;
+  if (!result.error || result.error === "generic") return t.genericError;
+  return result.error;
+}

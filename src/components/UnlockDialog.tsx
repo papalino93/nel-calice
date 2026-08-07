@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { post } from "@/lib/api";
+import { errorMessage, post } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 import { LockIcon } from "@/components/icons";
 
@@ -59,7 +59,7 @@ export function UnlockDialog({
       return;
     }
     // L'utente deve sapere cosa è andato storto, non restare a guardare.
-    setError(result.offline ? t.networkError : result.error);
+    setError(errorMessage(result, t));
   }
 
   return (
