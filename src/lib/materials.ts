@@ -1,69 +1,45 @@
-import { issueSignedToken, presignUrl } from "@vercel/blob";
 import { prisma } from "./prisma";
 
 // Le dispense stanno in uno store Vercel Blob **privato**: il loro indirizzo
-// non è raggiungibile da nessuno, nemmeno conoscendolo.
+// reale non è raggiungibile da nessuno, nemmeno conoscendolo.
 //
-// Chi ha diritto a leggerle riceve un link firmato che scade. È ciò che rende
-// vera la regola "le dispense di una lezione ereditano il suo blocco"
-// (§3.7d): con file pubblici il blocco impedirebbe solo di *scoprire*
-// l'indirizzo, e un link girato su WhatsApp resterebbe valido per sempre.
+// I file non vengono serviti con link firmati a scadenza, ma da una route
+// dell'app che autentica e poi li trasmette. La differenza conta: con un
+// link firmato il controllo avviene una volta sola, al momento di emetterlo,
+// e per tutta la durata del link chiunque lo abbia può scaricarlo. Passando
+// dalla route, **ogni singola lettura** ripassa dal controllo — e un
+// indirizzo copiato e girato non serve a nulla senza la sessione di chi ha
+// diritto a vederlo.
+//
+// È così che la regola "le dispense di una lezione ereditano il suo blocco"
+// (§3.7d) diventa vera e non solo apparente.
 //
 // I video non stanno nello store: sono link esterni (YouTube, Vimeo) e
 // restano tali.
-
-/** Quanto vive un link firmato. Il tempo di aprire il file, non di girarlo. */
-const LINK_TTL_MS = 15 * 60 * 1000;
 
 /** true se l'indirizzo punta al nostro store e non a un video esterno. */
 export function isStoredFile(url: string): boolean {
   return url.startsWith("blob:");
 }
 
-/** Il pathname dentro lo store, ricavato dall'indirizzo salvato. */
-function pathnameOf(url: string): string {
+/** Il percorso dentro lo store, ricavato dall'indirizzo salvato. */
+export function pathnameOf(url: string): string {
   return url.slice("blob:".length);
 }
 
 /**
- * Trasforma gli indirizzi salvati in link utilizzabili.
- * I file dello store diventano link firmati a scadenza; i video esterni
- * restano come sono.
+ * Sostituisce gli indirizzi interni con quelli della route che serve i file.
+ * I video esterni restano come sono.
  */
-export async function withSignedUrls<
-  T extends { url: string; type: string },
->(materials: T[]): Promise<T[]> {
-  const stored = materials.filter((m) => isStoredFile(m.url));
-  if (stored.length === 0) return materials;
-
-  const validUntil = Date.now() + LINK_TTL_MS;
-  // Un solo token per l'intera lista: firmare ogni file separatamente
-  // significherebbe una chiamata di rete per dispensa.
-  const token = await issueSignedToken({
-    pathname: "*",
-    operations: ["get"],
-    validUntil,
-  });
-
-  const signed = new Map<string, string>();
-  await Promise.all(
-    stored.map(async (m) => {
-      const { presignedUrl } = await presignUrl(token, {
-        operation: "get",
-        pathname: pathnameOf(m.url),
-        validUntil,
-        access: "private",
-      });
-      signed.set(m.url, presignedUrl);
-    }),
-  );
-
+export function withServingUrls<T extends { id: string; url: string }>(
+  materials: T[],
+  basePath: string,
+): T[] {
   return materials.map((m) =>
-    signed.has(m.url) ? { ...m, url: signed.get(m.url)! } : m,
+    isStoredFile(m.url) ? { ...m, url: `${basePath}/${m.id}` } : m,
   );
 }
 
-/** Registra una dispensa già caricata sullo store dal browser. */
 export async function createMaterial(input: {
   lessonId?: number | null;
   courseId?: string | null;
@@ -106,38 +82,39 @@ export async function deleteMaterial(id: string) {
   return true;
 }
 
-/** Dispense di una lezione del catalogo, per il pannello relatore. */
+/**
+ * Legge il file dallo store e lo restituisce pronto da trasmettere.
+ * Da chiamare **solo dopo** aver verificato che chi chiede ha diritto.
+ */
+export async function readStoredFile(url: string) {
+  if (!isStoredFile(url)) return null;
+  const { get } = await import("@vercel/blob");
+  return get(pathnameOf(url), { access: "private" });
+}
+
+const MATERIAL_FIELDS = {
+  id: true,
+  type: true,
+  titleIt: true,
+  titleEn: true,
+  url: true,
+  notes: true,
+  viewCount: true,
+  createdAt: true,
+} as const;
+
 export async function materialsForLesson(lessonId: number) {
   return prisma.material.findMany({
     where: { lessonId },
     orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      type: true,
-      titleIt: true,
-      titleEn: true,
-      url: true,
-      notes: true,
-      viewCount: true,
-      createdAt: true,
-    },
+    select: MATERIAL_FIELDS,
   });
 }
 
-/** Dispense generali di un corso. */
 export async function materialsForCourse(courseId: string) {
   return prisma.material.findMany({
     where: { courseId },
     orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      type: true,
-      titleIt: true,
-      titleEn: true,
-      url: true,
-      notes: true,
-      viewCount: true,
-      createdAt: true,
-    },
+    select: MATERIAL_FIELDS,
   });
 }

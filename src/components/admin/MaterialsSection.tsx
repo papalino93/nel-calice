@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { uploadPresigned } from "@vercel/blob/client";
 import { api, errorMessage, post } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 import {
@@ -140,18 +139,29 @@ function UploadForm({
         const file = fileRef.current?.files?.[0];
         if (!file) throw new Error("Scegli un file.");
 
-        // Il file va dal browser allo store senza passare dal server.
-        // `uploadPresigned` e non `upload`: lo store è privato, e il flusso
-        // ordinario farebbe scrivere il browser sul piano di controllo di
-        // Vercel, che dal browser è bloccato dal CORS.
-        const blob = await uploadPresigned(
-          `dispense/${lessonId}/${file.name}`,
-          file,
-          { access: "private", handleUploadUrl: "/api/admin/materials/upload" },
+        // Il server firma un indirizzo su cui si può scrivere una volta
+        // sola; il file ci va direttamente dal browser, senza passare dalla
+        // funzione serverless — è così che cade il limite dei 4MB (§7.14).
+        const pathname = `dispense/${lessonId}/${file.name}`;
+        const permesso = await post<{ presignedUrl: string }>(
+          "/api/admin/materials/upload",
+          { pathname, contentType: file.type },
         );
-        // Si salva il pathname, non l'indirizzo pubblico: il link vero
-        // viene firmato al momento della lettura.
-        url = `blob:${blob.pathname}`;
+        if (!permesso.ok) throw new Error(errorMessage(permesso, t));
+
+        const caricamento = await fetch(permesso.data.presignedUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "content-type": file.type },
+        });
+        if (!caricamento.ok) {
+          throw new Error("Il file non è stato accettato dallo storage.");
+        }
+
+        const salvato = (await caricamento.json()) as { pathname: string };
+        // Si salva il percorso interno, non un indirizzo pubblico: il file
+        // esce solo dalla route che verifica chi lo chiede.
+        url = `blob:${salvato.pathname ?? pathname}`;
       }
 
       const result = await post("/api/admin/materials", {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isDenied, requireAdmin } from "@/lib/guard";
-import { materialsForLesson, withSignedUrls } from "@/lib/materials";
+import { materialsForLesson, withServingUrls } from "@/lib/materials";
 
 /** Dispense di una lezione del catalogo, viste dal relatore. */
 export async function GET(
@@ -16,5 +16,10 @@ export async function GET(
   }
 
   const materials = await materialsForLesson(lessonId);
-  return NextResponse.json({ materials: await withSignedUrls(materials) });
+  return NextResponse.json({
+    materials: withServingUrls(materials, "/api/admin/materials").map((m) => ({
+      ...m,
+      url: m.url.startsWith("/api/admin/materials/") ? `${m.url}/file` : m.url,
+    })),
+  });
 }
