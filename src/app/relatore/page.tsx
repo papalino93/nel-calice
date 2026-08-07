@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { pick } from "@/lib/i18n";
 import { Login } from "@/components/Login";
 import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
-import { ArrowRightIcon, Seal } from "@/components/icons";
+import { ArrowRightIcon, EyeIcon, Seal } from "@/components/icons";
 
 type AdminCourse = {
   slug: string;
@@ -175,6 +175,21 @@ export default function AdminHomePage() {
           </p>
         )}
       </section>
+
+      {/* La home dei corsisti non è raggiungibile da un relatore: entrando
+          verrebbe rimandato qui. Questo collegamento salta il dirottamento,
+          per controllare cosa vede chi arriva la prima sera. */}
+      <div className="mt-4">
+        <Link
+          href="/?vista=corsista"
+          className="press inline-flex items-center gap-1.5 text-xs text-cream/45 underline underline-offset-4 hover:text-cream/70"
+        >
+          <EyeIcon className="h-3.5 w-3.5" />
+          {lang === "en"
+            ? "See the students' home page"
+            : "Vedi la pagina d'ingresso dei corsisti"}
+        </Link>
+      </div>
 
       <section className="mt-8">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">

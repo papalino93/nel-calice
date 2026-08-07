@@ -56,7 +56,13 @@ export default function Home() {
         return;
       }
 
-      if (result.data.user.role === "relatore") {
+      // Un relatore atterra normalmente nell'area riservata. Con
+      // `?vista=corsista` il dirottamento si salta: serve a controllare cosa
+      // vede davvero chi arriva la prima sera, campo del codice compreso.
+      const asStudent =
+        new URLSearchParams(window.location.search).get("vista") === "corsista";
+
+      if (result.data.user.role === "relatore" && !asStudent) {
         router.replace("/relatore");
         return;
       }
