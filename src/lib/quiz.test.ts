@@ -1,0 +1,168 @@
+import { describe, expect, it } from "vitest";
+import {
+  ANSWER_GRACE_MS,
+  attemptDeadline,
+  grade,
+  isExpired,
+  secondsRemaining,
+  shuffle,
+  type GradableQuestion,
+} from "./quiz";
+import { hashCode, normalizeCode, verifyCode } from "./codes";
+
+describe("timer del tentativo", () => {
+  const start = new Date("2026-08-07T18:00:00.000Z");
+
+  it("fissa la scadenza a partire dall'avvio", () => {
+    expect(attemptDeadline(start, 15)).toEqual(
+      new Date("2026-08-07T18:15:00.000Z"),
+    );
+    expect(attemptDeadline(start, 45)).toEqual(
+      new Date("2026-08-07T18:45:00.000Z"),
+    );
+  });
+
+  it("sopravvive a un refresh: la scadenza non dipende da quando la si guarda", () => {
+    const deadline = attemptDeadline(start, 15);
+
+    // Un minuto dopo l'avvio restano 14 minuti, non di nuovo 15.
+    const oneMinuteIn = new Date("2026-08-07T18:01:00.000Z");
+    expect(secondsRemaining(deadline, oneMinuteIn)).toBe(14 * 60);
+
+    // Ricalcolando la scadenza dallo stesso avvio si ottiene lo stesso valore.
+    expect(attemptDeadline(start, 15)).toEqual(deadline);
+  });
+
+  it("considera scaduto solo ciò che è oltre il termine", () => {
+    const deadline = attemptDeadline(start, 15);
+    expect(isExpired(deadline, new Date("2026-08-07T18:14:59.000Z"))).toBe(false);
+    expect(isExpired(deadline, new Date("2026-08-07T18:15:00.000Z"))).toBe(false);
+    expect(isExpired(deadline, new Date("2026-08-07T18:15:01.000Z"))).toBe(true);
+  });
+
+  it("tollera un piccolo ritardo di rete, ma non un'attesa", () => {
+    const deadline = attemptDeadline(start, 15);
+    const justLate = new Date(deadline.getTime() + 2_000);
+    const wayLate = new Date(deadline.getTime() + 60_000);
+
+    expect(isExpired(deadline, justLate, ANSWER_GRACE_MS)).toBe(false);
+    expect(isExpired(deadline, wayLate, ANSWER_GRACE_MS)).toBe(true);
+  });
+
+  it("non mostra mai secondi negativi", () => {
+    const deadline = attemptDeadline(start, 15);
+    expect(secondsRemaining(deadline, new Date("2026-08-07T19:00:00.000Z"))).toBe(0);
+  });
+});
+
+describe("mescolamento delle opzioni", () => {
+  it("conserva tutte le opzioni, senza perderne né duplicarne", () => {
+    const options = [1, 2, 3, 4];
+    const shuffled = shuffle(options, () => 0.42);
+    expect([...shuffled].sort()).toEqual([1, 2, 3, 4]);
+  });
+
+  it("non altera l'array di partenza", () => {
+    const options = [1, 2, 3, 4];
+    shuffle(options);
+    expect(options).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe("correzione", () => {
+  const questions: GradableQuestion[] = [
+    { questionId: 10, correctOptionId: 101, points: 2 },
+    { questionId: 11, correctOptionId: 111, points: 2 },
+    { questionId: 12, correctOptionId: 121, points: 1 },
+  ];
+
+  it("assegna i punti della domanda solo se la risposta è quella corretta", () => {
+    const result = grade(
+      questions,
+      new Map([
+        [10, 101], // giusta
+        [11, 112], // sbagliata
+        [12, 121], // giusta
+      ]),
+    );
+
+    expect(result.score).toBe(3);
+    expect(result.maxScore).toBe(5);
+    expect(result.answers.map((a) => a.isCorrect)).toEqual([true, false, true]);
+    expect(result.answers.map((a) => a.pointsAwarded)).toEqual([2, 0, 1]);
+  });
+
+  it("tratta una domanda lasciata in bianco come zero punti, non come errore di sistema", () => {
+    const result = grade(questions, new Map([[10, 101]]));
+
+    expect(result.score).toBe(2);
+    expect(result.maxScore).toBe(5);
+
+    const blank = result.answers.find((a) => a.questionId === 11)!;
+    expect(blank.selectedOptionId).toBeNull();
+    expect(blank.isCorrect).toBe(false);
+    expect(blank.pointsAwarded).toBe(0);
+  });
+
+  it("dà zero a un quiz scaduto senza nessuna risposta salvata", () => {
+    const result = grade(questions, new Map());
+    expect(result.score).toBe(0);
+    expect(result.maxScore).toBe(5);
+    expect(result.answers).toHaveLength(3);
+  });
+
+  it("dà il massimo a chi risponde tutto correttamente", () => {
+    const result = grade(
+      questions,
+      new Map([
+        [10, 101],
+        [11, 111],
+        [12, 121],
+      ]),
+    );
+    expect(result.score).toBe(result.maxScore);
+    expect(result.score).toBe(5);
+  });
+
+  it("ignora risposte a domande che non fanno parte del quiz", () => {
+    const result = grade(questions, new Map([[999, 9999]]));
+    expect(result.answers).toHaveLength(3);
+    expect(result.score).toBe(0);
+  });
+});
+
+describe("codici di sblocco", () => {
+  it("accetta il codice giusto scritto come capita", () => {
+    const stored = hashCode("ARCHETTI");
+    expect(verifyCode("ARCHETTI", stored)).toBe(true);
+    expect(verifyCode("archetti", stored)).toBe(true);
+    expect(verifyCode("  Archetti  ", stored)).toBe(true);
+  });
+
+  it("rifiuta un codice sbagliato", () => {
+    const stored = hashCode("ARCHETTI");
+    expect(verifyCode("BARRIQUE", stored)).toBe(false);
+    expect(verifyCode("ARCHETT", stored)).toBe(false);
+    expect(verifyCode("", stored)).toBe(false);
+  });
+
+  it("non conserva il codice in chiaro", () => {
+    const stored = hashCode("ARCHETTI");
+    expect(stored).not.toContain("ARCHETTI");
+    expect(stored.toUpperCase()).not.toContain("ARCHETTI");
+  });
+
+  it("produce hash diversi per lo stesso codice, grazie al salt", () => {
+    expect(hashCode("TANNINO")).not.toBe(hashCode("TANNINO"));
+  });
+
+  it("non esplode su un hash malformato", () => {
+    expect(verifyCode("ARCHETTI", "spazzatura")).toBe(false);
+    expect(verifyCode("ARCHETTI", "")).toBe(false);
+    expect(verifyCode("ARCHETTI", "abc:def")).toBe(false);
+  });
+
+  it("normalizza come lo si detta a voce", () => {
+    expect(normalizeCode("  perlage ")).toBe("PERLAGE");
+  });
+});
