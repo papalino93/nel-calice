@@ -142,7 +142,10 @@ function UploadForm({
         // Il server firma un indirizzo su cui si può scrivere una volta
         // sola; il file ci va direttamente dal browser, senza passare dalla
         // funzione serverless — è così che cade il limite dei 4MB (§7.14).
-        const pathname = `dispense/${lessonId}/${file.name}`;
+        // Nome unico composto qui: due dispense con lo stesso nome di file
+        // non si sovrascrivono, e il percorso è noto prima del caricamento.
+        const unico = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        const pathname = `dispense/${lessonId}/${unico}-${file.name}`;
         const permesso = await post<{ presignedUrl: string }>(
           "/api/admin/materials/upload",
           { pathname, contentType: file.type },
@@ -158,10 +161,9 @@ function UploadForm({
           throw new Error("Il file non è stato accettato dallo storage.");
         }
 
-        const salvato = (await caricamento.json()) as { pathname: string };
         // Si salva il percorso interno, non un indirizzo pubblico: il file
         // esce solo dalla route che verifica chi lo chiede.
-        url = `blob:${salvato.pathname ?? pathname}`;
+        url = `blob:${pathname}`;
       }
 
       const result = await post("/api/admin/materials", {
