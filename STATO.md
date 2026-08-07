@@ -124,12 +124,27 @@ build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
 2. **Ruotare il token dello store dispense** — era finito in chiaro in uno
    screenshot (mai nel repo: la cronologia di git è pulita). Si fa dal pannello
    Vercel: Storage → `dispense` → Settings → **Rotate Credentials**, scegliendo
-   **scadenza immediata** delle vecchie credenziali — il ritardo fino a 30
-   giorni che propone terrebbe in vita proprio il token da uccidere. Store,
-   file e collegamenti restano al loro posto; le variabili dei progetti
-   collegati le aggiorna Vercel. Serve poi un **redeploy**, perché le variabili
-   si leggono all'avvio, e un `vercel env pull` per riallineare il `.env`
-   locale.
+   **scadenza immediata** delle vecchie credenziali — il ritardo che propone
+   (2 ore in automatico, fino a 30 giorni) terrebbe in vita proprio il token da
+   uccidere. Store e file restano al loro posto.
 
    *Non* cancellare e ricreare lo store: era il piano prima di sapere che
    Rotate Credentials esiste, ed è inutilmente distruttivo.
+
+   **Attenzione al seguito.** Lo store risulta *senza progetti collegati*: il
+   `BLOB_READ_WRITE_TOKEN` in produzione è stato messo a mano, quindi la
+   rotazione **non** lo aggiorna da sola, come farebbe con un progetto
+   collegato. Dopo aver ruotato:
+
+   - collega `nuovo-corso-vino` allo store (`dispense` → *Projects*), così le
+     rotazioni future si propagano; se protesta che la variabile esiste già,
+     togli prima quella vecchia dalle impostazioni del progetto;
+   - **redeploy**, perché le variabili si leggono all'avvio;
+   - `vercel env pull` per riallineare il `.env` locale.
+
+   Finché non è fatto, le dispense non funzionano — e nient'altro: il resto
+   dell'app non tocca lo store.
+
+3. **Lo store non ha protezione firewall** ("Assign a project to protect it",
+   in cima alla stessa pagina). Da guardare con calma: si risolve probabilmente
+   con lo stesso collegamento del punto sopra.
