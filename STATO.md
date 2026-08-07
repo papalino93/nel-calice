@@ -133,15 +133,15 @@ build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
    — e il codice non passa mai un token a mano, lo lascia risolvere
    all'ambiente.
 
-   L'ordine conta:
+   Fatto e verificato in produzione: collegato il progetto allo store,
+   redeploy, caricamento e scaricamento di un PDF riusciti. Che quella prova
+   stesse già passando per OIDC lo dice l'SDK: `issueSignedToken` (firma dei
+   caricamenti) e `get` (lettura) passano entrambe da `resolveBlobAuth`, che
+   prova OIDC **per primo** e ripiega su `BLOB_READ_WRITE_TOKEN` solo se OIDC
+   manca. Il token statico era quindi già codice morto, e revocarlo non tocca
+   il runtime.
 
-   - **redeploy** (il deployment in aria non conosce ancora `BLOB_STORE_ID`);
-   - **provare un caricamento vero** dal pannello relatore: se funziona, OIDC
-     sta già reggendo da solo;
-   - solo allora **Revoke Token**.
-
-   Se il caricamento non funzionasse, non revocare: ripiegare su *Rotate
-   Credentials*, con scadenza immediata delle vecchie credenziali.
+   Resta il click su **Revoke Token** (Blob → Projects → banner arancione).
 
    In locale, dopo la revoca, il token OIDC arriva con `vercel env pull` ed è
    a scadenza breve: se le dispense smettono di funzionare in sviluppo, di
