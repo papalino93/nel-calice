@@ -15,12 +15,14 @@ import { LockIcon } from "@/components/icons";
  * ad ogni campo nuovo.
  */
 export function UnlockDialog({
-  lessonId,
+  slug,
+  courseLessonId,
   lessonTitle,
   onClose,
   onUnlocked,
 }: {
-  lessonId: number;
+  slug: string;
+  courseLessonId: string;
   lessonTitle: string;
   onClose: () => void;
   onUnlocked: () => void;
@@ -46,7 +48,7 @@ export function UnlockDialog({
     setError(null);
 
     const result = await post<{ unlocked: boolean }>(
-      `/api/lessons/${lessonId}/unlock`,
+      `/api/courses/${slug}/lessons/${courseLessonId}/unlock`,
       { code },
     );
 

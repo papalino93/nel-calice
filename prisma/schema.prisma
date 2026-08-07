@@ -327,14 +327,21 @@ model Enrollment {
 /// bruta (§7.6). Vive sull'utente e non sull'iscrizione, perché serve
 /// proprio a chi un'iscrizione non ce l'ha ancora.
 model EnrollmentAttempt {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId  String
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// null quando il codice digitato non corrisponde ad alcun corso.
+  /// Questi tentativi vanno registrati comunque: sono proprio quelli di chi
+  /// sta tirando a indovinare, e senza di essi il limite non scatterebbe
+  /// mai per chi non ha ancora azzeccato nulla.
+  courseId String?
+  course   Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
   succeeded Boolean
   createdAt DateTime @default(now())
 
+  @@index([userId, createdAt])
   @@index([userId, courseId, createdAt])
 }
 

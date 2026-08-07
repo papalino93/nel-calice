@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Jost } from "next/font/google";
 import { AuthSessionProvider } from "@/components/AuthSessionProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { DonationButton } from "@/components/DonationButton";
 import "./globals.css";
+
+/** Da sostituire con il link vero (Ko-fi, PayPal, Buy Me a Coffee…). */
+const DONATION_URL = "https://ko-fi.com/";
 
 // Serif elegante per titoli, numeri di lezione e nome sull'attestato;
 // sans geometrica per tutto il resto (§6). I font vengono impacchettati nel
@@ -34,7 +38,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <AuthSessionProvider>
-          <LanguageProvider>{children}</LanguageProvider>
+          <LanguageProvider>
+            {children}
+            {/* Sempre presente, in ogni pagina (§3.9). */}
+            <DonationButton href={DONATION_URL} />
+          </LanguageProvider>
         </AuthSessionProvider>
       </body>
     </html>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { api, post } from "@/lib/api";
 import { pick } from "@/lib/i18n";
 import { useLanguage } from "@/components/LanguageProvider";
-import { ArrowRightIcon, ClockIcon } from "@/components/icons";
+import { ClockIcon } from "@/components/icons";
 
 type SafeQuestion = {
   id: number;
@@ -23,12 +23,14 @@ type AttemptView = {
   questions: SafeQuestion[];
 };
 
+const LETTERS = "ABCDEFGH";
+
 export default function QuizPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; clId: string }>;
 }) {
-  const { id } = use(params);
+  const { slug, clId } = use(params);
   const { lang, t } = useLanguage();
   const router = useRouter();
 
@@ -49,21 +51,22 @@ export default function QuizPage({
 
     // Il client non manda punteggi: chiede solo di chiudere. Il server
     // corregge da sé, con le risposte già salvate (§7.4).
-    await post(`/api/attempts/${attempt.attemptId}/submit`);
-    router.replace(`/lezione/${id}/risultato`);
-  }, [attempt, id, router]);
+    await post(`/api/courses/${slug}/attempts/${attempt.attemptId}/submit`);
+    router.replace(`/corso/${slug}/lezione/${clId}/risultato`);
+  }, [attempt, slug, clId, router]);
 
-  // Avvio (o ripresa) del tentativo.
   useEffect(() => {
     let cancelled = false;
+
     void (async () => {
-      const result = await post<AttemptView>(`/api/lessons/${id}/attempt`);
+      const result = await post<AttemptView>(
+        `/api/courses/${slug}/lessons/${clId}/attempt`,
+      );
       if (cancelled) return;
 
       if (!result.ok) {
         if (result.status === 409) {
-          // Già svolta: si va direttamente al risultato.
-          router.replace(`/lezione/${id}/risultato`);
+          router.replace(`/corso/${slug}/lezione/${clId}/risultato`);
           return;
         }
         setError(result.offline ? t.networkError : result.error);
@@ -86,9 +89,9 @@ export default function QuizPage({
     return () => {
       cancelled = true;
     };
-  }, [id, router, t]);
+  }, [slug, clId, router, t]);
 
-  // Conto alla rovescia, calcolato dalla scadenza assoluta decisa dal server:
+  // Conto alla rovescia calcolato dalla scadenza assoluta decisa dal server:
   // ricaricare la pagina non lo azzera (§7.5).
   useEffect(() => {
     if (!attempt) return;
@@ -110,7 +113,7 @@ export default function QuizPage({
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="text-sm text-cream/70">{error}</p>
         <button
-          onClick={() => router.push("/")}
+          onClick={() => router.push(`/corso/${slug}`)}
           className="press rounded-full border border-cream/20 px-5 py-2 text-sm text-cream/70"
         >
           {t.backToLessons}
@@ -132,6 +135,9 @@ export default function QuizPage({
   const isLast = index === total - 1;
 
   const totalSeconds = Math.max(1, attempt.totalSeconds);
+  const ratio = Math.min(1, Math.max(0, remaining / totalSeconds));
+  // Sotto il 20% del tempo la barra si colora di rosso (§3.4).
+  const low = ratio <= 0.2;
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
 
@@ -139,7 +145,7 @@ export default function QuizPage({
     setSelected(optionId);
     // Salvataggio immediato: allo scadere del tempo il server ha già in mano
     // le risposte date entro il termine.
-    await post(`/api/attempts/${attempt!.attemptId}/answer`, {
+    await post(`/api/courses/${slug}/attempts/${attempt!.attemptId}/answer`, {
       questionId: question.id,
       selectedOptionId: optionId,
     });
@@ -157,42 +163,63 @@ export default function QuizPage({
 
   async function exit() {
     if (!window.confirm(t.exitConfirm)) return;
-    await api(`/api/attempts/${attempt!.attemptId}`, { method: "DELETE" });
-    router.push("/");
+    await api(`/api/courses/${slug}/attempts/${attempt!.attemptId}`, {
+      method: "DELETE",
+    });
+    router.push(`/corso/${slug}`);
   }
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 py-6 sm:px-8">
-      <TimerBar
-        minutes={minutes}
-        seconds={seconds}
-        remaining={remaining}
-        totalSeconds={totalSeconds}
-        onExit={exit}
-        exitLabel={t.exit}
-      />
-
-      <div className="mt-6">
-        <div className="flex items-center justify-between text-xs text-cream/45">
-          <span>{t.questionOf(index + 1, total)}</span>
-        </div>
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-cream/10">
-          <div
-            className="progress-fill h-full rounded-full transition-[width] duration-300"
-            style={{ width: `${((index + 1) / total) * 100}%` }}
-          />
-        </div>
+      <div className="flex items-center justify-between gap-4">
+        <button
+          onClick={exit}
+          className="press text-sm text-cream/55 transition-colors hover:text-cream"
+        >
+          ⎋ {t.exit}
+        </button>
+        <span
+          className={`inline-flex items-center gap-2 text-sm tabular-nums transition-colors ${
+            low ? "text-red-300" : "text-cream/70"
+          }`}
+          role="timer"
+          aria-live="off"
+        >
+          <ClockIcon className="h-3.5 w-3.5 opacity-60" />
+          {minutes}:{String(seconds).padStart(2, "0")}
+        </span>
       </div>
 
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cream/10">
+        <div
+          className={`h-full rounded-full transition-[width] duration-1000 ease-linear ${
+            low ? "bg-red-400" : "progress-fill"
+          }`}
+          style={{ width: `${ratio * 100}%` }}
+        />
+      </div>
+
+      <p className="mt-5 text-[0.65rem] font-medium uppercase tracking-[0.16em] text-gold/70">
+        {t.questionOf(index + 1, total)}
+      </p>
+      <div className="mt-2 h-1 overflow-hidden rounded-full bg-cream/10">
+        <div
+          className="progress-fill h-full rounded-full transition-[width] duration-300"
+          style={{ width: `${((index + 1) / total) * 100}%` }}
+        />
+      </div>
+
+      {/* La domanda su fondo chiaro: unico elemento crema della pagina, si
+          legge subito anche su un telefono in una sala poco illuminata. */}
       <h1
         key={question.id}
-        className="rise-in mt-7 font-serif text-2xl leading-snug text-cream sm:text-3xl"
+        className="rise-in mt-6 rounded-[16px] border border-gold/45 bg-cream-soft px-5 py-4 font-serif text-xl leading-snug text-charcoal sm:text-2xl"
       >
         {pick(lang, question.textIt, question.textEn)}
       </h1>
 
-      <div className="mt-6 flex flex-col gap-2.5">
-        {question.options.map((option) => {
+      <div className="mt-5 flex flex-col gap-2.5">
+        {question.options.map((option, i) => {
           const chosen = selected === option.id;
           return (
             <button
@@ -206,13 +233,13 @@ export default function QuizPage({
               }`}
             >
               <span
-                className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border transition-colors ${
-                  chosen ? "border-gold bg-gold" : "border-cream/25"
+                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs transition-colors ${
+                  chosen
+                    ? "border-gold bg-gold text-charcoal"
+                    : "border-cream/25 text-cream/50"
                 }`}
               >
-                {chosen && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-charcoal" />
-                )}
+                {LETTERS[i] ?? i + 1}
               </span>
               {pick(lang, option.textIt, option.textEn)}
             </button>
@@ -227,62 +254,8 @@ export default function QuizPage({
           className="press lift flex w-full items-center justify-center gap-2 rounded-full bg-gold px-6 py-3.5 font-medium text-charcoal transition-all disabled:cursor-not-allowed disabled:opacity-35"
         >
           {isLast ? t.finish : t.next}
-          <ArrowRightIcon className="h-4 w-4" />
         </button>
       </div>
     </main>
-  );
-}
-
-function TimerBar({
-  minutes,
-  seconds,
-  remaining,
-  totalSeconds,
-  onExit,
-  exitLabel,
-}: {
-  minutes: number;
-  seconds: number;
-  remaining: number;
-  totalSeconds: number;
-  onExit: () => void;
-  exitLabel: string;
-}) {
-  const ratio = Math.min(1, Math.max(0, remaining / totalSeconds));
-  // Sotto il 20% del tempo la barra si colora di rosso (§3.4).
-  const low = ratio <= 0.2;
-
-  return (
-    <div>
-      <div className="flex items-center justify-between gap-4">
-        <span
-          className={`inline-flex items-center gap-2 font-serif text-2xl tabular-nums transition-colors ${
-            low ? "text-red-300" : "text-cream"
-          }`}
-          role="timer"
-          aria-live="off"
-        >
-          <ClockIcon className="h-4 w-4 opacity-60" />
-          {minutes}:{String(seconds).padStart(2, "0")}
-        </span>
-
-        <button
-          onClick={onExit}
-          className="press rounded-full border border-cream/15 px-4 py-1.5 text-xs text-cream/60 transition-colors hover:text-cream"
-        >
-          {exitLabel}
-        </button>
-      </div>
-
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cream/10">
-        <div
-          className={`h-full rounded-full transition-[width] duration-1000 ease-linear ${
-            low ? "bg-red-400" : "progress-fill"
-          }`}
-          style={{ width: `${ratio * 100}%` }}
-        />
-      </div>
-    </div>
   );
 }

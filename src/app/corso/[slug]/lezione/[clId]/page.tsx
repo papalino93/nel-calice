@@ -22,9 +22,9 @@ type LessonDetail = { lesson: LessonCard; materials: Material[] };
 export default function LessonPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; clId: string }>;
 }) {
-  const { id } = use(params);
+  const { slug, clId } = use(params);
   const { lang, t } = useLanguage();
   const [detail, setDetail] = useState<LessonDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,9 @@ export default function LessonPage({
     let cancelled = false;
 
     void (async () => {
-      const result = await api<LessonDetail>(`/api/lessons/${id}`);
+      const result = await api<LessonDetail>(
+        `/api/courses/${slug}/lessons/${clId}`,
+      );
       if (cancelled) return;
 
       if (result.ok) setDetail(result.data);
@@ -43,13 +45,16 @@ export default function LessonPage({
     return () => {
       cancelled = true;
     };
-  }, [id, t]);
+  }, [slug, clId, t]);
 
   if (error) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
         <p className="text-sm text-cream/70">{error}</p>
-        <Link href="/" className="text-sm text-gold underline underline-offset-4">
+        <Link
+          href={`/corso/${slug}`}
+          className="text-sm text-gold underline underline-offset-4"
+        >
           {t.backToLessons}
         </Link>
       </main>
@@ -73,7 +78,7 @@ export default function LessonPage({
     <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8 sm:px-8">
       <header className="mb-8 flex items-center justify-between gap-4">
         <Link
-          href="/"
+          href={`/corso/${slug}`}
           className="press text-sm text-cream/55 transition-colors hover:text-cream"
         >
           ← {t.backToLessons}
@@ -84,16 +89,18 @@ export default function LessonPage({
       <div className="rise-in flex flex-col items-center text-center">
         <Seal size={72}>
           <span className="grid h-full w-full place-items-center font-serif text-2xl">
-            {lesson.isExam ? "★" : lesson.id}
+            {lesson.isExam ? "★" : lesson.position}
           </span>
         </Seal>
-        <h1 className="mt-5 font-serif text-3xl leading-tight text-cream sm:text-4xl">
+        <p className="mt-4 text-[0.65rem] font-medium uppercase tracking-[0.18em] text-gold/70">
+          {lesson.isExam ? t.finalExam : `${t.lesson} ${lesson.position}`}
+        </p>
+        <h1 className="mt-1 font-serif text-3xl leading-tight text-cream sm:text-4xl">
           {title}
         </h1>
         {subtitle && <p className="mt-2 text-sm text-cream/50">{subtitle}</p>}
       </div>
 
-      {/* Riquadro del quiz */}
       <section className="card rise-in mt-8 flex flex-col items-center p-6 text-center">
         {done ? (
           <>
@@ -105,7 +112,7 @@ export default function LessonPage({
               <span className="text-cream/35">/{lesson.maxScore}</span>
             </p>
             <Link
-              href={`/lezione/${lesson.id}/risultato`}
+              href={`/corso/${slug}/lezione/${clId}/risultato`}
               className="press lift mt-5 inline-flex items-center gap-2 rounded-full border border-gold/40 px-6 py-3 text-sm text-gold transition-transform"
             >
               {t.seeResult}
@@ -114,7 +121,7 @@ export default function LessonPage({
           </>
         ) : (
           <Link
-            href={`/lezione/${lesson.id}/quiz`}
+            href={`/corso/${slug}/lezione/${clId}/quiz`}
             className="press lift inline-flex items-center gap-2 rounded-full bg-gold px-8 py-3.5 font-medium text-charcoal transition-transform"
           >
             {lesson.inProgress ? t.resume : t.start}

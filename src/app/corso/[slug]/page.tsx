@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { api } from "@/lib/api";
 import { pick } from "@/lib/i18n";
 import type { CourseOverview, LessonCard } from "@/lib/course";
-import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
+import { Login } from "@/components/Login";
+import { EnrollForm } from "@/components/EnrollForm";
 import { UnlockDialog } from "@/components/UnlockDialog";
+import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -30,49 +32,80 @@ function initials(name: string): string {
     .join("");
 }
 
-export function Dashboard() {
+export default function CoursePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = use(params);
+  const { status } = useSession();
   const { lang, t } = useLanguage();
+
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [needsEnrollment, setNeedsEnrollment] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unlocking, setUnlocking] = useState<LessonCard | null>(null);
 
-  // Contatore di ricariche: cambiandolo si rilancia l'effetto, senza dover
-  // chiamare una funzione che aggiorna lo stato dall'interno dell'effetto.
   const [reloads, setReloads] = useState(0);
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
   useEffect(() => {
+    if (status !== "authenticated") return;
     let cancelled = false;
 
     void (async () => {
-      const result = await api<Overview>("/api/course");
+      const result = await api<Overview>(`/api/courses/${slug}`);
       if (cancelled) return;
 
       if (result.ok) {
         setOverview(result.data);
+        setNeedsEnrollment(false);
         setError(null);
-      } else {
-        setError(result.offline ? t.networkError : t.genericError);
+        return;
       }
+      // Chi non è iscritto non riceve un errore, ma la porta d'ingresso.
+      if (result.status === 403) {
+        setNeedsEnrollment(true);
+        return;
+      }
+      setError(result.offline ? t.networkError : t.genericError);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [t, reloads]);
+  }, [slug, status, reloads, t]);
 
-  if (error && !overview) {
+  if (status === "loading") {
     return (
-      <main className="flex flex-1 items-center justify-center px-6">
-        <div className="card max-w-sm p-6 text-center">
-          <p className="text-sm text-cream/70">{error}</p>
-          <button
-            onClick={reload}
-            className="press mt-4 rounded-full bg-gold px-5 py-2 text-sm font-medium text-charcoal"
-          >
-            {t.confirm}
-          </button>
+      <main className="flex flex-1 items-center justify-center">
+        <p className="text-sm text-cream/50">{t.checkingSession}</p>
+      </main>
+    );
+  }
+  if (status !== "authenticated") return <Login />;
+
+  if (needsEnrollment) {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center px-5 py-10">
+        <Seal size={72} />
+        <div className="mt-8">
+          <EnrollForm courseSlug={slug} onEnrolled={reload} />
         </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
+        <p className="text-sm text-cream/70">{error}</p>
+        <button
+          onClick={reload}
+          className="press rounded-full bg-gold px-5 py-2 text-sm font-medium text-charcoal"
+        >
+          {t.confirm}
+        </button>
       </main>
     );
   }
@@ -85,27 +118,26 @@ export function Dashboard() {
     );
   }
 
-  const { user } = overview;
+  const { user, course } = overview;
 
   return (
     <>
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 2xl:max-w-7xl">
         <header className="mb-8 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <Seal size={44} />
-            <span className="font-serif text-lg leading-tight text-cream/90">
-              {t.courseTitle}
+            <span className="truncate font-serif text-lg leading-tight text-cream/90">
+              {pick(lang, course.titleIt, course.titleEn)}
             </span>
           </div>
           <LanguageToggle />
         </header>
 
         <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
-          {/* Colonna sinistra — chi sei e a che punto sei */}
           <div className="flex flex-col gap-5">
             <section className="card rise-in p-5">
               <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-bordeaux font-serif text-lg text-cream">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-bordeaux font-serif text-lg text-cream ring-1 ring-gold/50">
                   {initials(user.name)}
                 </span>
                 <div className="min-w-0">
@@ -125,8 +157,8 @@ export function Dashboard() {
               </div>
             </section>
 
-            <section className="card rise-in flex flex-col items-center p-6">
-              <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
+            <section className="rise-in flex flex-col items-center rounded-[16px] border border-gold/25 bg-bordeaux/90 p-6">
+              <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-gold/90">
                 {t.totalPoints}
               </h2>
               <div className="mt-4">
@@ -135,11 +167,15 @@ export function Dashboard() {
                   max={overview.totalPoints}
                 />
               </div>
-              <p className="mt-4 text-xs uppercase tracking-wider text-cream/40">
+              <p className="mt-4 text-xs uppercase tracking-wider text-cream/50">
                 {t.currentTitle}
               </p>
-              <p className="mt-1 font-serif text-2xl text-gold">
-                {overview.meritTitle}
+              <p className="mt-1 text-center font-serif text-2xl text-gold-light">
+                {overview.totalScore === 0
+                  ? lang === "en"
+                    ? "Start your journey to find out"
+                    : "Inizia il tuo percorso per scoprirla"
+                  : overview.meritTitle}
               </p>
             </section>
 
@@ -164,7 +200,6 @@ export function Dashboard() {
             </a>
           </div>
 
-          {/* Colonna destra — le lezioni */}
           <div>
             <h2 className="mb-3 px-1 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
               {t.lessons}
@@ -172,30 +207,38 @@ export function Dashboard() {
             <div className="grid gap-3 lg:grid-cols-2">
               {overview.lessons.map((lesson) => (
                 <LessonTile
-                  key={lesson.id}
+                  key={lesson.courseLessonId}
+                  slug={slug}
                   lesson={lesson}
                   onUnlock={() => setUnlocking(lesson)}
                 />
               ))}
             </div>
 
-            {user.role === "relatore" && (
-              <div className="mt-6 text-center">
+            <div className="mt-6 flex justify-center gap-5 text-sm">
+              <Link
+                href="/"
+                className="text-cream/45 underline underline-offset-4 hover:text-cream/70"
+              >
+                {t.backToCourses}
+              </Link>
+              {user.role === "relatore" && (
                 <Link
                   href="/relatore"
-                  className="text-sm text-gold/80 underline underline-offset-4 hover:text-gold"
+                  className="text-gold/80 underline underline-offset-4 hover:text-gold"
                 >
                   {t.adminArea}
                 </Link>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </main>
 
       {unlocking && (
         <UnlockDialog
-          lessonId={unlocking.id}
+          slug={slug}
+          courseLessonId={unlocking.courseLessonId}
           lessonTitle={pick(lang, unlocking.titleIt, unlocking.titleEn)}
           onClose={() => setUnlocking(null)}
           onUnlocked={() => {
@@ -209,9 +252,11 @@ export function Dashboard() {
 }
 
 function LessonTile({
+  slug,
   lesson,
   onUnlock,
 }: {
+  slug: string;
   lesson: LessonCard;
   onUnlock: () => void;
 }) {
@@ -222,11 +267,16 @@ function LessonTile({
   const body = (
     <>
       <div className="flex items-start gap-3">
-        <span className="font-serif text-3xl leading-none text-gold/45">
-          {lesson.isExam ? "★" : lesson.id}
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-gold/45 font-serif text-lg text-gold">
+          {lesson.isExam ? "★" : String(lesson.position).padStart(2, "0")}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-serif text-lg leading-snug text-cream">{title}</p>
+          <p className="text-[0.65rem] font-medium uppercase tracking-[0.16em] text-gold/70">
+            {lesson.isExam ? t.finalExam : `${t.lesson} ${lesson.position}`}
+          </p>
+          <p className="mt-0.5 font-serif text-lg leading-snug text-cream">
+            {title}
+          </p>
           {subtitle && (
             <p className="mt-0.5 text-xs text-cream/45">{subtitle}</p>
           )}
@@ -262,7 +312,10 @@ function LessonTile({
   }
 
   return (
-    <Link href={`/lezione/${lesson.id}`} className={`${base} lift press block`}>
+    <Link
+      href={`/corso/${slug}/lezione/${lesson.courseLessonId}`}
+      className={`${base} lift press block`}
+    >
       {body}
     </Link>
   );
@@ -294,7 +347,7 @@ function StatusPill({ lesson }: { lesson: LessonCard }) {
   }
 
   return (
-    <span className="pill bg-bordeaux/45 text-cream">
+    <span className="pill bg-bordeaux/60 text-cream">
       {lesson.inProgress ? t.resume : t.start}
       <ArrowRightIcon className="h-3.5 w-3.5" />
     </span>

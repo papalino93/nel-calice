@@ -53,13 +53,35 @@ export async function enrollWithCodeOnly(
   userId: string,
   code: string,
 ): Promise<EnrollOutcome> {
+  // Il limite si applica prima di guardare il codice: chi tira a indovinare
+  // non ha ancora un corso a cui associare i tentativi, quindi si contano
+  // tutti i suoi fallimenti recenti, di qualsiasi corso e anche a vuoto.
+  const recentFailures = await prisma.enrollmentAttempt.count({
+    where: {
+      userId,
+      succeeded: false,
+      createdAt: { gte: new Date(Date.now() - ENROLLMENT_WINDOW_MS) },
+    },
+  });
+  if (recentFailures >= MAX_FAILED_ENROLLMENTS) {
+    return { ok: false, reason: "rate_limited" };
+  }
+
   const course = await prisma.course.findUnique({
     where: { enrollmentCodeLookup: codeLookup(code) },
     select: { slug: true },
   });
-  // Codice inesistente: si risponde come per un codice sbagliato, così non
-  // si rivela quali codici esistono.
-  if (!course) return { ok: false, reason: "wrong_code" };
+
+  if (!course) {
+    // Il tentativo va registrato anche se il codice non esiste: è proprio
+    // quello il caso da limitare (§7.6).
+    await prisma.enrollmentAttempt.create({
+      data: { userId, courseId: null, succeeded: false },
+    });
+    // Si risponde come per un codice sbagliato, senza rivelare che quel
+    // codice non appartiene a nessun corso.
+    return { ok: false, reason: "wrong_code" };
+  }
 
   return enrollWithCode(userId, course.slug, code);
 }

@@ -35,9 +35,9 @@ type Review = {
 export default function ResultPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; clId: string }>;
 }) {
-  const { id } = use(params);
+  const { slug, clId } = use(params);
   const { lang, t } = useLanguage();
   const [review, setReview] = useState<Review | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +47,9 @@ export default function ResultPage({
     let cancelled = false;
 
     void (async () => {
-      // Si passa dalla lezione per ritrovare l'id del tentativo più recente.
+      // Si passa dalla lezione per ritrovare l'id del tentativo.
       const lesson = await api<{ lesson: { attemptId: string | null } }>(
-        `/api/lessons/${id}`,
+        `/api/courses/${slug}/lessons/${clId}`,
       );
       if (cancelled) return;
 
@@ -59,7 +59,7 @@ export default function ResultPage({
       }
 
       const result = await api<Review>(
-        `/api/attempts/${lesson.data.lesson.attemptId}`,
+        `/api/courses/${slug}/attempts/${lesson.data.lesson.attemptId}`,
       );
       if (cancelled) return;
 
@@ -70,13 +70,16 @@ export default function ResultPage({
     return () => {
       cancelled = true;
     };
-  }, [id, t]);
+  }, [slug, clId, t]);
 
   if (error) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="text-sm text-cream/70">{error}</p>
-        <Link href="/" className="text-sm text-gold underline underline-offset-4">
+        <Link
+          href={`/corso/${slug}`}
+          className="text-sm text-gold underline underline-offset-4"
+        >
           {t.backToLessons}
         </Link>
       </main>
@@ -105,7 +108,8 @@ export default function ResultPage({
 
         {review.timedOut && (
           <p className="pill mt-5 bg-red-400/12 text-red-300">
-            <ClockIcon className="h-3.5 w-3.5" />⏱ {t.timeUp}
+            <ClockIcon className="h-3.5 w-3.5" />
+            {t.timeUp}
           </p>
         )}
 
@@ -169,9 +173,7 @@ export default function ResultPage({
                 </p>
 
                 {question.selectedOptionId === null && (
-                  <p className="mt-2 text-xs text-amber-300/80">
-                    {t.leftBlank}
-                  </p>
+                  <p className="mt-2 text-xs text-amber-300/80">{t.leftBlank}</p>
                 )}
 
                 <div className="mt-3 flex flex-col gap-1.5 text-sm">
@@ -179,7 +181,9 @@ export default function ResultPage({
                     <p className="flex items-start gap-2 text-gold">
                       <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" />
                       <span>
-                        <span className="text-cream/45">{t.correctAnswer}: </span>
+                        <span className="text-cream/45">
+                          {t.correctAnswer}:{" "}
+                        </span>
                         {pick(lang, correct.textIt, correct.textEn)}
                       </span>
                     </p>
@@ -203,7 +207,7 @@ export default function ResultPage({
 
       <div className="mt-8 text-center">
         <Link
-          href="/"
+          href={`/corso/${slug}`}
           className="press lift inline-block rounded-full border border-gold/40 px-6 py-3 text-sm text-gold transition-transform"
         >
           {t.backToLessons}

@@ -56,6 +56,16 @@ const it = {
   // Materiali
   materials: "Materiale Didattico",
   noMaterials: "Nessuna dispensa per questa lezione, per ora.",
+  // Corsi e iscrizione
+  myCourses: "I tuoi corsi",
+  noCoursesYet: "Non sei ancora iscritto a nessun corso.",
+  enrollTitle: "Codice del corso",
+  enrollHint: "Il relatore lo comunica a voce alla prima serata.",
+  enrollPlaceholder: "Scrivi il codice",
+  enroll: "Iscriviti",
+  openCourse: "Apri",
+  studentView: "Vista corsista",
+  backToCourses: "Torna ai corsi",
   // Errori
   genericError: "Qualcosa non ha funzionato. Riprova.",
   networkError: "Connessione assente. Controlla la rete e riprova.",
@@ -104,6 +114,15 @@ const en: Strings = {
   backToLessons: "Back to lessons",
   materials: "Course Material",
   noMaterials: "No handouts for this lesson yet.",
+  myCourses: "Your courses",
+  noCoursesYet: "You are not enrolled in any course yet.",
+  enrollTitle: "Course code",
+  enrollHint: "The host says it out loud on the first evening.",
+  enrollPlaceholder: "Type the code",
+  enroll: "Join",
+  openCourse: "Open",
+  studentView: "Student view",
+  backToCourses: "Back to courses",
   genericError: "Something went wrong. Please try again.",
   networkError: "You seem to be offline. Check your connection and retry.",
 };
