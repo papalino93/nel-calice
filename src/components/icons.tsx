@@ -55,12 +55,19 @@ export function TastevinIcon(props: IconProps) {
  * fanno vedere il colore del vino in una coppa bassa — con l'anello per il
  * pollice sul fianco. Di profilo sembrerebbe una tazza qualsiasi.
  */
-export function TastevinShape() {
-  const cx = 10.2;
+export function TastevinShape({
+  accent = "currentColor",
+}: {
+  /** Colore delle parti piene (cupola e bugne). */
+  accent?: string;
+}) {
+  const cx = 10;
   const cy = 12;
-  const bossRing = 4.9;
-  const bosses = Array.from({ length: 8 }, (_, i) => {
-    const a = (Math.PI * 2 * i) / 8 - Math.PI / 2;
+  const bossRing = 5.4;
+  // Sei bugne e non otto: a dimensione da sigillo, otto diventano un
+  // tratteggio indistinto. Meglio poche e leggibili.
+  const bosses = Array.from({ length: 6 }, (_, i) => {
+    const a = (Math.PI * 2 * i) / 6 - Math.PI / 2;
     return {
       x: cx + bossRing * Math.cos(a),
       y: cy + bossRing * Math.sin(a),
@@ -70,19 +77,24 @@ export function TastevinShape() {
   return (
     <>
       {/* Anello per il pollice, agganciato al bordo */}
-      <circle cx="20.4" cy="12" r="2.5" />
-      <path d="M17.9 12h-0.6" />
+      <circle cx="20.2" cy="12" r="2.6" />
+      <path d="M17.6 12h-0.8" />
 
-      {/* Bordo della coppa e parete interna */}
-      <circle cx={cx} cy={cy} r="8.1" />
-      <circle cx={cx} cy={cy} r="6.9" />
+      {/* Bordo della coppa */}
+      <circle cx={cx} cy={cy} r="8.2" />
 
-      {/* Cupola centrale */}
-      <circle cx={cx} cy={cy} r="2.1" />
-
-      {/* Bugne sbalzate in corona */}
+      {/* Cupola centrale e bugne sbalzate: piene, perché a contorno
+          sparirebbero appena l'attestato viene rimpicciolito. */}
+      <circle cx={cx} cy={cy} r="2.3" fill={accent} stroke="none" />
       {bosses.map((b, i) => (
-        <circle key={i} cx={b.x.toFixed(2)} cy={b.y.toFixed(2)} r="0.95" />
+        <circle
+          key={i}
+          cx={b.x.toFixed(2)}
+          cy={b.y.toFixed(2)}
+          r="1.25"
+          fill={accent}
+          stroke="none"
+        />
       ))}
     </>
   );

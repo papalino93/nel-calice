@@ -235,14 +235,14 @@ export function Certificate({
             dove compare al posto del calice. Stesso disegno dell'icona in
             src/components/icons.tsx — una sola forma, due usi. */}
         <g
-          transform={`translate(${cx - 14.5} ${112 - 14.5}) scale(1.28)`}
+          transform={`translate(${cx - 22.2} ${112 - 21}) scale(1.85)`}
           fill="none"
           stroke={GOLD_LIGHT}
-          strokeWidth="1.15"
+          strokeWidth="1.1"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <TastevinShape />
+          <TastevinShape accent={GOLD_LIGHT} />
         </g>
       </g>
 
