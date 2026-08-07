@@ -140,10 +140,11 @@ export function Seal({
   children?: React.ReactNode;
   className?: string;
 }) {
-  // Bordo dentellato: raggio alternato lungo la circonferenza.
-  const teeth = 44;
-  const outer = 48;
-  const inner = 45;
+  // Bordo dentellato: raggio alternato lungo la circonferenza, come la
+  // ceralacca di un sigillo.
+  const teeth = 40;
+  const outer = 49;
+  const inner = 44;
   const points = Array.from({ length: teeth * 2 }, (_, i) => {
     const r = i % 2 === 0 ? outer : inner;
     const a = (Math.PI * i) / teeth - Math.PI / 2;
@@ -156,24 +157,30 @@ export function Seal({
       style={{ width: size, height: size }}
     >
       <svg viewBox="0 0 100 100" className="absolute inset-0" aria-hidden="true">
-        <polygon points={points} className="fill-gold/15" />
+        <defs>
+          <linearGradient id="seal-gold" x1="0" y1="0" x2="0.6" y2="1">
+            <stop offset="0%" stopColor="var(--color-gold-light)" />
+            <stop offset="45%" stopColor="var(--color-gold)" />
+            <stop offset="100%" stopColor="var(--color-gold-deep)" />
+          </linearGradient>
+        </defs>
+
+        {/* Corona dentellata e anello, entrambi in oro pieno. */}
+        <polygon points={points} fill="url(#seal-gold)" />
+        <circle cx="50" cy="50" r="44" fill="url(#seal-gold)" />
+
+        {/* Cuore bordeaux: è ciò che dà al sigillo il suo peso visivo. */}
+        <circle cx="50" cy="50" r="35" className="fill-bordeaux-deep" />
         <circle
           cx="50"
           cy="50"
-          r="41"
-          className="fill-charcoal-soft stroke-gold/60"
-          strokeWidth="1.5"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r="36"
-          className="fill-none stroke-gold/30"
+          r="35"
+          className="fill-none stroke-gold/35"
           strokeWidth="0.8"
         />
       </svg>
-      <span className="relative text-gold" style={{ width: size * 0.4 }}>
-        {children ?? <GlassIcon className="w-full h-full" />}
+      <span className="relative text-gold-light" style={{ width: size * 0.38 }}>
+        {children ?? <GlassIcon className="h-full w-full" strokeWidth={1.4} />}
       </span>
     </span>
   );
@@ -193,6 +200,12 @@ export function ProgressRing({
   const circumference = 2 * Math.PI * radius;
   const ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
 
+  // Pallino oro alla punta dell'arco: segna a che punto si è arrivati, e a
+  // zero resta in cima come segno di partenza.
+  const angle = ratio * 2 * Math.PI - Math.PI / 2;
+  const markerX = 50 + radius * Math.cos(angle);
+  const markerY = 50 + radius * Math.sin(angle);
+
   return (
     <svg
       viewBox="0 0 100 100"
@@ -200,27 +213,6 @@ export function ProgressRing({
       role="img"
       aria-label={`${value} punti su ${max}`}
     >
-      <circle
-        cx="50"
-        cy="50"
-        r={radius}
-        fill="none"
-        className="stroke-cream/10"
-        strokeWidth="7"
-      />
-      <circle
-        cx="50"
-        cy="50"
-        r={radius}
-        fill="none"
-        stroke="url(#ring-gold)"
-        strokeWidth="7"
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={circumference * (1 - ratio)}
-        transform="rotate(-90 50 50)"
-        style={{ transition: "stroke-dashoffset 0.6s ease-out" }}
-      />
       <defs>
         <linearGradient id="ring-gold" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="var(--color-gold-deep)" />
@@ -228,20 +220,50 @@ export function ProgressRing({
           <stop offset="100%" stopColor="var(--color-gold-light)" />
         </linearGradient>
       </defs>
+
+      <circle
+        cx="50"
+        cy="50"
+        r={radius}
+        fill="none"
+        className="stroke-cream/12"
+        strokeWidth="6"
+      />
+      <circle
+        cx="50"
+        cy="50"
+        r={radius}
+        fill="none"
+        stroke="url(#ring-gold)"
+        strokeWidth="6"
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={circumference * (1 - ratio)}
+        transform="rotate(-90 50 50)"
+        style={{ transition: "stroke-dashoffset 0.6s ease-out" }}
+      />
+      <circle
+        cx={markerX}
+        cy={markerY}
+        r="3.4"
+        className="fill-gold-light"
+        style={{ transition: "cx 0.6s ease-out, cy 0.6s ease-out" }}
+      />
+
       <text
         x="50"
-        y="47"
+        y="49"
         textAnchor="middle"
         className="fill-cream font-serif"
-        style={{ fontSize: "26px", fontWeight: 600 }}
+        style={{ fontSize: "30px", fontWeight: 600 }}
       >
         {value}
       </text>
       <text
         x="50"
-        y="63"
+        y="65"
         textAnchor="middle"
-        className="fill-cream/50"
+        className="fill-cream/45"
         style={{ fontSize: "11px" }}
       >
         / {max}

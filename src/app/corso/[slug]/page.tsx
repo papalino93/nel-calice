@@ -13,7 +13,6 @@ import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
 import {
   ArrowRightIcon,
   CheckIcon,
-  GlassIcon,
   LockIcon,
   ProgressRing,
   Seal,
@@ -136,25 +135,28 @@ export default function CoursePage({
         <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
           <div className="flex flex-col gap-5">
             <section className="card rise-in p-5">
-              <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-bordeaux font-serif text-lg text-cream ring-1 ring-gold/50">
+              <div className="flex items-center gap-3.5">
+                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-bordeaux font-serif text-xl text-cream ring-2 ring-gold/60">
                   {initials(user.name)}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate font-serif text-xl text-cream">
-                    {user.name}
+                  <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold/70">
+                    {lang === "en" ? "Welcome" : "Benvenuto/a"}
                   </p>
-                  <p className="truncate text-xs text-cream/45">
-                    {t.signedInAs} {user.email} ·{" "}
-                    <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="underline underline-offset-2 hover:text-cream/70"
-                    >
-                      {t.signOut}
-                    </button>
+                  <p className="truncate font-serif text-2xl leading-tight text-cream">
+                    {user.name}
                   </p>
                 </div>
               </div>
+              <p className="mt-3 truncate text-xs text-cream/45">
+                {t.signedInAs} {user.email} ·{" "}
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="underline underline-offset-2 hover:text-cream/70"
+                >
+                  {t.signOut}
+                </button>
+              </p>
             </section>
 
             <section className="rise-in flex flex-col items-center rounded-[16px] border border-gold/25 bg-bordeaux/90 p-6">
@@ -180,24 +182,37 @@ export default function CoursePage({
             </section>
 
             {/* App sorella, si apre in nuova scheda (§9) */}
-            <a
-              href="https://sorso-taccuino.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="card lift press flex items-center gap-3 p-4 transition-transform"
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold/12 text-gold">
-                <GlassIcon className="h-5 w-5" />
-              </span>
-              <span className="min-w-0">
-                <span className="block font-serif text-lg text-cream">Sorso</span>
-                <span className="block truncate text-xs text-cream/45">
-                  {lang === "en"
-                    ? "Your tasting notebook"
-                    : "Il tuo taccuino di degustazione"}
-                </span>
-              </span>
-            </a>
+            <section className="rise-in rounded-[16px] border border-gold/35 bg-charcoal-soft/70 p-5">
+              <div className="flex items-center gap-3">
+                <Seal size={44} />
+                <div className="min-w-0">
+                  <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold/70">
+                    Sorso
+                  </p>
+                  <p className="font-serif text-lg leading-tight text-cream">
+                    {lang === "en"
+                      ? "The tasting notebook"
+                      : "Il taccuino di degustazione"}
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs leading-relaxed text-cream/50">
+                {lang === "en"
+                  ? "Rate the wines you taste, keep your own notes, and find them again on any device."
+                  : "Valuta i vini che assaggi, tieni traccia dei tuoi punteggi e ritrovali su qualsiasi dispositivo."}
+              </p>
+
+              <a
+                href="https://sorso-taccuino.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="press lift mt-4 flex items-center justify-center gap-2 rounded-full border border-gold/40 px-4 py-2.5 text-sm text-gold transition-transform"
+              >
+                {lang === "en" ? "Open Sorso" : "Apri Sorso"}
+                <ArrowRightIcon className="h-4 w-4" />
+              </a>
+            </section>
           </div>
 
           <div>
