@@ -16,6 +16,8 @@
 // Vincolo di contenuto (§2.2): è un attestato di *partecipazione* a un corso
 // amatoriale. Niente che suggerisca una qualifica professionale.
 
+import { TastevinShape } from "./icons";
+
 export const CERTIFICATE_WIDTH = 1000;
 export const CERTIFICATE_HEIGHT = 700;
 
@@ -229,23 +231,18 @@ export function Certificate({
           strokeWidth="0.8"
           opacity="0.5"
         />
-        {/* Tastevin: l'emblema della degustazione, e l'unico posto
-            dell'app dove compare al posto del calice. */}
+        {/* Tastevin: l'emblema della degustazione, e l'unico posto dell'app
+            dove compare al posto del calice. Stesso disegno dell'icona in
+            src/components/icons.tsx — una sola forma, due usi. */}
         <g
-          transform={`translate(${cx - 15.5} 97) scale(1.32)`}
+          transform={`translate(${cx - 14.5} ${112 - 14.5}) scale(1.28)`}
           fill="none"
           stroke={GOLD_LIGHT}
-          strokeWidth="1.35"
+          strokeWidth="1.15"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <ellipse cx="10.5" cy="8" rx="7.8" ry="2.5" />
-          <path d="M2.7 8c0 4.4 3.2 7.2 7.8 7.2s7.8-2.8 7.8-7.2" />
-          <circle cx="7" cy="10.6" r="1.15" />
-          <circle cx="10.5" cy="11.8" r="1.15" />
-          <circle cx="14" cy="10.6" r="1.15" />
-          <circle cx="20.6" cy="8.4" r="2.3" />
-          <path d="M18.3 8.4h-.6" />
+          <TastevinShape />
         </g>
       </g>
 

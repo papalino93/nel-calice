@@ -41,18 +41,50 @@ export function GlassIcon(props: IconProps) {
 export function TastevinIcon(props: IconProps) {
   return (
     <Icon {...props}>
-      {/* Bordo della coppa */}
-      <ellipse cx="10.5" cy="8" rx="7.8" ry="2.5" />
-      {/* Corpo basso e svasato */}
-      <path d="M2.7 8c0 4.4 3.2 7.2 7.8 7.2s7.8-2.8 7.8-7.2" />
-      {/* Sbalzi: le bugne che rompono la luce sul vino */}
-      <circle cx="7" cy="10.6" r="1.15" />
-      <circle cx="10.5" cy="11.8" r="1.15" />
-      <circle cx="14" cy="10.6" r="1.15" />
-      {/* Anello per il pollice */}
-      <circle cx="20.6" cy="8.4" r="2.3" />
-      <path d="M18.3 8.4h-.6" />
+      <TastevinShape />
     </Icon>
+  );
+}
+
+/**
+ * Il disegno vero e proprio, senza contenitore: serve identico anche
+ * sull'attestato, dove va inserito dentro l'SVG della pergamena.
+ *
+ * Visto dall'alto, perché è così che un tastevin si riconosce: la cupola
+ * centrale e la corona di bugne sbalzate — quelle che spezzano la luce e
+ * fanno vedere il colore del vino in una coppa bassa — con l'anello per il
+ * pollice sul fianco. Di profilo sembrerebbe una tazza qualsiasi.
+ */
+export function TastevinShape() {
+  const cx = 10.2;
+  const cy = 12;
+  const bossRing = 4.9;
+  const bosses = Array.from({ length: 8 }, (_, i) => {
+    const a = (Math.PI * 2 * i) / 8 - Math.PI / 2;
+    return {
+      x: cx + bossRing * Math.cos(a),
+      y: cy + bossRing * Math.sin(a),
+    };
+  });
+
+  return (
+    <>
+      {/* Anello per il pollice, agganciato al bordo */}
+      <circle cx="20.4" cy="12" r="2.5" />
+      <path d="M17.9 12h-0.6" />
+
+      {/* Bordo della coppa e parete interna */}
+      <circle cx={cx} cy={cy} r="8.1" />
+      <circle cx={cx} cy={cy} r="6.9" />
+
+      {/* Cupola centrale */}
+      <circle cx={cx} cy={cy} r="2.1" />
+
+      {/* Bugne sbalzate in corona */}
+      {bosses.map((b, i) => (
+        <circle key={i} cx={b.x.toFixed(2)} cy={b.y.toFixed(2)} r="0.95" />
+      ))}
+    </>
   );
 }
 
