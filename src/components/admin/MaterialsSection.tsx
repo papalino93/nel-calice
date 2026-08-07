@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
+import { uploadPresigned } from "@vercel/blob/client";
 import { api, errorMessage, post } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 import {
@@ -140,11 +140,15 @@ function UploadForm({
         const file = fileRef.current?.files?.[0];
         if (!file) throw new Error("Scegli un file.");
 
-        // Il file va dal browser allo store senza passare da qui.
-        const blob = await upload(`dispense/${lessonId}/${file.name}`, file, {
-          access: "public",
-          handleUploadUrl: "/api/admin/materials/upload",
-        });
+        // Il file va dal browser allo store senza passare dal server.
+        // `uploadPresigned` e non `upload`: lo store è privato, e il flusso
+        // ordinario farebbe scrivere il browser sul piano di controllo di
+        // Vercel, che dal browser è bloccato dal CORS.
+        const blob = await uploadPresigned(
+          `dispense/${lessonId}/${file.name}`,
+          file,
+          { access: "private", handleUploadUrl: "/api/admin/materials/upload" },
+        );
         // Si salva il pathname, non l'indirizzo pubblico: il link vero
         // viene firmato al momento della lettura.
         url = `blob:${blob.pathname}`;
