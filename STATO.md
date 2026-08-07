@@ -101,6 +101,22 @@ npm run dev
 Verifiche: `npm test` (unità), `npm run lint`, `npm run build`,
 `npm run test:db` (vincoli, richiede un database).
 
+## Le dispense non hanno più un segreto da proteggere
+
+Vale la pena saperlo prima di toccare quella parte. Lo store `dispense` è
+collegato al progetto, e il progetto si autentica con **OIDC**: credenziali a
+vita brevissima che Vercel rinnova da sé. Il vecchio `BLOB_READ_WRITE_TOKEN` è
+stato **revocato**, e le dispense continuano a caricarsi e ad aprirsi — provato
+in produzione dopo la revoca.
+
+Quindi: non reintrodurre un token statico per comodità. L'SDK lo userebbe solo
+se OIDC mancasse (`resolveBlobAuth` prova OIDC per primo), e sarebbe di nuovo
+un segreto da custodire — l'errore da cui questo progetto è appena uscito.
+
+In sviluppo locale il token OIDC arriva con `vercel env pull` ed è a scadenza
+breve: se le dispense smettono di funzionare sulla propria macchina, di norma è
+solo quello scaduto e basta rifare il pull.
+
 ## Cosa è fatto
 
 Tutto provato dal vivo, non solo compilato: accesso con Google, iscrizione col
@@ -121,33 +137,7 @@ build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
    edizione dia errore senza lasciare in giro una lezione a metà.
 2. **Controllo bug e resa su telefono, tablet e computer.** Non ancora fatto:
    richiede occhi veri sui tre formati, non basta la revisione del codice.
-2. **Togliere di mezzo il token dello store dispense** — era finito in chiaro
-   in uno screenshot (mai nel repo: la cronologia di git è pulita).
-
-   Lo store è ora collegato al progetto (`dispense` → *Projects*), il che
-   apre la strada migliore: **non ruotare il token, revocarlo**. Ruotare
-   creerebbe un nuovo segreto statico, esposto allo stesso rischio; revocarlo
-   lo elimina e basta, perché il progetto collegato si autentica via OIDC con
-   credenziali a vita breve che Vercel rinnova da sé. `@vercel/blob` 2.7.0 lo
-   regge — accetta `VERCEL_OIDC_TOKEN` con `BLOB_STORE_ID` al posto del token
-   — e il codice non passa mai un token a mano, lo lascia risolvere
-   all'ambiente.
-
-   Fatto e verificato in produzione: collegato il progetto allo store,
-   redeploy, caricamento e scaricamento di un PDF riusciti. Che quella prova
-   stesse già passando per OIDC lo dice l'SDK: `issueSignedToken` (firma dei
-   caricamenti) e `get` (lettura) passano entrambe da `resolveBlobAuth`, che
-   prova OIDC **per primo** e ripiega su `BLOB_READ_WRITE_TOKEN` solo se OIDC
-   manca. Il token statico era quindi già codice morto, e revocarlo non tocca
-   il runtime.
-
-   Resta il click su **Revoke Token** (Blob → Projects → banner arancione).
-
-   In locale, dopo la revoca, il token OIDC arriva con `vercel env pull` ed è
-   a scadenza breve: se le dispense smettono di funzionare in sviluppo, di
-   norma è solo quello scaduto.
-
-3. **Occasione aperta dal collegamento.** Il collegamento ha creato anche
+2. **Occasione aperta dal collegamento.** Il collegamento ha creato anche
    `BLOB_WEBHOOK_PUBLIC_KEY`, che prima non c'era. La firma dei caricamenti è
    scritta a mano proprio perché quella chiave mancava
    (`api/admin/materials/upload/route.ts`): ora si potrebbe usare
