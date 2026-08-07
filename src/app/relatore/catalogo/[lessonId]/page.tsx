@@ -12,6 +12,7 @@ import {
   inputClass,
 } from "@/components/admin/AdminShell";
 import { CheckIcon, CrossIcon } from "@/components/icons";
+import { MaterialsSection } from "@/components/admin/MaterialsSection";
 
 type OptionRow = {
   id: number;
@@ -132,6 +133,8 @@ export default function LessonEditorPage({
       </AdminSection>
 
       <NewQuestion lessonId={lesson.id} onCreated={reload} />
+
+      <MaterialsSection lessonId={lesson.id} />
     </AdminShell>
   );
 }

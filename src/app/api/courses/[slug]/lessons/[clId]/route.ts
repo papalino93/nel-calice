@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isDenied, requireEnrollment } from "@/lib/guard";
 import { courseOverview } from "@/lib/course";
 import { prisma } from "@/lib/prisma";
+import { withSignedUrls } from "@/lib/materials";
 
 /**
  * Dettaglio di una lezione: il riquadro del quiz e le sue dispense, insieme
@@ -53,5 +54,11 @@ export async function GET(
     },
   });
 
-  return NextResponse.json({ lesson, materials });
+  // Gli indirizzi salvati non sono utilizzabili così come sono: i file
+  // stanno in uno store privato. Si esce da qui con link firmati che
+  // scadono, e solo perché siamo già passati dal controllo di sblocco.
+  return NextResponse.json({
+    lesson,
+    materials: await withSignedUrls(materials),
+  });
 }
