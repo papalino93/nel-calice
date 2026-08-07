@@ -38,6 +38,7 @@ export default function Home() {
   const router = useRouter();
 
   const [data, setData] = useState<MyCourses | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
@@ -46,7 +47,14 @@ export default function Home() {
 
     void (async () => {
       const result = await api<MyCourses>("/api/courses");
-      if (cancelled || !result.ok) return;
+      if (cancelled) return;
+
+      if (!result.ok) {
+        // Su 401 `api` ha già chiuso la sessione: la schermata di accesso
+        // arriva da sé al render successivo.
+        if (result.status !== 401) setLoadError(true);
+        return;
+      }
 
       if (result.data.user.role === "relatore") {
         router.replace("/relatore");
@@ -75,6 +83,23 @@ export default function Home() {
   }
 
   if (status !== "authenticated") return <Login />;
+
+  if (loadError) {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-sm text-cream/70">{t.genericError}</p>
+        <button
+          onClick={() => {
+            setLoadError(false);
+            setReloads((n) => n + 1);
+          }}
+          className="press rounded-full bg-gold px-5 py-2 text-sm font-medium text-charcoal"
+        >
+          {t.confirm}
+        </button>
+      </main>
+    );
+  }
 
   if (!data) {
     return (

@@ -27,6 +27,14 @@ export async function api<T>(
   const body = await response.json().catch(() => null);
 
   if (!response.ok) {
+    // 401 significa che il cookie c'è ma non vale più: sessione scaduta, o
+    // account che non esiste più sul server. Va chiusa subito, altrimenti
+    // l'interfaccia resta ad aspettare dati che non arriveranno mai.
+    if (response.status === 401) {
+      const { signOut } = await import("next-auth/react");
+      void signOut({ redirect: false });
+    }
+
     return {
       ok: false,
       offline: false,
