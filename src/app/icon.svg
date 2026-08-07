@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Calice">
+  <!--
+    Il calice identitario, ridotto a ciò che sopravvive a 16 pixel.
+
+    È pieno, non a contorno: alla dimensione di una scheda del browser una
+    linea da un pixel sparisce contro il fondo, com'era già emerso disegnando
+    il sigillo dell'attestato. Il fondo carbone è portato dentro l'icona
+    perché l'oro non regge da solo sulla barra chiara del browser.
+  -->
+  <defs>
+    <linearGradient id="oro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9ce7e" />
+      <stop offset=".55" stop-color="#d4af37" />
+      <stop offset="1" stop-color="#a9822a" />
+    </linearGradient>
+  </defs>
+
+  <rect width="32" height="32" rx="7" fill="#1e1f21" />
+
+  <!-- Coppa e stelo in un tratto solo: la coppa scende dritta e poi si
+       stringe verso il centro, come un calice da degustazione. Lo stelo è
+       lungo quasi quanto la coppa: è quella proporzione a distinguere un
+       calice da un trofeo. -->
+  <path
+    d="M9.7 5.6h12.6v3.3c0 4.5-2.3 7.5-5.3 8v7.5h-2v-7.5c-3-.5-5.3-3.5-5.3-8z"
+    fill="url(#oro)"
+  />
+  <rect x="10.2" y="24.3" width="11.6" height="2.5" rx="1.25" fill="url(#oro)" />
+</svg>
