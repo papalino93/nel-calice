@@ -133,31 +133,32 @@ export default function CoursePage({
   // che sono il motivo per cui si entra.
   const compact = overview.lessons.length <= 2;
 
-  const profileBlock = (
-    <section className="card rise-in p-5">
-      <div className="flex items-center gap-3.5">
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-bordeaux font-serif text-xl text-cream ring-2 ring-gold/60">
-          {initials(user.name)}
-        </span>
-        <div className="min-w-0">
-          <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold/70">
-            {lang === "en" ? "Welcome" : "Benvenuto/a"}
-          </p>
-          <p className="truncate font-serif text-2xl leading-tight text-cream">
-            {user.name}
-          </p>
-        </div>
+  // L'identità non è contenuto: è la conferma di chi sei. Sta
+  // nell'intestazione, dove ci si aspetta di trovarla, e non occupa una card
+  // nel corpo della pagina — che resta alle lezioni, ai punti e a Sorso.
+  const identity = (
+    <div className="flex min-w-0 items-center gap-3">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-bordeaux font-serif text-base text-cream ring-2 ring-gold/60">
+        {initials(user.name)}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold/70">
+          {lang === "en" ? "Welcome" : "Benvenuto/a"}
+        </p>
+        <p className="truncate font-serif text-lg leading-tight text-cream">
+          {user.name}
+        </p>
+        <p className="truncate text-[0.7rem] text-cream/40">
+          {user.email} ·{" "}
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="underline underline-offset-2 hover:text-cream/70"
+          >
+            {t.signOut}
+          </button>
+        </p>
       </div>
-      <p className="mt-3 truncate text-xs text-cream/45">
-        {t.signedInAs} {user.email} ·{" "}
-        <button
-          onClick={() => signOut({ callbackUrl: "/" })}
-          className="underline underline-offset-2 hover:text-cream/70"
-        >
-          {t.signOut}
-        </button>
-      </p>
-    </section>
+    </div>
   );
 
   const pointsBlock = (
@@ -193,38 +194,42 @@ export default function CoursePage({
     </section>
   );
 
-  // App sorella, si apre in nuova scheda (§9)
+  // App sorella (§9). Fondo pieno e pulsante in oro pieno: non è una nota a
+  // margine ma un invito ad andarci, e deve reggere il confronto con la card
+  // dei punti che le sta sopra.
   const sorsoBlock = (
-    <section className="rise-in rounded-[16px] border border-gold/35 bg-charcoal-soft/70 p-5">
-      <div className="flex items-center gap-3">
-        <Seal size={44} />
-        <div className="min-w-0">
-          <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold/70">
-            Sorso
-          </p>
-          <p className="font-serif text-lg leading-tight text-cream">
-            {lang === "en"
-              ? "The tasting notebook"
-              : "Il taccuino di degustazione"}
-          </p>
+    <section className="rise-in overflow-hidden rounded-[16px] border border-gold/45 bg-bordeaux-deep">
+      <div className="p-5">
+        <div className="flex items-center gap-3">
+          <Seal size={48} />
+          <div className="min-w-0">
+            <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold">
+              Sorso
+            </p>
+            <p className="font-serif text-xl leading-tight text-cream">
+              {lang === "en"
+                ? "The tasting notebook"
+                : "Il taccuino di degustazione"}
+            </p>
+          </div>
         </div>
+
+        <p className="mt-3.5 text-sm leading-relaxed text-cream/65">
+          {lang === "en"
+            ? "Rate the wines you taste, keep your own notes, and find them again on any device."
+            : "Valuta i vini che assaggi, tieni traccia dei tuoi punteggi e ritrovali su qualsiasi dispositivo."}
+        </p>
+
+        <a
+          href="https://sorso-taccuino.vercel.app"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="press lift mt-4 flex items-center justify-center gap-2 rounded-full bg-gold px-4 py-3 text-sm font-medium text-charcoal transition-transform"
+        >
+          {lang === "en" ? "Open Sorso" : "Apri Sorso"}
+          <ArrowRightIcon className="h-4 w-4" />
+        </a>
       </div>
-
-      <p className="mt-3 text-xs leading-relaxed text-cream/50">
-        {lang === "en"
-          ? "Rate the wines you taste, keep your own notes, and find them again on any device."
-          : "Valuta i vini che assaggi, tieni traccia dei tuoi punteggi e ritrovali su qualsiasi dispositivo."}
-      </p>
-
-      <a
-        href="https://sorso-taccuino.vercel.app"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="press lift mt-4 flex items-center justify-center gap-2 rounded-full border border-gold/40 px-4 py-2.5 text-sm text-gold transition-transform"
-      >
-        {lang === "en" ? "Open Sorso" : "Apri Sorso"}
-        <ArrowRightIcon className="h-4 w-4" />
-      </a>
     </section>
   );
 
@@ -271,14 +276,18 @@ export default function CoursePage({
       )}
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 2xl:max-w-7xl">
-        <header className="mb-8 flex items-center justify-between gap-4">
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-5">
           <div className="flex min-w-0 items-center gap-3">
             <Seal size={44} />
             <span className="truncate font-serif text-lg leading-tight text-cream/90">
               {pick(lang, course.titleIt, course.titleEn)}
             </span>
           </div>
-          <LanguageToggle />
+
+          <div className="order-last flex w-full items-center justify-between gap-4 sm:order-none sm:w-auto">
+            {identity}
+            <LanguageToggle />
+          </div>
         </header>
 
         {/* I blocchi sono gli stessi nelle due disposizioni: cambia solo
@@ -286,14 +295,12 @@ export default function CoursePage({
         {compact ? (
           <div className="mx-auto flex max-w-xl flex-col gap-5">
             {lessonsBlock}
-            {profileBlock}
             {pointsBlock}
             {sorsoBlock}
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
             <div className="flex flex-col gap-5">
-              {profileBlock}
               {pointsBlock}
               {sorsoBlock}
             </div>
