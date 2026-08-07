@@ -4,6 +4,9 @@ Note prese dagli screenshot dell'app attuale (corso-vino-quiz.vercel.app),
 da rispettare nella nuova versione. L'identità visiva è il tratto che piace
 di più dell'attuale e va conservata, non reinventata (§6 del documento).
 
+**Stato:** applicati accesso, dashboard, quiz e area relatore. Restano da
+fare l'attestato (che il committente vuole ridisegnato) e i materiali.
+
 ## Palette
 
 Come da §6: fondo carbone, accenti oro, bordeaux di marca. Già in
