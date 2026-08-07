@@ -116,31 +116,78 @@ export async function courseDetail(
 }
 
 /**
- * Aggiunge una lezione del catalogo a un corso.
+ * Il corso e il primo numero di serata libero.
  * Il numero è il primo libero: aggiungere in fondo non tocca le altre.
  */
-export async function addLessonToCourse(
-  slug: string,
-  lessonId: number,
-  code: string,
-) {
+async function courseWithNextPosition(slug: string) {
   const course = await prisma.course.findUnique({
     where: { slug },
     select: { id: true, lessons: { select: { position: true } } },
   });
   if (!course) return null;
 
-  const nextPosition =
-    course.lessons.reduce((max, l) => Math.max(max, l.position), 0) + 1;
+  return {
+    id: course.id,
+    nextPosition:
+      course.lessons.reduce((max, l) => Math.max(max, l.position), 0) + 1,
+  };
+}
+
+/** Aggiunge una lezione del catalogo a un corso. */
+export async function addLessonToCourse(
+  slug: string,
+  lessonId: number,
+  code: string,
+) {
+  const course = await courseWithNextPosition(slug);
+  if (!course) return null;
 
   return prisma.courseLesson.create({
     data: {
       courseId: course.id,
       lessonId,
-      position: nextPosition,
+      position: course.nextPosition,
       unlockCodeEncrypted: encryptCode(code),
       unlockCodeLookup: codeLookup(code),
     },
+  });
+}
+
+/**
+ * Scrive una lezione nuova e la mette subito in questo corso, senza passare
+ * dal catalogo: è il gesto che il relatore fa più spesso, e farlo in due
+ * schermate diverse costringeva a uscire e rientrare.
+ *
+ * La lezione nasce comunque nel catalogo — non è una lezione "privata" del
+ * corso — e resta quindi riusabile da un'altra edizione, con le sue domande
+ * e le sue dispense.
+ *
+ * Le due scritture stanno in una transazione perché un codice già usato
+ * nella stessa edizione non lasci in catalogo una lezione che nessuno ha
+ * chiesto: o entrambe, o nessuna.
+ */
+export async function createLessonInCourse(
+  slug: string,
+  input: { titleIt: string; titleEn: string },
+  code: string,
+) {
+  const course = await courseWithNextPosition(slug);
+  if (!course) return null;
+
+  return prisma.$transaction(async (tx) => {
+    const lesson = await tx.lesson.create({ data: input });
+
+    await tx.courseLesson.create({
+      data: {
+        courseId: course.id,
+        lessonId: lesson.id,
+        position: course.nextPosition,
+        unlockCodeEncrypted: encryptCode(code),
+        unlockCodeLookup: codeLookup(code),
+      },
+    });
+
+    return lesson;
   });
 }
 

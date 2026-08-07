@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { api, errorMessage, post } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -303,18 +303,31 @@ function LessonsSection({
   onChanged: () => void;
 }) {
   const { t } = useLanguage();
+  const [mode, setMode] = useState<"new" | "catalogue">("new");
   const [addLessonId, setAddLessonId] = useState("");
+  const [newTitle, setNewTitle] = useState("");
   const [addCode, setAddCode] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const ready = Boolean(
+    addCode.trim() && (mode === "new" ? newTitle.trim() : addLessonId),
+  );
 
   async function add() {
     setMsg(null);
-    const result = await post(`/api/admin/courses/${slug}/lessons`, {
-      lessonId: Number(addLessonId),
-      code: addCode,
-    });
+    setBusy(true);
+    const result = await post(
+      `/api/admin/courses/${slug}/lessons`,
+      mode === "new"
+        ? { titleIt: newTitle.trim(), code: addCode }
+        : { lessonId: Number(addLessonId), code: addCode },
+    );
+    setBusy(false);
+
     if (result.ok) {
       setAddLessonId("");
+      setNewTitle("");
       setAddCode("");
       onChanged();
     } else {
@@ -325,7 +338,7 @@ function LessonsSection({
   return (
     <AdminSection
       title="Lezioni di questo corso"
-      hint="Scegli dal catalogo quali lezioni fa questa edizione, e con quale codice della serata. Togliere una lezione non la cancella dal catalogo: resta per gli altri corsi, con le sue domande e dispense. I numeri delle altre non scorrono."
+      hint="Quali serate fa questa edizione, e con quale codice. Puoi scrivere una lezione nuova qui, oppure riprendere dal catalogo una già fatta. Togliere una lezione non la cancella dal catalogo: resta per gli altri corsi, con le sue domande e dispense. I numeri delle altre non scorrono."
     >
       <ul className="flex flex-col gap-2.5">
         {detail.lessons.map((lesson) => (
@@ -346,22 +359,57 @@ function LessonsSection({
       )}
 
       <div className="card mt-4 p-5">
-        <p className="mb-3 text-sm text-cream/70">Aggiungi una lezione</p>
-        <div className="grid gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
-          <Field label="Dal catalogo">
-            <select
-              value={addLessonId}
-              onChange={(e) => setAddLessonId(e.target.value)}
-              className={inputClass}
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="text-sm text-cream/70">Aggiungi una serata</p>
+          <div className="flex gap-1.5">
+            <ModeButton
+              active={mode === "new"}
+              onClick={() => {
+                setMode("new");
+                setMsg(null);
+              }}
             >
-              <option value="">Scegli…</option>
-              {available.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.titleIt} ({l.questionCount} domande)
-                </option>
-              ))}
-            </select>
-          </Field>
+              Lezione nuova
+            </ModeButton>
+            <ModeButton
+              active={mode === "catalogue"}
+              onClick={() => {
+                setMode("catalogue");
+                setMsg(null);
+              }}
+            >
+              Dal catalogo
+            </ModeButton>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+          {mode === "new" ? (
+            <Field label="Titolo della lezione">
+              <input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Per esempio: I vini del Piemonte"
+                className={inputClass}
+              />
+            </Field>
+          ) : (
+            <Field label="Dal catalogo">
+              <select
+                value={addLessonId}
+                onChange={(e) => setAddLessonId(e.target.value)}
+                className={inputClass}
+              >
+                <option value="">Scegli…</option>
+                {available.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.titleIt} ({l.questionCount} domande)
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+
           <Field label="Codice serata">
             <input
               value={addCode}
@@ -371,30 +419,57 @@ function LessonsSection({
               spellCheck={false}
             />
           </Field>
-          <button
-            onClick={add}
-            disabled={!addLessonId || !addCode.trim()}
-            className={buttonClass}
-          >
+
+          <button onClick={add} disabled={!ready || busy} className={buttonClass}>
             Aggiungi
           </button>
         </div>
 
-        {available.length === 0 && (
+        {mode === "new" ? (
           <p className="mt-3 text-xs text-cream/45">
-            Tutte le lezioni del catalogo sono già in questo corso.{" "}
-            <Link
-              href="/relatore/catalogo"
-              className="text-gold/80 underline underline-offset-4"
-            >
-              Scrivine una nuova
-            </Link>
-            .
+            La lezione nasce anche nel catalogo: resta riusabile in un&apos;altra
+            edizione, con le sue domande e le sue dispense. Le domande le scrivi
+            dopo, dal pulsante «Domande» della serata.
           </p>
+        ) : (
+          available.length === 0 && (
+            <p className="mt-3 text-xs text-cream/45">
+              Tutte le lezioni del catalogo sono già in questo corso.{" "}
+              <button
+                onClick={() => setMode("new")}
+                className="press text-gold/80 underline underline-offset-4 hover:text-gold"
+              >
+                Scrivine una nuova
+              </button>
+              .
+            </p>
+          )
         )}
         {msg && <p className="mt-3 text-sm text-red-300">{msg}</p>}
       </div>
     </AdminSection>
+  );
+}
+
+/** Le due strade per aggiungere una serata, una accanto all'altra. */
+function ModeButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`press rounded-full px-3 py-1 text-xs transition ${
+        active ? "bg-gold/15 text-gold" : "text-cream/45 hover:text-cream/70"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
