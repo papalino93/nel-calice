@@ -122,8 +122,14 @@ build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
 2. **Controllo bug e resa su telefono, tablet e computer.** Non ancora fatto:
    richiede occhi veri sui tre formati, non basta la revisione del codice.
 2. **Ruotare il token dello store dispense** — era finito in chiaro in uno
-   screenshot. Si fa dal pannello Vercel: Storage → `dispense` → *Reset token*
-   se c'è, altrimenti cancella e ricrea lo store come **privato**, ricollegalo
-   al progetto per Production/Preview/Development, poi redeploy. Prima di
-   cancellarlo, togli le dispense dall'app: `Material.url` punta al blob e
-   resterebbe un link morto.
+   screenshot (mai nel repo: la cronologia di git è pulita). Si fa dal pannello
+   Vercel: Storage → `dispense` → Settings → **Rotate Credentials**, scegliendo
+   **scadenza immediata** delle vecchie credenziali — il ritardo fino a 30
+   giorni che propone terrebbe in vita proprio il token da uccidere. Store,
+   file e collegamenti restano al loro posto; le variabili dei progetti
+   collegati le aggiorna Vercel. Serve poi un **redeploy**, perché le variabili
+   si leggono all'avvio, e un `vercel env pull` per riallineare il `.env`
+   locale.
+
+   *Non* cancellare e ricreare lo store: era il piano prima di sapere che
+   Rotate Credentials esiste, ed è inutilmente distruttivo.
