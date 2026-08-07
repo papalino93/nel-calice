@@ -64,7 +64,7 @@ export function MaterialsSection({ lessonId }: { lessonId: number }) {
   return (
     <AdminSection
       title="Dispense"
-      hint="Restano legate alla lezione, quindi la seguono in ogni corso che la usa. I file sono protetti: chi non è iscritto non li raggiunge, e chi lo è riceve un link che scade dopo un quarto d'ora, così non resta valido per sempre se viene girato."
+      hint="Restano legate alla lezione, quindi la seguono in ogni corso che la usa. I file sono protetti: non hanno un indirizzo pubblico, e ogni apertura ripassa dal controllo di chi sei. Un link copiato e girato non serve quindi a nulla a chi non è iscritto, e smette di funzionare per tutti appena richiudi la lezione."
     >
       {materials.length > 0 && (
         <ul className="mb-4 flex flex-col gap-2">
