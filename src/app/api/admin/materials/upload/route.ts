@@ -64,9 +64,11 @@ export async function POST(request: Request) {
       validUntil,
       allowedContentTypes: [contentType],
       maximumSizeInBytes: MAX_BYTES,
-      // Niente suffisso casuale: lo aggiungerebbe lo storage *dopo* la
-      // firma, e il percorso salvato non combacerebbe più con quello reale.
-      // L'unicità la garantisce il nome composto dal client.
+      // Va disattivato esplicitamente: di default lo storage aggiunge un
+      // suffisso casuale *dopo* la firma, e il percorso salvato non
+      // combacerebbe più con quello reale. L'unicità la garantisce il nome
+      // composto dal client.
+      addRandomSuffix: false,
       access: "private",
     });
 
