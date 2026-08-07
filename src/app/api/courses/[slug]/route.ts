@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isDenied, requireEnrollment } from "@/lib/guard";
 import { courseOverview } from "@/lib/course";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Dashboard di un corso: le sue lezioni con lo stato di questo iscritto.
@@ -18,8 +19,15 @@ export async function GET(
     return NextResponse.json({ error: "corso inesistente" }, { status: 404 });
   }
 
+  // Serve a decidere se mostrare "Torna ai corsi": chi è iscritto a un corso
+  // solo verrebbe rimandato qui dalla home, in un anello chiuso.
+  const enrolledCount = await prisma.enrollment.count({
+    where: { userId: ctx.user.id },
+  });
+
   return NextResponse.json({
     ...overview,
+    hasOtherCourses: enrolledCount > 1,
     user: {
       name: ctx.user.name,
       email: ctx.user.email,

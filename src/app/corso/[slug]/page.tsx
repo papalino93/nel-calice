@@ -13,6 +13,7 @@ import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
 import {
   ArrowRightIcon,
   CheckIcon,
+  EyeIcon,
   LockIcon,
   MedalIcon,
   ProgressRing,
@@ -20,6 +21,7 @@ import {
 } from "@/components/icons";
 
 type Overview = CourseOverview & {
+  hasOtherCourses: boolean;
   user: { name: string; email: string; role: "relatore" | "corsista" };
 };
 
@@ -125,8 +127,149 @@ export default function CoursePage({
   const allDone =
     doable.length > 0 && doable.every((l) => l.status === "fatto");
 
+  // Un corso da una o due serate non riempie due colonne: la destra
+  // resterebbe quasi vuota accanto a una sinistra alta e pesante. Sotto le
+  // tre lezioni si passa a una colonna sola, con le lezioni in cima —
+  // che sono il motivo per cui si entra.
+  const compact = overview.lessons.length <= 2;
+
+  const profileBlock = (
+    <section className="card rise-in p-5">
+      <div className="flex items-center gap-3.5">
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-bordeaux font-serif text-xl text-cream ring-2 ring-gold/60">
+          {initials(user.name)}
+        </span>
+        <div className="min-w-0">
+          <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold/70">
+            {lang === "en" ? "Welcome" : "Benvenuto/a"}
+          </p>
+          <p className="truncate font-serif text-2xl leading-tight text-cream">
+            {user.name}
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 truncate text-xs text-cream/45">
+        {t.signedInAs} {user.email} ·{" "}
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="underline underline-offset-2 hover:text-cream/70"
+        >
+          {t.signOut}
+        </button>
+      </p>
+    </section>
+  );
+
+  const pointsBlock = (
+    <section className="rise-in flex flex-col items-center rounded-[16px] border border-gold/25 bg-bordeaux/90 p-6">
+      <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-gold/90">
+        {t.totalPoints}
+      </h2>
+      <div className="mt-4">
+        <ProgressRing value={overview.totalScore} max={overview.totalPoints} />
+      </div>
+      <p className="mt-4 text-xs uppercase tracking-wider text-cream/50">
+        {t.currentTitle}
+      </p>
+      <p className="mt-1 text-center font-serif text-2xl text-gold-light">
+        {overview.totalScore === 0
+          ? lang === "en"
+            ? "Start your journey to find out"
+            : "Inizia il tuo percorso per scoprirla"
+          : overview.meritTitle}
+      </p>
+
+      {/* Compare solo a corso completato: prima sarebbe una promessa
+                che l'app non può ancora mantenere. */}
+      {allDone && (
+        <Link
+          href={`/corso/${slug}/attestato`}
+          className="press lift mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-medium text-charcoal transition-transform"
+        >
+          <MedalIcon className="h-4 w-4" />
+          {lang === "en" ? "Your certificate" : "Il tuo attestato"}
+        </Link>
+      )}
+    </section>
+  );
+
+  // App sorella, si apre in nuova scheda (§9)
+  const sorsoBlock = (
+    <section className="rise-in rounded-[16px] border border-gold/35 bg-charcoal-soft/70 p-5">
+      <div className="flex items-center gap-3">
+        <Seal size={44} />
+        <div className="min-w-0">
+          <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold/70">
+            Sorso
+          </p>
+          <p className="font-serif text-lg leading-tight text-cream">
+            {lang === "en"
+              ? "The tasting notebook"
+              : "Il taccuino di degustazione"}
+          </p>
+        </div>
+      </div>
+
+      <p className="mt-3 text-xs leading-relaxed text-cream/50">
+        {lang === "en"
+          ? "Rate the wines you taste, keep your own notes, and find them again on any device."
+          : "Valuta i vini che assaggi, tieni traccia dei tuoi punteggi e ritrovali su qualsiasi dispositivo."}
+      </p>
+
+      <a
+        href="https://sorso-taccuino.vercel.app"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="press lift mt-4 flex items-center justify-center gap-2 rounded-full border border-gold/40 px-4 py-2.5 text-sm text-gold transition-transform"
+      >
+        {lang === "en" ? "Open Sorso" : "Apri Sorso"}
+        <ArrowRightIcon className="h-4 w-4" />
+      </a>
+    </section>
+  );
+
+  const lessonsBlock = (
+    <div>
+      <h2 className="mb-3 px-1 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
+        {t.lessons}
+      </h2>
+      <div className={`grid gap-3 ${compact ? "" : "lg:grid-cols-2"}`}>
+        {overview.lessons.map((lesson) => (
+          <LessonTile
+            key={lesson.courseLessonId}
+            slug={slug}
+            lesson={lesson}
+            onUnlock={() => setUnlocking(lesson)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <>
+      {/* Un relatore che guarda un corso dal punto di vista dei corsisti deve
+          sapere perché sta vedendo questa pagina, e come tornare indietro.
+          Un corsista non incontra mai questa fascia. */}
+      {user.role === "relatore" && (
+        <div className="border-b border-gold/20 bg-gold/8">
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-2 text-xs sm:px-8 2xl:max-w-7xl">
+            <span className="flex items-center gap-2 text-gold/85">
+              <EyeIcon className="h-3.5 w-3.5" />
+              {lang === "en"
+                ? "You are viewing this course as a student"
+                : "Stai guardando il corso come lo vede un corsista"}
+            </span>
+            <Link
+              href={`/relatore/corso/${slug}`}
+              className="press shrink-0 whitespace-nowrap text-gold underline underline-offset-4"
+            >
+              {t.adminArea} →
+            </Link>
+          </div>
+        </div>
+      )}
+
       <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 2xl:max-w-7xl">
         <header className="mb-8 flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
@@ -138,133 +281,37 @@ export default function CoursePage({
           <LanguageToggle />
         </header>
 
-        <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
-          <div className="flex flex-col gap-5">
-            <section className="card rise-in p-5">
-              <div className="flex items-center gap-3.5">
-                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-bordeaux font-serif text-xl text-cream ring-2 ring-gold/60">
-                  {initials(user.name)}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold/70">
-                    {lang === "en" ? "Welcome" : "Benvenuto/a"}
-                  </p>
-                  <p className="truncate font-serif text-2xl leading-tight text-cream">
-                    {user.name}
-                  </p>
-                </div>
-              </div>
-              <p className="mt-3 truncate text-xs text-cream/45">
-                {t.signedInAs} {user.email} ·{" "}
-                <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="underline underline-offset-2 hover:text-cream/70"
-                >
-                  {t.signOut}
-                </button>
-              </p>
-            </section>
-
-            <section className="rise-in flex flex-col items-center rounded-[16px] border border-gold/25 bg-bordeaux/90 p-6">
-              <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-gold/90">
-                {t.totalPoints}
-              </h2>
-              <div className="mt-4">
-                <ProgressRing
-                  value={overview.totalScore}
-                  max={overview.totalPoints}
-                />
-              </div>
-              <p className="mt-4 text-xs uppercase tracking-wider text-cream/50">
-                {t.currentTitle}
-              </p>
-              <p className="mt-1 text-center font-serif text-2xl text-gold-light">
-                {overview.totalScore === 0
-                  ? lang === "en"
-                    ? "Start your journey to find out"
-                    : "Inizia il tuo percorso per scoprirla"
-                  : overview.meritTitle}
-              </p>
-
-              {/* Compare solo a corso completato: prima sarebbe una promessa
-                  che l'app non può ancora mantenere. */}
-              {allDone && (
-                <Link
-                  href={`/corso/${slug}/attestato`}
-                  className="press lift mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-medium text-charcoal transition-transform"
-                >
-                  <MedalIcon className="h-4 w-4" />
-                  {lang === "en" ? "Your certificate" : "Il tuo attestato"}
-                </Link>
-              )}
-            </section>
-
-            {/* App sorella, si apre in nuova scheda (§9) */}
-            <section className="rise-in rounded-[16px] border border-gold/35 bg-charcoal-soft/70 p-5">
-              <div className="flex items-center gap-3">
-                <Seal size={44} />
-                <div className="min-w-0">
-                  <p className="text-[0.6rem] font-medium uppercase tracking-[0.2em] text-gold/70">
-                    Sorso
-                  </p>
-                  <p className="font-serif text-lg leading-tight text-cream">
-                    {lang === "en"
-                      ? "The tasting notebook"
-                      : "Il taccuino di degustazione"}
-                  </p>
-                </div>
-              </div>
-
-              <p className="mt-3 text-xs leading-relaxed text-cream/50">
-                {lang === "en"
-                  ? "Rate the wines you taste, keep your own notes, and find them again on any device."
-                  : "Valuta i vini che assaggi, tieni traccia dei tuoi punteggi e ritrovali su qualsiasi dispositivo."}
-              </p>
-
-              <a
-                href="https://sorso-taccuino.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="press lift mt-4 flex items-center justify-center gap-2 rounded-full border border-gold/40 px-4 py-2.5 text-sm text-gold transition-transform"
-              >
-                {lang === "en" ? "Open Sorso" : "Apri Sorso"}
-                <ArrowRightIcon className="h-4 w-4" />
-              </a>
-            </section>
+        {/* I blocchi sono gli stessi nelle due disposizioni: cambia solo
+            come vengono impaginati. */}
+        {compact ? (
+          <div className="mx-auto flex max-w-xl flex-col gap-5">
+            {lessonsBlock}
+            {profileBlock}
+            {pointsBlock}
+            {sorsoBlock}
           </div>
-
-          <div>
-            <h2 className="mb-3 px-1 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
-              {t.lessons}
-            </h2>
-            <div className="grid gap-3 lg:grid-cols-2">
-              {overview.lessons.map((lesson) => (
-                <LessonTile
-                  key={lesson.courseLessonId}
-                  slug={slug}
-                  lesson={lesson}
-                  onUnlock={() => setUnlocking(lesson)}
-                />
-              ))}
+        ) : (
+          <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
+            <div className="flex flex-col gap-5">
+              {profileBlock}
+              {pointsBlock}
+              {sorsoBlock}
             </div>
-
-            <div className="mt-6 flex justify-center gap-5 text-sm">
-              <Link
-                href="/"
-                className="text-cream/45 underline underline-offset-4 hover:text-cream/70"
-              >
-                {t.backToCourses}
-              </Link>
-              {user.role === "relatore" && (
-                <Link
-                  href="/relatore"
-                  className="text-gold/80 underline underline-offset-4 hover:text-gold"
-                >
-                  {t.adminArea}
-                </Link>
-              )}
-            </div>
+            <div>{lessonsBlock}</div>
           </div>
+        )}
+
+        <div className="mt-8 flex justify-center gap-5 text-sm">
+          {/* Solo per chi è iscritto a più corsi: con un corso solo la home
+              rimanda qui, e il collegamento sarebbe un anello chiuso. */}
+          {overview.hasOtherCourses && (
+            <Link
+              href="/"
+              className="text-cream/45 underline underline-offset-4 hover:text-cream/70"
+            >
+              {t.backToCourses}
+            </Link>
+          )}
         </div>
       </main>
 
@@ -358,7 +405,9 @@ function StatusPill({ lesson }: { lesson: LessonCard }) {
   const { t } = useLanguage();
 
   if (lesson.status === "vuoto") {
-    return <span className="pill bg-cream/8 text-cream/45">{t.comingSoon}</span>;
+    return (
+      <span className="pill bg-cream/8 text-cream/45">{t.comingSoon}</span>
+    );
   }
 
   if (lesson.status === "bloccata") {
