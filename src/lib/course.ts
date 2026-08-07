@@ -26,6 +26,15 @@ export type LessonCard = {
   subtitleEn: string | null;
   isExam: boolean;
   status: LessonStatus;
+  /**
+   * Se la serata è aperta per questo corsista.
+   *
+   * Sta accanto a `status` e non dentro, perché lo stato risponde alla
+   * domanda «cosa vede» e questo alla domanda «cosa può leggere», e le due
+   * non coincidono: una lezione ancora senza domande è "vuoto" pur restando
+   * chiusa. Chi decide un permesso guardi questo campo, mai lo stato.
+   */
+  unlocked: boolean;
   /** Punti in palio per questa lezione in questo corso. */
   points: number;
   score: number | null;
@@ -126,6 +135,7 @@ export async function courseOverview(
       subtitleEn: cl.lesson.subtitleEn,
       isExam: cl.isExam,
       status,
+      unlocked,
       points: budget?.budget ?? 0,
       score: done ? (attempt.score ?? 0) : null,
       maxScore: done ? (attempt.maxScore ?? 0) : null,

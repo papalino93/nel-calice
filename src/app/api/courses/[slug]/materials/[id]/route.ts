@@ -40,7 +40,9 @@ export async function GET(
   }
 
   if (material.lessonId !== null) {
-    // La dispensa segue il blocco della lezione a cui appartiene.
+    // La dispensa segue il blocco della lezione a cui appartiene: si guarda
+    // lo sblocco vero, non lo stato mostrato, che per una lezione ancora
+    // senza domande dice "vuoto" anche a serata chiusa.
     const courseLesson = await prisma.courseLesson.findFirst({
       where: { courseId: ctx.enrollment.courseId, lessonId: material.lessonId },
       select: { id: true },
@@ -48,9 +50,16 @@ export async function GET(
     const card = overview.lessons.find(
       (l) => l.courseLessonId === courseLesson?.id,
     );
-    if (!card || card.status === "bloccata") {
+    if (!card || !card.unlocked) {
       return NextResponse.json({ error: "non disponibile" }, { status: 403 });
     }
+  } else if (material.courseId === null) {
+    // Senza proprietario non c'è niente da verificare, quindi non si serve:
+    // oggi il caso è impedito da un vincolo del database, ma quel vincolo
+    // vive solo nella migrazione e non nello schema Prisma. Se un giorno
+    // venisse ricreato senza, qui si aprirebbe una dispensa leggibile da
+    // qualunque iscritto di qualunque corso.
+    return NextResponse.json({ error: "non disponibile" }, { status: 403 });
   }
 
   const file = await readStoredFile(material.url);

@@ -25,7 +25,11 @@ export async function GET(
   if (!lesson) {
     return NextResponse.json({ error: "lezione inesistente" }, { status: 404 });
   }
-  if (lesson.status === "bloccata") {
+  // Si guarda lo sblocco, non lo stato: una lezione ancora priva di domande
+  // vale "vuoto" pur restando chiusa, e dedurre il permesso dallo stato la
+  // lasciava leggere — dispense comprese — a chi non aveva mai sentito il
+  // codice della serata.
+  if (!lesson.unlocked) {
     return NextResponse.json({ error: "lezione bloccata" }, { status: 403 });
   }
 
