@@ -82,6 +82,68 @@ const emptyDraft: Draft = {
 /** L'id della domanda selezionata, o "new" per il modulo di creazione. */
 type Selection = number | "new";
 
+/**
+ * Riempie i campi inglesi partendo dall'italiano.
+ *
+ * Non salva: restituisce i testi, che finiscono nel modulo e restano
+ * modificabili. Chi scrive il corso non scrive in inglese — ma quello che
+ * legge un corsista deve poter passare da un occhio umano prima di essere
+ * scritto sul database.
+ */
+function useTranslator() {
+  const { t } = useLanguage();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function translate(texts: string[]): Promise<string[] | null> {
+    setBusy(true);
+    setError(null);
+    const result = await post<{ translations: string[] }>(
+      "/api/admin/translate",
+      { texts },
+    );
+    setBusy(false);
+    if (result.ok) return result.data.translations;
+    setError(errorMessage(result, t));
+    return null;
+  }
+
+  return { translate, busy, error };
+}
+
+/** La riga col pulsante, uguale nei due moduli che la usano. */
+function TranslateRow({
+  onTranslate,
+  busy,
+  error,
+  disabled,
+}: {
+  onTranslate: () => void;
+  busy: boolean;
+  error: string | null;
+  disabled: boolean;
+}) {
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <button
+          type="button"
+          onClick={onTranslate}
+          disabled={disabled || busy}
+          className={ghostButtonClass}
+        >
+          {busy ? "Traduco…" : "Traduci in inglese"}
+        </button>
+        <span className="text-xs leading-relaxed text-cream/60">
+          Riempie i campi inglesi partendo dall&apos;italiano. Puoi correggerli
+          prima di salvare.
+        </span>
+      </div>
+      {error && <p className="mb-3 text-sm text-red-300">{error}</p>}
+    </>
+  );
+}
+
 export default function LessonEditorPage({
   params,
 }: {
@@ -251,6 +313,17 @@ function LessonFields({
   const [subtitleIt, setSubtitleIt] = useState(lesson.subtitleIt ?? "");
   const [subtitleEn, setSubtitleEn] = useState(lesson.subtitleEn ?? "");
   const [msg, setMsg] = useState<string | null>(null);
+  const translator = useTranslator();
+
+  async function translate() {
+    const out = await translator.translate([titleIt, subtitleIt]);
+    if (!out) return;
+    // Un campo italiano vuoto torna vuoto: in quel caso si lascia stare
+    // l'inglese che c'è, invece di cancellarlo.
+    if (out[0]) setTitleEn(out[0]);
+    if (out[1]) setSubtitleEn(out[1]);
+    setMsg(null);
+  }
 
   async function save() {
     setMsg(null);
@@ -272,6 +345,12 @@ function LessonFields({
   return (
     <AdminSection title="Titoli">
       <div className="card p-5">
+        <TranslateRow
+          onTranslate={translate}
+          busy={translator.busy}
+          error={translator.error}
+          disabled={!titleIt.trim() && !subtitleIt.trim()}
+        />
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Titolo (italiano)">
             <input
@@ -478,6 +557,8 @@ function DraftFields({
   /// Domanda congelata perché già risposta: si legge, non si scrive.
   disabled?: boolean;
 }) {
+  const translator = useTranslator();
+
   function setOption(i: number, patch: Partial<Draft["options"][number]>) {
     setDraft({
       ...draft,
@@ -485,8 +566,45 @@ function DraftFields({
     });
   }
 
+  /**
+   * Domanda, opzioni e spiegazione partono insieme, in una richiesta sola:
+   * tradurre le opzioni senza la domanda a cui rispondono farebbe perdere il
+   * senso ("Il primo" — il primo cosa?).
+   */
+  async function translateAll() {
+    const out = await translator.translate([
+      draft.textIt,
+      ...draft.options.map((o) => o.textIt),
+      draft.explanationIt,
+    ]);
+    if (!out) return;
+    // Dove l'italiano era vuoto torna vuoto, e lì si tiene l'inglese che
+    // c'era già invece di azzerarlo.
+    setDraft({
+      ...draft,
+      textEn: out[0] || draft.textEn,
+      options: draft.options.map((o, i) => ({
+        ...o,
+        textEn: out[i + 1] || o.textEn,
+      })),
+      explanationEn: out[draft.options.length + 1] || draft.explanationEn,
+    });
+  }
+
+  const nothingToTranslate =
+    !draft.textIt.trim() &&
+    !draft.explanationIt.trim() &&
+    draft.options.every((o) => !o.textIt.trim());
+
   return (
     <>
+      <TranslateRow
+        onTranslate={translateAll}
+        busy={translator.busy}
+        error={translator.error}
+        disabled={disabled || nothingToTranslate}
+      />
+
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Domanda (italiano)">
           <textarea

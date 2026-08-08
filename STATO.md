@@ -84,6 +84,11 @@ esegue l'app; in produzione sono già su Vercel.
 | `ADMIN_EMAILS` | elenco delle email che valgono come relatore |
 | `UNLOCK_CODE_KEY` | 32 byte in base64: cifra i codici di sblocco |
 | `BLOB_READ_WRITE_TOKEN` | store privato delle dispense |
+| `ANTHROPIC_API_KEY` | traduzione automatica dei testi del catalogo |
+
+`ANTHROPIC_API_KEY` è l'unica facoltativa: senza, tutto il resto funziona e il
+pulsante «Traduci in inglese» risponde che non è configurato, invece di dare
+errore.
 
 Senza `UNLOCK_CODE_KEY` sei test falliscono: non è una regressione, è
 l'ambiente incompleto.
