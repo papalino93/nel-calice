@@ -369,7 +369,7 @@ export async function catalogue() {
 }
 
 export async function lessonWithQuestions(lessonId: number) {
-  return prisma.lesson.findUnique({
+  const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
     select: {
       id: true,
@@ -387,6 +387,11 @@ export async function lessonWithQuestions(lessonId: number) {
           explanationIt: true,
           explanationEn: true,
           position: true,
+          // Quante risposte sono già state date a questa domanda. Serve solo
+          // come booleano: se ce n'è anche una sola, la domanda non è più
+          // modificabile (vedi saveQuestion). Il pannello lo deve sapere
+          // *prima* di far scrivere, non scoprirlo dal rifiuto al salvataggio.
+          _count: { select: { attemptAnswers: true } },
           options: {
             orderBy: { position: "asc" },
             select: {
@@ -401,6 +406,18 @@ export async function lessonWithQuestions(lessonId: number) {
       },
     },
   });
+  if (!lesson) return null;
+
+  // Il conteggio non esce così com'è: al pannello serve la conseguenza
+  // ("si può ancora modificare?"), non il numero.
+  const { questions, ...rest } = lesson;
+  return {
+    ...rest,
+    questions: questions.map(({ _count, ...q }) => ({
+      ...q,
+      hasAnswers: _count.attemptAnswers > 0,
+    })),
+  };
 }
 
 export type QuestionInput = {

@@ -28,6 +28,10 @@ type QuestionRow = {
   explanationIt: string | null;
   explanationEn: string | null;
   position: number;
+  /// Qualcuno ha già risposto: la domanda è congelata. Il server lo rifiuta
+  /// comunque, ma saperlo qui evita di far riscrivere una domanda per poi
+  /// dire di no al salvataggio.
+  hasAnswers: boolean;
   options: OptionRow[];
 };
 
@@ -210,6 +214,11 @@ function QuestionList({
             <span className="block truncate">
               {i + 1}. {question.textIt || "(senza testo)"}
             </span>
+            {question.hasAnswers && (
+              <span className="mt-0.5 block text-[0.7rem] text-cream/45">
+                già risposta — non modificabile
+              </span>
+            )}
           </button>
         </li>
       ))}
@@ -320,58 +329,97 @@ function QuestionEditor({
   // selezionata: il chiamante monta questo componente con `key={question.id}`,
   // quindi React lo ricrea da zero da solo, bozza compresa.
   const [draft, setDraft] = useState<Draft>(() => draftFrom(question));
-  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  // Il salvataggio riuscito deve *dirsi*. Prima non diceva nulla: si premeva
+  // "Salva domanda", il pannello ricaricava in silenzio e la schermata
+  // restava identica — indistinguibile da un pulsante che non funziona.
+  const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const locked = question.hasAnswers;
 
   async function save() {
     setBusy(true);
-    setMsg(null);
+    setError(null);
+    setSaved(false);
     const result = await api(
       `/api/admin/catalogue/${lessonId}/questions/${question.id}`,
       { method: "PUT", body: JSON.stringify(draft) },
     );
     setBusy(false);
-    if (result.ok) onChanged();
-    else setMsg(errorMessage(result, t));
+    if (result.ok) {
+      setSaved(true);
+      onChanged();
+    } else setError(errorMessage(result, t));
   }
 
   async function remove() {
     if (!window.confirm("Eliminare questa domanda?")) return;
     setBusy(true);
-    setMsg(null);
+    setError(null);
+    setSaved(false);
     const result = await api(
       `/api/admin/catalogue/${lessonId}/questions/${question.id}`,
       { method: "DELETE" },
     );
     setBusy(false);
     if (result.ok) onDeleted();
-    else setMsg(errorMessage(result, t));
+    else setError(errorMessage(result, t));
   }
 
   return (
     <div className="card p-5">
-      <DraftFields draft={draft} setDraft={setDraft} />
+      {locked && (
+        <p className="mb-4 rounded-xl border border-gold/25 bg-charcoal/60 px-3.5 py-3 text-sm leading-relaxed text-cream/70">
+          Qualcuno ha già risposto a questa domanda, quindi non si può più
+          modificare: cambiarla falserebbe punteggi già assegnati. Per
+          correggerla, scrivine una nuova ed elimina questa dal corso.
+        </p>
+      )}
+
+      <DraftFields
+        draft={draft}
+        // Toccare un campo toglie la conferma di prima: "Salvato." deve
+        // riferirsi a ciò che si vede adesso, non a due modifiche fa.
+        setDraft={(d) => {
+          setDraft(d);
+          setSaved(false);
+        }}
+        disabled={locked}
+      />
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button onClick={save} disabled={busy} className={buttonClass}>
-          Salva domanda
+        <button
+          onClick={save}
+          disabled={busy || locked}
+          className={buttonClass}
+        >
+          {busy ? "Salvo…" : "Salva domanda"}
         </button>
         <button
-          onClick={() => setDraft(draftFrom(question))}
+          onClick={() => {
+            setDraft(draftFrom(question));
+            setSaved(false);
+            setError(null);
+          }}
+          disabled={locked}
           className={ghostButtonClass}
         >
           Annulla modifiche
         </button>
         <button
           onClick={remove}
-          disabled={busy}
-          className="press ml-auto inline-flex min-h-10 items-center px-1 text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
+          disabled={busy || locked}
+          className="press ml-auto inline-flex min-h-10 items-center px-1 text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300 disabled:opacity-40"
         >
           Elimina domanda
         </button>
       </div>
 
-      {msg && <p className="mt-3 text-sm text-red-300">{msg}</p>}
+      {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+      {saved && !error && (
+        <p className="mt-3 text-sm text-gold">Salvato.</p>
+      )}
     </div>
   );
 }
@@ -423,9 +471,12 @@ function NewQuestion({
 function DraftFields({
   draft,
   setDraft,
+  disabled = false,
 }: {
   draft: Draft;
   setDraft: (d: Draft) => void;
+  /// Domanda congelata perché già risposta: si legge, non si scrive.
+  disabled?: boolean;
 }) {
   function setOption(i: number, patch: Partial<Draft["options"][number]>) {
     setDraft({
@@ -442,6 +493,7 @@ function DraftFields({
             value={draft.textIt}
             onChange={(e) => setDraft({ ...draft, textIt: e.target.value })}
             rows={2}
+            disabled={disabled}
             className={inputClass}
           />
         </Field>
@@ -450,6 +502,7 @@ function DraftFields({
             value={draft.textEn}
             onChange={(e) => setDraft({ ...draft, textEn: e.target.value })}
             rows={2}
+            disabled={disabled}
             className={inputClass}
             placeholder="Se vuoto, usa l'italiano"
           />
@@ -479,8 +532,9 @@ function DraftFields({
                   })),
                 })
               }
+              disabled={disabled}
               aria-label="Segna come corretta"
-              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors ${
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors disabled:opacity-60 ${
                 option.isCorrect
                   ? "border-gold bg-gold text-charcoal"
                   : "border-cream/25 text-transparent hover:border-gold/50"
@@ -494,12 +548,14 @@ function DraftFields({
                 value={option.textIt}
                 onChange={(e) => setOption(i, { textIt: e.target.value })}
                 placeholder="Testo (italiano)"
+                disabled={disabled}
                 className={`${inputClass} min-w-0`}
               />
               <input
                 value={option.textEn}
                 onChange={(e) => setOption(i, { textEn: e.target.value })}
                 placeholder="Inglese"
+                disabled={disabled}
                 className={`${inputClass} min-w-0`}
               />
             </div>
@@ -512,7 +568,7 @@ function DraftFields({
                   options: draft.options.filter((_, j) => j !== i),
                 })
               }
-              disabled={draft.options.length <= 2}
+              disabled={disabled || draft.options.length <= 2}
               aria-label="Elimina opzione"
               className="press grid h-10 w-10 shrink-0 place-items-center text-cream/35 transition-colors hover:text-red-300 disabled:opacity-25"
             >
@@ -533,7 +589,8 @@ function DraftFields({
             ],
           })
         }
-        className="press mt-3 text-xs text-gold/80 underline underline-offset-4 hover:text-gold"
+        disabled={disabled}
+        className="press mt-3 text-xs text-gold/80 underline underline-offset-4 hover:text-gold disabled:opacity-40"
       >
         + Aggiungi opzione
       </button>
@@ -549,6 +606,7 @@ function DraftFields({
               setDraft({ ...draft, explanationIt: e.target.value })
             }
             rows={2}
+            disabled={disabled}
             placeholder="Perché è (o non è) la risposta giusta"
             className={inputClass}
           />
@@ -560,6 +618,7 @@ function DraftFields({
               setDraft({ ...draft, explanationEn: e.target.value })
             }
             rows={2}
+            disabled={disabled}
             placeholder="Se vuoto, usa l'italiano"
             className={inputClass}
           />
