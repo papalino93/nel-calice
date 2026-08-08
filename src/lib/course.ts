@@ -51,11 +51,6 @@ export type CourseOverview = {
     titleEn: string;
     subtitleIt: string | null;
     subtitleEn: string | null;
-    location: string | null;
-    certificateIssuer: string | null;
-    /** Solo l'indirizzo interno: il byte del logo si legge solo se serve
-        davvero costruire un attestato, non a ogni apertura del corso. */
-    logoUrls: string[];
   };
   lessons: LessonCard[];
   totalScore: number;
@@ -76,9 +71,6 @@ export async function courseOverview(
       titleEn: true,
       subtitleIt: true,
       subtitleEn: true,
-      location: true,
-      certificateIssuer: true,
-      logos: { select: { url: true }, orderBy: { createdAt: "asc" } },
       lessons: {
         orderBy: { position: "asc" },
         select: {
@@ -168,9 +160,6 @@ export async function courseOverview(
       titleEn: course.titleEn,
       subtitleIt: course.subtitleIt,
       subtitleEn: course.subtitleEn,
-      location: course.location,
-      certificateIssuer: course.certificateIssuer,
-      logoUrls: course.logos.map((l) => l.url),
     },
     lessons: cards,
     totalScore,

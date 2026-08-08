@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  use,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { use, useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { api, errorMessage, post } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -42,9 +35,6 @@ type Detail = {
   titleEn: string;
   subtitleIt: string | null;
   subtitleEn: string | null;
-  location: string | null;
-  certificateIssuer: string | null;
-  logos: { id: string; url: string }[];
   status: string;
   enrollmentOpen: boolean;
   enrollmentCode: string | null;
@@ -141,10 +131,6 @@ export default function ManageCoursePage({
         </Link>
       </div>
 
-      <CourseTitles detail={detail} onSaved={reload} />
-
-      <LogosSection slug={slug} logos={detail.logos} onChanged={reload} />
-
       <CourseSettings detail={detail} onSaved={reload} />
 
       <CertificatePreview slug={slug} />
@@ -192,231 +178,6 @@ function CertificatePreview({ slug }: { slug: string }) {
       ) : (
         <p className="text-sm text-cream/45">Un momento…</p>
       )}
-    </AdminSection>
-  );
-}
-
-function CourseTitles({
-  detail,
-  onSaved,
-}: {
-  detail: Detail;
-  onSaved: () => void;
-}) {
-  const { t } = useLanguage();
-  const [titleIt, setTitleIt] = useState(detail.titleIt);
-  const [titleEn, setTitleEn] = useState(detail.titleEn);
-  const [subtitleIt, setSubtitleIt] = useState(detail.subtitleIt ?? "");
-  const [subtitleEn, setSubtitleEn] = useState(detail.subtitleEn ?? "");
-  const [location, setLocation] = useState(detail.location ?? "");
-  const [certificateIssuer, setCertificateIssuer] = useState(
-    detail.certificateIssuer ?? "",
-  );
-  const [msg, setMsg] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    setBusy(true);
-    setMsg(null);
-    const result = await api(`/api/admin/courses/${detail.slug}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        titleIt,
-        titleEn,
-        subtitleIt: subtitleIt || null,
-        subtitleEn: subtitleEn || null,
-        location: location.trim() || null,
-        certificateIssuer: certificateIssuer.trim() || null,
-      }),
-    });
-    setBusy(false);
-    if (result.ok) {
-      setMsg("Salvato.");
-      onSaved();
-    } else {
-      setMsg(errorMessage(result, t));
-    }
-  }
-
-  return (
-    <AdminSection
-      title="Titoli"
-      hint="Il luogo è facoltativo: se lo lasci vuoto, l'attestato mostra solo la data. Sta bene compilato quando questa edizione si tiene altrove dalla solita sede."
-    >
-      <div className="card p-5">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Titolo (italiano)">
-            <input
-              value={titleIt}
-              onChange={(e) => setTitleIt(e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Titolo (inglese)">
-            <input
-              value={titleEn}
-              onChange={(e) => setTitleEn(e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Sottotitolo (italiano)">
-            <input
-              value={subtitleIt}
-              onChange={(e) => setSubtitleIt(e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Sottotitolo (inglese)">
-            <input
-              value={subtitleEn}
-              onChange={(e) => setSubtitleEn(e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Luogo (per l'attestato)">
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Per esempio: Roma"
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Firma sull'attestato">
-            <input
-              value={certificateIssuer}
-              onChange={(e) => setCertificateIssuer(e.target.value)}
-              placeholder="Per esempio: L'Angolo del Vino"
-              className={inputClass}
-            />
-          </Field>
-        </div>
-        <p className="mt-3 text-xs text-cream/45">
-          Vuota, quella riga sparisce dall&apos;attestato. Se carichi almeno
-          un logo qui sotto, i loghi prendono comunque il suo posto: per
-          un&apos;edizione realizzata con un partner, il nome resta ma
-          l&apos;attestato mostra i marchi, non lo scrive.
-        </p>
-        <div className="mt-4 flex items-center gap-3">
-          <button onClick={save} disabled={busy} className={buttonClass}>
-            Salva
-          </button>
-          {msg && <span className="text-xs text-cream/60">{msg}</span>}
-        </div>
-      </div>
-    </AdminSection>
-  );
-}
-
-/**
- * Loghi che sostituiscono la firma testuale sull'attestato — il caso di
- * un'edizione realizzata con un partner, dove il marchio dell'attività non
- * basta più da solo. Fino a quattro: oltre, sulla riga dell'attestato non
- * ci starebbero leggibili.
- */
-function LogosSection({
-  slug,
-  logos,
-  onChanged,
-}: {
-  slug: string;
-  logos: { id: string; url: string }[];
-  onChanged: () => void;
-}) {
-  const { t } = useLanguage();
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  async function upload() {
-    const file = fileRef.current?.files?.[0];
-    if (!file) return;
-
-    setBusy(true);
-    setMsg(null);
-    try {
-      const permesso = await post<{ presignedUrl: string; pathname: string }>(
-        `/api/admin/courses/${slug}/logos/upload`,
-        { contentType: file.type },
-      );
-      if (!permesso.ok) throw new Error(errorMessage(permesso, t));
-
-      const caricamento = await fetch(permesso.data.presignedUrl, {
-        method: "PUT",
-        body: file,
-        headers: { "content-type": file.type },
-      });
-      if (!caricamento.ok) {
-        throw new Error("Il file non è stato accettato dallo storage.");
-      }
-
-      const result = await post(`/api/admin/courses/${slug}/logos`, {
-        pathname: permesso.data.pathname,
-      });
-      if (!result.ok) throw new Error(errorMessage(result, t));
-
-      if (fileRef.current) fileRef.current.value = "";
-      onChanged();
-    } catch (error) {
-      setMsg(error instanceof Error ? error.message : t.genericError);
-    }
-    setBusy(false);
-  }
-
-  async function remove(id: string) {
-    setBusy(true);
-    await api(`/api/admin/courses/${slug}/logos/${id}`, { method: "DELETE" });
-    setBusy(false);
-    onChanged();
-  }
-
-  return (
-    <AdminSection
-      title="Loghi dell'attestato"
-      hint="Al posto della firma testuale — non accanto. Pensati per un'edizione realizzata con un partner: carica il suo marchio insieme al proprio, o al posto del proprio."
-    >
-      {logos.length > 0 && (
-        <ul className="mb-4 flex flex-wrap gap-3">
-          {logos.map((logo) => (
-            <li
-              key={logo.id}
-              className="card flex items-center gap-3 p-3"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- immagine autenticata, non ottimizzabile da next/image */}
-              <img
-                src={logo.url}
-                alt=""
-                className="h-10 w-auto max-w-[7rem] object-contain"
-              />
-              <button
-                onClick={() => remove(logo.id)}
-                disabled={busy}
-                className="press inline-flex min-h-8 items-center px-1 text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
-              >
-                Elimina
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {logos.length < 4 ? (
-        <div className="card flex flex-wrap items-center gap-3 p-4">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={upload}
-            disabled={busy}
-            className="text-sm text-cream/70 file:mr-3 file:rounded-full file:border-0 file:bg-gold/15 file:px-3 file:py-2 file:text-xs file:text-gold hover:file:bg-gold/25"
-          />
-          <span className="text-xs text-cream/40">PNG, JPEG o WebP, fino a 2MB</span>
-        </div>
-      ) : (
-        <p className="text-xs text-cream/45">
-          Limite di 4 loghi raggiunto. Elimina un logo per caricarne un altro.
-        </p>
-      )}
-      {msg && <p className="mt-2 text-sm text-red-300">{msg}</p>}
     </AdminSection>
   );
 }
