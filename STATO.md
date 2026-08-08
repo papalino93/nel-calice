@@ -202,6 +202,105 @@ un registro, una dispensa che gira si risale a chi l'ha aperta.
 
 3. **Un registro delle letture delle dispense** (vedi sezione sopra): oggi non
    si sa chi ha aperto cosa.
+
+## Difetti trovati e non ancora corretti
+
+Da tre revisioni approfondite. Ordinati per quanto costano davvero. Chi ne
+corregge uno, tolga la voce.
+
+### Punteggi e attestato — i due che mordono di più
+
+- **L'attestato si può prendere alla prima serata.** `certificate.ts:35-40`
+  considera "da fare" solo le lezioni che *in questo momento* hanno domande.
+  Corso di sei serate con le domande scritte solo per la prima: chi la fa
+  risulta averle fatte tutte, prende 100/100 e "Palato d'Oro". Da decidere: il
+  conto guarda le lezioni **presenti** nel corso o solo quelle già scritte?
+- **Il punteggio può superare 100.** I budget si ricalcolano sulla forma
+  attuale del corso, ma il punteggio di un tentativo resta quello di allora, e
+  nessuno riconcilia le due cose. Chi fa la lezione 1 quando è l'unica scritta
+  prende 100; scritte le altre, il totale può arrivare a 186 su 100 —
+  sull'anello di progresso e sull'attestato. Serve decidere se rinormalizzare
+  i punteggi storici o congelare i budget alla consegna.
+- **Con molte lezioni, la maggior parte delle domande vale 0.** I 40 punti
+  delle lezioni divisi per 12 serate lasciano 3-4 punti per serata da spartire
+  fra 8 domande: 61 domande su 96 valgono zero. La somma resta 100, ma il
+  corsista risponde a domande che non contano e non lo sa.
+
+### Quiz
+
+- **Un tentativo scaduto resta "Riprendi".** Nessuno chiude i tentativi
+  scaduti finché qualcuno non li tocca: la dashboard invita a riprendere, e
+  premendo si viene sbalzati su un risultato consegnato che non si è mai
+  consegnato, senza spiegazione.
+- **L'ultima risposta può perdersi.** Il salvataggio della risposta non viene
+  atteso prima di abilitare la consegna: toccando l'opzione e subito
+  «Consegna», su rete lenta, la risposta giusta viene contata sbagliata.
+
+### Conflitti che diventano errori 500
+
+Il database ferma sempre il dato sbagliato — quella parte è solida — ma
+nessuna route traduce il conflitto in una risposta sensata: doppia iscrizione,
+doppio avvio del quiz, doppio invio del codice giusto mostrano un errore
+generico a chi in quel momento **è** riuscito. Serve un `catch` sul vincolo di
+unicità che risponda "sei già iscritto" invece di "errore".
+
+E il limite ai tentativi di indovinare i codici si conta prima di scrivere la
+riga: venti richieste lanciate insieme passano tutte.
+
+### Autorizzazioni (area relatore)
+
+Le route del corsista sono solide — verificate una per una, nessuna si fida di
+un id mandato dal client. Nell'area relatore invece alcune route ignorano
+parte del proprio percorso: una modifica inviata con lo slug sbagliato cambia
+un altro corso senza protestare. E **un corso rimesso in preparazione resta
+usabile** da chi era già iscritto: sparisce dall'elenco ma quiz e dispense
+continuano a funzionare.
+
+### La promessa bilingue, che oggi è disattesa
+
+C'è l'interruttore IT/EN su ogni pagina, ma:
+
+- **l'attestato è tutto in italiano fisso** — il pezzo che il corsista si porta
+  a casa non cambia una parola premendo EN;
+- **tutta l'area relatore** è in italiano fisso, fuori da `src/lib/i18n.ts`;
+- il titolo inglese di una dispensa non è scrivibile da nessun campo.
+
+### Buchi nel pannello relatore
+
+- **Non si può creare un corso**: non esiste nessun `POST /api/admin/courses`.
+  I corsi nascono solo dal seed. Alla seconda edizione ci si blocca.
+- **Non si possono cambiare titolo e sottotitolo di un corso**: il server li
+  accetta, il modulo non li offre.
+- **Non si può sbloccare una serata a un singolo corsista** che ha perso la
+  lezione, benché il modello lo preveda (`UnlockMethod.ADMIN`, mai usato).
+- **Non si possono caricare dispense generali del corso**: modello, vincolo e
+  API ci sono, manca il pulsante.
+- I punti per domanda sono calcolati e mandati al client, ma la pagina del
+  risultato non li mostra mai.
+
+### Resa responsive, ciò che resta
+
+Attestato illeggibile su telefono (scritte a 3-6px, e la dicitura finale a 8px
+perfino su computer); tabella dell'andamento classe che scorre bene ma perde
+la colonna del nome e ha intestazioni numeriche con un `title` che sul touch
+non esiste; testo informativo sotto il rapporto di contrasto 4,5:1; qualche
+riga senza `flex-wrap`.
+
+### Pulizia
+
+`README.md` è ancora quello di `create-next-app`. Mancano i metadati per
+l'anteprima dei link condivisi (il progetto invita a condividere l'attestato su
+WhatsApp, e il link esce senza immagine). Restano funzioni esportate mai
+chiamate, campi serializzati e mai letti, e `User.avatarUrl` scritto a ogni
+accesso e mai usato.
+
+### Test
+
+`npm test` fallisce su una macchina appena clonata: 6 test su 43 chiedono
+`UNLOCK_CODE_KEY`, che non ha né configurazione né file di setup. E le due
+suite coprono solo le funzioni pure: nessun test tocca l'avvio, la consegna,
+l'abbandono, lo sblocco o l'iscrizione — cioè esattamente i punti dove sono
+stati trovati i difetti di sopra.
 2. **Occasione aperta dal collegamento.** Il collegamento ha creato anche
    `BLOB_WEBHOOK_PUBLIC_KEY`, che prima non c'era. La firma dei caricamenti è
    scritta a mano proprio perché quella chiave mancava
