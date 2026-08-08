@@ -274,7 +274,7 @@ function CourseSettings({
               type="checkbox"
               checked={open}
               onChange={(e) => setOpen(e.target.checked)}
-              className="h-4 w-4 accent-[var(--color-gold)]"
+              className="h-5 w-5 accent-[var(--color-gold)]"
             />
             Iscrizioni aperte
           </label>
@@ -464,7 +464,7 @@ function ModeButton({
   return (
     <button
       onClick={onClick}
-      className={`press rounded-full px-3 py-1 text-xs transition ${
+      className={`press inline-flex min-h-10 items-center rounded-full px-4 text-xs transition ${
         active ? "bg-gold/15 text-gold" : "text-cream/45 hover:text-cream/70"
       }`}
     >
@@ -564,7 +564,7 @@ function LessonRow({
             type="checkbox"
             checked={lesson.isExam}
             onChange={(e) => void patch({ isExam: e.target.checked })}
-            className="h-4 w-4 accent-[var(--color-gold)]"
+            className="h-5 w-5 accent-[var(--color-gold)]"
           />
           Prova finale
         </label>
@@ -580,7 +580,7 @@ function LessonRow({
         <button
           onClick={remove}
           disabled={busy}
-          className="press mb-2 ml-auto text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
+          className="press mb-1 ml-auto inline-flex min-h-10 items-center px-1 text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
         >
           Togli dal corso
         </button>

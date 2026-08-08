@@ -145,7 +145,7 @@ export default function ResultPage({
                 key={chip.label}
                 onClick={() => setOnlyErrors(chip.value)}
                 aria-pressed={onlyErrors === chip.value}
-                className={`press rounded-full px-3 py-1 transition-colors ${
+                className={`press inline-flex min-h-10 items-center rounded-full px-4 transition-colors ${
                   onlyErrors === chip.value
                     ? "bg-gold/20 text-gold"
                     : "text-cream/50 hover:text-cream/80"

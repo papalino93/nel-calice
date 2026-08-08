@@ -290,7 +290,7 @@ function QuestionEditor({
             <button
               onClick={remove}
               disabled={busy}
-              className="press ml-auto text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
+              className="press ml-auto inline-flex min-h-10 items-center px-1 text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
             >
               Elimina domanda
             </button>
@@ -388,7 +388,11 @@ function DraftFields({
 
       <ul className="flex flex-col gap-2">
         {draft.options.map((option, i) => (
-          <li key={i} className="flex items-center gap-2">
+          // I due campi si impilano sotto i 640px. Affiancati non si
+          // stringono: un input ha una larghezza propria che il browser non
+          // comprime, e su un telefono la riga usciva dalla scheda — l'unico
+          // punto dell'app che scorreva in orizzontale.
+          <li key={i} className="flex items-start gap-2">
             <button
               type="button"
               onClick={() =>
@@ -402,7 +406,7 @@ function DraftFields({
                 })
               }
               aria-label="Segna come corretta"
-              className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-colors ${
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors ${
                 option.isCorrect
                   ? "border-gold bg-gold text-charcoal"
                   : "border-cream/25 text-transparent hover:border-gold/50"
@@ -411,18 +415,20 @@ function DraftFields({
               <CheckIcon className="h-3.5 w-3.5" />
             </button>
 
-            <input
-              value={option.textIt}
-              onChange={(e) => setOption(i, { textIt: e.target.value })}
-              placeholder="Testo (italiano)"
-              className={inputClass}
-            />
-            <input
-              value={option.textEn}
-              onChange={(e) => setOption(i, { textEn: e.target.value })}
-              placeholder="Inglese"
-              className={inputClass}
-            />
+            <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+              <input
+                value={option.textIt}
+                onChange={(e) => setOption(i, { textIt: e.target.value })}
+                placeholder="Testo (italiano)"
+                className={`${inputClass} min-w-0`}
+              />
+              <input
+                value={option.textEn}
+                onChange={(e) => setOption(i, { textEn: e.target.value })}
+                placeholder="Inglese"
+                className={`${inputClass} min-w-0`}
+              />
+            </div>
 
             <button
               type="button"
@@ -434,7 +440,7 @@ function DraftFields({
               }
               disabled={draft.options.length <= 2}
               aria-label="Elimina opzione"
-              className="press shrink-0 text-cream/35 transition-colors hover:text-red-300 disabled:opacity-25"
+              className="press grid h-10 w-10 shrink-0 place-items-center text-cream/35 transition-colors hover:text-red-300 disabled:opacity-25"
             >
               <CrossIcon className="h-4 w-4" />
             </button>

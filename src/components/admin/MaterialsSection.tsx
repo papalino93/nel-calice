@@ -95,7 +95,7 @@ export function MaterialsSection({ lessonId }: { lessonId: number }) {
                 <span className="pill bg-cream/8 text-cream/50">{m.type}</span>
                 <button
                   onClick={() => void remove(m.id, m.titleIt)}
-                  className="press text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
+                  className="press inline-flex min-h-10 items-center px-1 text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
                 >
                   Elimina
                 </button>
@@ -227,7 +227,7 @@ function UploadForm({
             type="button"
             onClick={() => setType(option.value)}
             aria-pressed={type === option.value}
-            className={`press pill transition-colors ${
+            className={`press pill min-h-10 px-4 transition-colors ${
               type === option.value
                 ? "bg-gold text-charcoal"
                 : "bg-cream/8 text-cream/60 hover:text-cream"

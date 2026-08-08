@@ -170,8 +170,12 @@ export default function QuizPage({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-6 pb-28 sm:px-8">
-      <div className="flex items-center justify-between gap-4">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-6 sm:px-8">
+      {/* Il tempo che resta non deve mai scorrere fuori dallo schermo: con
+          cinque o sei opzioni la pagina supera l'altezza di un telefono, e
+          durante una prova a tempo quel numero è l'informazione che conta
+          di più. Resta in cima, e più grande sul telefono. */}
+      <div className="sticky top-0 z-20 -mx-5 flex items-center justify-between gap-4 bg-charcoal/95 px-5 pb-2 backdrop-blur sm:-mx-8 sm:px-8">
         <button
           onClick={exit}
           className="press text-sm text-cream/55 transition-colors hover:text-cream"
@@ -179,7 +183,7 @@ export default function QuizPage({
           ⎋ {t.exit}
         </button>
         <span
-          className={`inline-flex items-center gap-2 text-sm tabular-nums transition-colors ${
+          className={`inline-flex items-center gap-2 text-base font-medium tabular-nums transition-colors sm:text-sm ${
             low ? "text-red-300" : "text-cream/70"
           }`}
           role="timer"
@@ -247,7 +251,10 @@ export default function QuizPage({
         })}
       </div>
 
-      <div className="mt-auto pt-8">
+      {/* Come il timer: con molte opzioni il pulsante finiva sotto la piega,
+          e si sceglieva la risposta senza vedere come proseguire. Il fondo
+          generoso tiene il pulsante donazione fuori dai piedi. */}
+      <div className="sticky bottom-0 z-20 -mx-5 mt-auto bg-charcoal/95 px-5 pt-4 pb-20 backdrop-blur sm:-mx-8 sm:px-8">
         <button
           onClick={next}
           disabled={selected === null || submitting}

@@ -80,7 +80,7 @@ export function LanguageToggle({ className = "" }: { className?: string }) {
           type="button"
           onClick={() => setLang(code)}
           aria-pressed={lang === code}
-          className={`press rounded-full px-2.5 py-1 uppercase tracking-wide transition-colors ${
+          className={`press inline-flex min-h-10 items-center rounded-full px-3.5 uppercase tracking-wide transition-colors ${
             lang === code
               ? "bg-gold/20 text-gold"
               : "text-cream/50 hover:text-cream/80"
