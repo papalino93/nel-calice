@@ -116,6 +116,30 @@ Le due che parlano con un database vero, e che **non** sono la stessa cosa:
 torna sempre — *l'ho lanciata sul database giusto?* — perché la prima riga che
 stampa è l'host a cui si è connesso.
 
+## Come va in produzione
+
+Vercel distribuisce da sé a ogni push su `main`: non c'è nessun pulsante da
+premere. Quindi «mandare in produzione» vuol dire unire su `main` e pushare, e
+chi lavora qui **porta il lavoro fino in fondo** invece di fermarsi al proprio
+ramo.
+
+L'eccezione è una sola, ed è quella che conta: **se il lavoro porta una
+migrazione, prima si migra il database di produzione e solo dopo si unisce.**
+Nell'ordine inverso il codice nuovo arriva davanti a una colonna che non
+esiste ancora, e ogni pagina che la tocca risponde 500 per tutto il tempo che
+passa fra il deploy e la migrazione. Il ramo `certificate-branding-ready` è
+fermo esattamente per questo, e la migrazione della spiegazione è stata
+lanciata in quest'ordine apposta.
+
+Prima di unire, la verifica che costa dieci secondi:
+
+```bash
+git diff --stat origin/main..<ramo> -- prisma/
+```
+
+Se stampa qualcosa, c'è una migrazione da lanciare prima. Se non stampa
+niente, si unisce e basta.
+
 ## Le dispense non hanno più un segreto da proteggere
 
 Vale la pena saperlo prima di toccare quella parte. Lo store `dispense` è
