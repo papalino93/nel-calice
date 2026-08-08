@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { api } from "@/lib/api";
+import { api, errorMessage, post } from "@/lib/api";
 import { pick } from "@/lib/i18n";
 import { Login } from "@/components/Login";
+import { Field, buttonClass, inputClass } from "@/components/admin/AdminShell";
 import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
 import { ArrowRightIcon, EyeIcon, Seal } from "@/components/icons";
 
@@ -38,6 +40,8 @@ export default function AdminHomePage() {
   const { lang, t } = useLanguage();
   const [data, setData] = useState<AdminHome | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reloads, setReloads] = useState(0);
+  const reload = useCallback(() => setReloads((n) => n + 1), []);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -53,7 +57,7 @@ export default function AdminHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [status, t]);
+  }, [status, t, reloads]);
 
   if (status === "loading") {
     return (
@@ -174,6 +178,8 @@ export default function AdminHomePage() {
               : "Nessun corso, per ora."}
           </p>
         )}
+
+        <NewCourse onCreated={reload} />
       </section>
 
       {/* La home dei corsisti non è raggiungibile da un relatore: entrando
@@ -214,5 +220,90 @@ export default function AdminHomePage() {
         </Link>
       </section>
     </main>
+  );
+}
+
+/**
+ * Crea un corso nuovo, vuoto — l'unico modo che c'era prima era il seed
+ * iniziale del database, che non regge una seconda edizione.
+ *
+ * Nasce sempre "In preparazione", senza lezioni: quelle si aggiungono dal
+ * pannello del corso appena creato, per cui si viene mandati subito dopo.
+ * Lo slug (l'indirizzo) è calcolato dal titolo, non chiesto: il relatore non
+ * deve inventarsi un percorso, e se il titolo si ripete diventa unico da solo.
+ */
+function NewCourse({ onCreated }: { onCreated: () => void }) {
+  const { lang, t } = useLanguage();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [titleIt, setTitleIt] = useState("");
+  const [enrollmentCode, setEnrollmentCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function create() {
+    setBusy(true);
+    setMsg(null);
+    const result = await post<{ slug: string }>("/api/admin/courses", {
+      titleIt: titleIt.trim(),
+      enrollmentCode,
+    });
+    setBusy(false);
+    if (result.ok) {
+      onCreated();
+      router.push(`/relatore/corso/${result.data.slug}`);
+    } else {
+      setMsg(errorMessage(result, t));
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="press mt-3 inline-flex min-h-10 items-center text-sm text-gold/80 underline underline-offset-4 hover:text-gold"
+      >
+        + {lang === "en" ? "New course" : "Nuovo corso"}
+      </button>
+    );
+  }
+
+  return (
+    <div className="card mt-3 p-5">
+      <div className="grid gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+        <Field label={lang === "en" ? "Course title" : "Titolo del corso"}>
+          <input
+            value={titleIt}
+            onChange={(e) => setTitleIt(e.target.value)}
+            placeholder={
+              lang === "en" ? "e.g. Autumn Reds" : "Per esempio: Rossi d'Autunno"
+            }
+            className={inputClass}
+          />
+        </Field>
+        <Field label={lang === "en" ? "Enrolment code" : "Codice d'iscrizione"}>
+          <input
+            value={enrollmentCode}
+            onChange={(e) => setEnrollmentCode(e.target.value)}
+            className={`${inputClass} font-serif tracking-[0.15em] uppercase`}
+            autoCapitalize="characters"
+            spellCheck={false}
+          />
+        </Field>
+        <button
+          onClick={create}
+          disabled={!titleIt.trim() || !enrollmentCode.trim() || busy}
+          className={buttonClass}
+        >
+          {lang === "en" ? "Create" : "Crea"}
+        </button>
+      </div>
+      <p className="mt-3 text-xs text-cream/45">
+        {lang === "en"
+          ? "It starts empty, in preparation: add lessons and an English title from its own page."
+          : "Nasce vuoto e in preparazione: le lezioni e il titolo inglese si aggiungono dalla sua pagina."}
+      </p>
+      {msg && <p className="mt-2 text-sm text-red-300">{msg}</p>}
+    </div>
   );
 }
