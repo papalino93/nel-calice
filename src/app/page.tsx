@@ -116,7 +116,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 py-10 sm:px-8">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-10 pb-28 sm:px-8">
       <header className="mb-10 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Seal size={40} />

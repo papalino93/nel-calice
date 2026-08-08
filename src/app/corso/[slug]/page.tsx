@@ -148,15 +148,18 @@ export default function CoursePage({
         <p className="truncate font-serif text-lg leading-tight text-cream">
           {user.name}
         </p>
-        <p className="truncate text-[0.7rem] text-cream/40">
-          {user.email} ·{" "}
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="underline underline-offset-2 hover:text-cream/70"
-          >
-            {t.signOut}
-          </button>
-        </p>
+        {/* L'uscita sta fuori dalla riga dell'indirizzo, non dentro: lì
+            veniva accorciata insieme al testo, e con `overflow: hidden`
+            non spariva soltanto — finiva fuori dal riquadro e smetteva di
+            rispondere al tocco. Su un telefono, e per chi è iscritto a un
+            corso solo, quello è l'unico modo di uscire che esiste. */}
+        <p className="truncate text-xs text-cream/50">{user.email}</p>
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="press -ml-1 inline-flex min-h-9 items-center px-1 text-xs text-cream/60 underline underline-offset-2 hover:text-cream"
+        >
+          {t.signOut}
+        </button>
       </div>
     </div>
   );
@@ -276,7 +279,7 @@ export default function CoursePage({
         </div>
       )}
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 2xl:max-w-7xl">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-5 pt-8 pb-28 sm:px-8 2xl:max-w-7xl">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-5">
           <div className="flex min-w-0 items-center gap-3">
             <Seal size={44} />

@@ -100,7 +100,7 @@ export default function ResultPage({
     : review.questions;
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-8 sm:px-8">
+    <main className="mx-auto w-full max-w-2xl flex-1 px-5 pt-8 pb-28 sm:px-8">
       <div className="rise-in flex flex-col items-center text-center">
         <Seal size={96}>
           <GrapesIcon className="h-full w-full" />

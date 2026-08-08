@@ -57,7 +57,7 @@ export default function CertificatePage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-5 py-8 sm:px-8">
+    <main className="mx-auto w-full max-w-4xl flex-1 px-5 pt-8 pb-28 sm:px-8">
       <header className="no-print mb-8 flex items-center justify-between gap-4">
         <Link
           href={`/corso/${slug}`}

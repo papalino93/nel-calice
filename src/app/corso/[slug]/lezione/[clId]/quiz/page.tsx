@@ -170,7 +170,7 @@ export default function QuizPage({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 py-6 sm:px-8">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-6 pb-28 sm:px-8">
       <div className="flex items-center justify-between gap-4">
         <button
           onClick={exit}
