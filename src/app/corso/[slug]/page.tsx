@@ -283,7 +283,7 @@ export default function CoursePage({
         <header className="mb-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-5">
           <div className="flex min-w-0 items-center gap-3">
             <Seal size={44} />
-            <span className="truncate font-serif text-lg leading-tight text-cream/90">
+            <span className="line-clamp-2 font-serif text-lg leading-tight text-cream/90 sm:truncate">
               {pick(lang, course.titleIt, course.titleEn)}
             </span>
           </div>
@@ -303,7 +303,7 @@ export default function CoursePage({
             {sorsoBlock}
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-[1fr_2fr]">
+          <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
             <div className="flex flex-col gap-5">
               {pointsBlock}
               {sorsoBlock}

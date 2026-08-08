@@ -135,6 +135,11 @@ export function pick(
   it: string | null,
   en: string | null,
 ): string {
-  const chosen = lang === "en" ? en : it;
-  return chosen ?? it ?? en ?? "";
+  // Anche la stringa vuota conta come mancante, non solo `null`: il campo
+  // inglese di un'opzione di risposta si salva vuoto se il relatore non lo
+  // compila, e senza questo il corsista inglese si trovava davanti pulsanti
+  // bianchi invece del testo italiano.
+  const has = (v: string | null) => (v && v.trim() ? v : null);
+  const chosen = lang === "en" ? has(en) : has(it);
+  return chosen ?? has(it) ?? has(en) ?? "";
 }

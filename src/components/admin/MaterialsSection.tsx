@@ -81,7 +81,7 @@ export function MaterialsSection({ lessonId }: { lessonId: number }) {
                   href={m.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block truncate text-cream underline decoration-cream/25 underline-offset-4 hover:decoration-gold"
+                  className="block line-clamp-2 text-cream underline sm:truncate decoration-cream/25 underline-offset-4 hover:decoration-gold"
                 >
                   {m.titleIt}
                 </a>

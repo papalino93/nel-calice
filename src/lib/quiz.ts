@@ -386,7 +386,20 @@ export async function finalizeAttempt(
   });
 }
 
-/** Abbandona il tentativo in corso (§3.4, pulsante "Esci"). */
+/**
+ * Abbandona il tentativo in corso (§3.4, pulsante "Esci").
+ *
+ * Si abbandona solo ciò che è ancora in tempo. Senza la condizione sulla
+ * scadenza il timer diventava aggirabile, e in un modo comodo: si apriva il
+ * quiz, si leggevano le domande con calma, si lasciava scadere il tempo, si
+ * cancellava il tentativo scaduto e se ne apriva uno nuovo — con l'orologio
+ * intero e le risposte già cercate. È esattamente ciò che `startAttempt`
+ * impedisce chiudendo il tentativo scaduto invece di riaprirlo, e che questa
+ * cancellazione annullava.
+ *
+ * Un tentativo scaduto non si cancella: si finalizza, e vale ciò che si è
+ * risposto entro il tempo.
+ */
 export async function abandonAttempt(
   attemptId: string,
   enrollment: EnrollmentRef,
@@ -396,6 +409,7 @@ export async function abandonAttempt(
       id: attemptId,
       enrollmentId: enrollment.id,
       status: AttemptStatus.IN_PROGRESS,
+      expiresAt: { gt: new Date() },
     },
   });
   return count > 0;

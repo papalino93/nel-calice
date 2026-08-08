@@ -38,7 +38,7 @@ export function AdminShell({
             <p className="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-gold/70">
               {t.adminArea}
             </p>
-            <h1 className="truncate font-serif text-2xl leading-tight text-cream sm:text-3xl">
+            <h1 className="line-clamp-2 font-serif text-2xl leading-tight text-cream sm:truncate sm:text-3xl">
               {title}
             </h1>
           </div>

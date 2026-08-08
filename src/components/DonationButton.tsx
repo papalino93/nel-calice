@@ -25,7 +25,7 @@ export function DonationButton({ href }: { href: string }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className={`press group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-gold font-medium text-charcoal shadow-lg shadow-black/35 transition-all ${
+      className={`no-print press group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-gold font-medium text-charcoal shadow-lg shadow-black/35 transition-all ${
         expanded ? "px-5 py-3" : "p-3.5"
       }`}
     >

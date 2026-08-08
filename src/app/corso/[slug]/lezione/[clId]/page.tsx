@@ -150,7 +150,7 @@ export default function LessonPage({
                   className="card lift press flex items-center justify-between gap-3 p-4 transition-transform"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate text-cream">
+                    <span className="block line-clamp-2 text-cream sm:truncate">
                       {pick(lang, material.titleIt, material.titleEn)}
                     </span>
                     {material.notes && (

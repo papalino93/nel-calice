@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -45,9 +46,16 @@ function serverLanguage(): Language {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const lang = useSyncExternalStore(subscribe, readLanguage, serverLanguage);
 
+  // La pagina esce dal server dichiarata italiana. Chi aveva scelto l'inglese
+  // se lo ritrova al ricaricamento, ma l'attributo restava "it": una pagina
+  // inglese annunciata come italiana confonde i lettori di schermo e fa
+  // scattare i traduttori automatici del browser.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   const setLang = useCallback((next: Language) => {
     window.localStorage.setItem(STORAGE_KEY, next);
-    document.documentElement.lang = next;
     listeners.forEach((notify) => notify());
   }, []);
 
