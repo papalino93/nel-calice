@@ -130,13 +130,78 @@ corso il relatore può ora scrivere una lezione nuova sul posto, senza passare
 dal catalogo (resta comunque riusabile, e l'interfaccia lo dice). Test, lint e
 build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
 
+## Le dispense: cosa protegge davvero, e cosa no
+
+Richiesta del committente: i corsisti non devono poter condividere le
+dispense, e «non devono poter fare screenshot».
+
+**Gli screenshot non si possono impedire.** Nessun browser permette a una
+pagina di bloccare la cattura dello schermo; ogni aggiramento (tasto destro
+disabilitato, testo dentro un canvas, DRM) si scavalca in pochi minuti, e una
+fotografia con il telefono batte qualunque difesa software. Chi promette il
+contrario sta vendendo fumo. La strada presa è un'altra: **togliere
+l'anonimato**, che è ciò che scoraggia davvero.
+
+Cosa c'è oggi:
+
+- nessun indirizzo pubblico: i file passano da una route che controlla
+  sessione, iscrizione e sblocco **a ogni singola lettura**;
+- ogni PDF esce **firmato con nome, email e data di chi lo apre**
+  (`src/lib/watermark.ts`), in diagonale e ripetuto, più una riga leggibile in
+  fondo. Una dispensa che gira dice da chi è passata;
+- `Cache-Control: private, no-store`, così su un computer condiviso non resta
+  copia su disco;
+- `Content-Disposition: inline`: si apre nel browser invece di cadere nella
+  cartella dei download.
+
+Idea del committente da valutare (non ancora fatta): **niente scaricamento,
+sola consultazione dentro l'area riservata**, con evidenziazioni e appunti
+personali. È buona, e l'aggiunta degli appunti la rende perfino più comoda del
+file scaricato — ma va detto che anche così i byte arrivano comunque al
+browser per essere disegnati, quindi resta aggirabile da chi sa usare gli
+strumenti per sviluppatori. Richiede un visualizzatore PDF interno (pdf.js) e
+una tabella per le annotazioni: è un lavoro di giorni, non di ore.
+
+Manca ancora, e conterebbe: un **registro delle letture** (chi ha aperto cosa
+e quando). Oggi c'è solo `Material.viewCount`, un contatore che nessuna
+schermata mostra e che non dice né chi né quando — inutile come traccia. Con
+un registro, una dispensa che gira si risale a chi l'ha aperta.
+
 ## Cosa resta
 
-1. **Provare il nuovo modo di aggiungere una serata**, sopra: crearne una,
-   controllare che compaia in catalogo, e che un codice già usato nella stessa
-   edizione dia errore senza lasciare in giro una lezione a metà.
-2. **Controllo bug e resa su telefono, tablet e computer.** Non ancora fatto:
-   richiede occhi veri sui tre formati, non basta la revisione del codice.
+1. **Provare il nuovo modo di aggiungere una serata**: crearne una, controllare
+   che compaia in catalogo, e che un codice già usato nella stessa edizione dia
+   errore senza lasciare in giro una lezione a metà.
+
+2. **Resa su telefono e tablet: corretti i due difetti gravi, ne restano.**
+   Fatti: il pulsante donazione non copre più il pulsante del quiz (si toccava
+   quello sbagliato durante una prova a tempo), e l'uscita non è più tagliata
+   fuori dal riquadro sul telefono. Restano, in ordine di peso:
+
+   - **editor domande, riga delle opzioni** (`relatore/catalogo/[lessonId]`,
+     ~riga 391): due campi di testo affiancati senza `flex-wrap` sfondano sotto
+     i 640px — l'unico punto dell'app che scorre in orizzontale. Impilarli con
+     `flex-col sm:flex-row` e `min-w-0`;
+   - **attestato su telefono**: l'SVG scala in proporzione, quindi a 360px le
+     scritte minori vengono renderizzate a 3-6px, illeggibili; anche a 1280px
+     la dicitura finale è a 8px. Alzare i corpi minimi nel disegno e far
+     scorrere la pergamena su telefono invece di rimpicciolirla;
+   - **quiz su schermi bassi**: con 5-6 opzioni il pulsante primario finisce
+     sotto la piega e il timer scorre via in cima. Renderli fissi (`sticky`);
+   - **bersagli da toccare sotto i 40px**: il commutatore di lingua (24px, su
+     *ogni* pagina), le pillole, le caselle di spunta a 16px, e i comandi
+     distruttivi «Elimina»/«Togli dal corso» a 18px;
+   - **tabella andamento classe**: scorre correttamente, ma la colonna del nome
+     scorre via con le altre (renderla `sticky left-0`) e le intestazioni sono
+     solo numeri con un `title` che sul touch non esiste — serve una legenda;
+   - **dashboard su tablet**: passa a due colonne già a 768px e la colonna
+     sinistra resta una strisciolina; portare a `lg:`;
+   - **contrasto**: il testo informativo a `text-cream/40`–`/45` sta sotto il
+     rapporto 4,5:1, e alcune scritte sono a 9-11px. Per un pubblico adulto,
+     in sala poco illuminata, conta.
+
+3. **Un registro delle letture delle dispense** (vedi sezione sopra): oggi non
+   si sa chi ha aperto cosa.
 2. **Occasione aperta dal collegamento.** Il collegamento ha creato anche
    `BLOB_WEBHOOK_PUBLIC_KEY`, che prima non c'era. La firma dei caricamenti è
    scritta a mano proprio perché quella chiave mancava
