@@ -38,8 +38,19 @@ export type CertificateData = {
   courseTitle: string;
   meritTitle: string;
   meritSubtitle: string;
+  /** Città del corso. Facoltativa: se manca, si mostra solo la data. */
+  location: string | null;
   date: string;
-  issuer: string;
+  /** Firma testuale. Facoltativa: vuota, quella riga sparisce. */
+  issuer: string | null;
+  /**
+   * Loghi già pronti come `data:` URI (mai un indirizzo esterno: vedi
+   * src/lib/certificate.ts per il perché). Quando presenti prendono il posto
+   * della firma testuale invece di affiancarla — un'edizione realizzata con
+   * un partner non deve portare né il nome dell'organizzatore né i suoi
+   * marchi ambiguamente insieme, uno dei due.
+   */
+  logos: string[];
 };
 
 /** Sigillo dentellato, lo stesso dell'app ma ridisegnato in coordinate SVG. */
@@ -95,6 +106,44 @@ function Vine({ x, y, mirrored }: { x: number; y: number; mirrored: boolean }) {
       <circle cx="36" cy="-3" r="3.2" fill={BORDEAUX} opacity="0.75" />
       <circle cx="24" cy="3" r="3.2" fill={BORDEAUX} opacity="0.6" />
       <circle cx="33" cy="4" r="3.2" fill={BORDEAUX} opacity="0.6" />
+    </g>
+  );
+}
+
+/**
+ * Fila di loghi centrata. Ogni immagine sta dentro una gabbia di dimensione
+ * fissa e vi si adatta mantenendo le proporzioni (comportamento di default
+ * di `<image>`), così un logo quadrato e uno molto largo non vengono
+ * deformati né sbilanciano la riga.
+ */
+function LogoRow({
+  cx,
+  y,
+  logos,
+}: {
+  cx: number;
+  y: number;
+  logos: string[];
+}) {
+  const boxWidth = 100;
+  const boxHeight = 38;
+  const gap = 16;
+  const totalWidth = logos.length * boxWidth + (logos.length - 1) * gap;
+  const startX = cx - totalWidth / 2;
+
+  return (
+    <g>
+      {logos.map((href, i) => (
+        <image
+          key={i}
+          href={href}
+          x={startX + i * (boxWidth + gap)}
+          y={y}
+          width={boxWidth}
+          height={boxHeight}
+          preserveAspectRatio="xMidYMid meet"
+        />
+      ))}
     </g>
   );
 }
@@ -336,32 +385,51 @@ export function Certificate({
         {data.meritSubtitle.toUpperCase()}
       </text>
 
-      {/* Solo la data: niente numero. Il titolo di merito già dice come è
-          andata, in una forma che non mette mai in imbarazzo — un
-          "26/100" stampato su un ricordo da appendere lo farebbe, un
-          "Amico del Calice" no. */}
+      {/* Chiusura in stile «Roma, 8 agosto 2026» — la convenzione con cui si
+          firma una lettera, non una riga di dati. Niente più punteggio: il
+          titolo di merito già dice come è andata, in una forma che non mette
+          mai in imbarazzo (un "26/100" lo farebbe, un "Amico del Calice" no).
+          Il luogo è facoltativo: se il corso non lo specifica, resta solo
+          la data, com'era prima che questo campo esistesse. */}
       <text
         x={cx}
         y="574"
         textAnchor="middle"
         fill={INK}
-        fontFamily={SANS}
-        fontSize="14"
+        fontFamily={SERIF}
+        fontStyle="italic"
+        fontSize="16"
+        opacity="0.85"
       >
-        {data.date}
+        {data.location ? `${data.location}, ${data.date}` : data.date}
       </text>
 
-      <text
-        x={cx}
-        y="628"
-        textAnchor="middle"
-        fill={GOLD_DEEP}
-        fontFamily={SANS}
-        fontSize="11"
-        letterSpacing="3.4"
-      >
-        {data.issuer.toUpperCase()}
-      </text>
+      {/* I loghi, quando ci sono, prendono il posto della firma testuale
+          invece di affiancarla: è il caso di un'edizione realizzata con un
+          partner, dove non deve comparire il nome dell'organizzatore ma i
+          marchi di chi la fa insieme a lui. */}
+      {data.logos.length > 0 ? (
+        // Più in alto e più basso di riga rispetto alla firma testuale che
+        // sostituiscono: un'immagine leggibile come "logo" ha bisogno di più
+        // dei ~10px di una riga di maiuscolo, e senza questo margine
+        // finiva addosso alla dicitura legale in fondo (misurato, non
+        // supposto: la prima versione ci finiva sopra per un pelo).
+        <LogoRow cx={cx} y={594} logos={data.logos} />
+      ) : (
+        data.issuer && (
+          <text
+            x={cx}
+            y="628"
+            textAnchor="middle"
+            fill={GOLD_DEEP}
+            fontFamily={SANS}
+            fontSize="11"
+            letterSpacing="3.4"
+          >
+            {data.issuer.toUpperCase()}
+          </text>
+        )
+      )}
 
       <text
         x={cx}

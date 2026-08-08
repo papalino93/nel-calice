@@ -37,9 +37,12 @@ portante:
 - **Catalogo** (`Lesson`, `Question`, `Option`, `Material`): il contenuto, che
   esiste indipendentemente da chi lo usa. Una lezione scritta una volta serve
   più edizioni.
-- **Corso** (`Course`, `CourseLesson`): l'edizione. `CourseLesson` è il
-  collegamento, e porta ciò che è specifico di *quella* serata: numero, codice
-  di sblocco, se è la prova finale.
+- **Corso** (`Course`, `CourseLesson`, `CourseLogo`): l'edizione. `CourseLesson`
+  è il collegamento, e porta ciò che è specifico di *quella* serata: numero,
+  codice di sblocco, se è la prova finale. `CourseLogo` è deliberatamente
+  separata da `Material`: un logo per l'attestato non è materiale didattico,
+  non segue lo sblocco di una lezione, e mescolarlo alle dispense avrebbe
+  confuso due cose che non si assomigliano.
 - **Iscrizione** (`Enrollment`, `LessonUnlock`, `QuizAttempt`,
   `AttemptAnswer`): la storia del singolo corsista dentro una singola edizione.
 
@@ -125,10 +128,23 @@ con revisione, attestato scaricabile in PNG, pannello relatore completo (corsi,
 catalogo, domande, andamento della classe) e dispense con caricamento diretto e
 accesso protetto.
 
-Fa eccezione una cosa, scritta ma **mai provata dal vivo**: dalla pagina del
-corso il relatore può ora scrivere una lezione nuova sul posto, senza passare
-dal catalogo (resta comunque riusabile, e l'interfaccia lo dice). Test, lint e
-build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
+Fanno eccezione due cose, scritte ma **mai provate dal vivo** — entrambe con
+test, lint e build verdi, e la seconda verificata anche a livello di schema
+contro un vero Postgres (migrazioni applicate e confrontate, nessuna deriva),
+ma nessuna delle due cliccata con un database vero:
+
+- dalla pagina del corso il relatore può scrivere una lezione nuova sul posto,
+  senza passare dal catalogo (resta comunque riusabile, e l'interfaccia lo
+  dice);
+- l'attestato ora ha un luogo facoltativo, una firma testuale che si può
+  svuotare, e fino a quattro loghi che — quando ci sono — prendono il posto
+  della firma: il caso concreto è un'edizione realizzata con un partner, dove
+  l'attestato deve portare i marchi di chi la organizza insieme all'attività,
+  non il nome dell'attività da sola. I loghi si leggono dallo store e si
+  incorporano nell'SVG come `data:` URI (mai un indirizzo esterno), perché
+  altrimenti l'esportazione in PNG smetterebbe di funzionare — il browser
+  rifiuta di rasterizzare un canvas con dentro un'immagine di un'altra
+  origine, anche dello stesso sito.
 
 ## Le dispense: cosa protegge davvero, e cosa no
 
@@ -173,34 +189,33 @@ un registro, una dispensa che gira si risale a chi l'ha aperta.
    che compaia in catalogo, e che un codice già usato nella stessa edizione dia
    errore senza lasciare in giro una lezione a metà.
 
-2. **Resa su telefono e tablet: corretti i due difetti gravi, ne restano.**
-   Fatti: il pulsante donazione non copre più il pulsante del quiz (si toccava
-   quello sbagliato durante una prova a tempo), e l'uscita non è più tagliata
-   fuori dal riquadro sul telefono. Restano, in ordine di peso:
+2. **Provare la personalizzazione dell'attestato dal vivo.** Scritta e
+   verificata nel disegno (screenshot renderizzati a mano, con e senza luogo,
+   firma, loghi), ma **mai passata da un caricamento vero** su Vercel Blob: da
+   qui non c'è modo di raggiungere lo store reale. Da provare: caricare un
+   logo, controllare che compaia sull'attestato al posto della firma
+   testuale, cancellarlo, e verificare il limite di quattro.
 
-   - **editor domande, riga delle opzioni** (`relatore/catalogo/[lessonId]`,
-     ~riga 391): due campi di testo affiancati senza `flex-wrap` sfondano sotto
-     i 640px — l'unico punto dell'app che scorre in orizzontale. Impilarli con
-     `flex-col sm:flex-row` e `min-w-0`;
+3. **Resa su telefono e tablet: molto è stato corretto, resta il pezzo più
+   grosso.** Fatti questa notte: il pulsante donazione non copre più quello
+   del quiz, l'uscita non è più tagliata fuori dal riquadro, l'editor domande
+   non sfonda più sotto i 640px, timer e pulsante del quiz restano fissi in
+   vista, i bersagli da toccare (lingua, pillole, comandi distruttivi) sono
+   tutti almeno 40px, la dashboard passa a due colonne solo da `lg:`, e i
+   titoli troncati vanno a capo invece di tagliarsi. Restano:
+
    - **attestato su telefono**: l'SVG scala in proporzione, quindi a 360px le
-     scritte minori vengono renderizzate a 3-6px, illeggibili; anche a 1280px
-     la dicitura finale è a 8px. Alzare i corpi minimi nel disegno e far
-     scorrere la pergamena su telefono invece di rimpicciolirla;
-   - **quiz su schermi bassi**: con 5-6 opzioni il pulsante primario finisce
-     sotto la piega e il timer scorre via in cima. Renderli fissi (`sticky`);
-   - **bersagli da toccare sotto i 40px**: il commutatore di lingua (24px, su
-     *ogni* pagina), le pillole, le caselle di spunta a 16px, e i comandi
-     distruttivi «Elimina»/«Togli dal corso» a 18px;
+     scritte minori vengono renderizzate a 3-6px, illeggibili. Alzare i corpi
+     minimi nel disegno e far scorrere la pergamena su telefono invece di
+     rimpicciolirla;
    - **tabella andamento classe**: scorre correttamente, ma la colonna del nome
      scorre via con le altre (renderla `sticky left-0`) e le intestazioni sono
      solo numeri con un `title` che sul touch non esiste — serve una legenda;
-   - **dashboard su tablet**: passa a due colonne già a 768px e la colonna
-     sinistra resta una strisciolina; portare a `lg:`;
    - **contrasto**: il testo informativo a `text-cream/40`–`/45` sta sotto il
      rapporto 4,5:1, e alcune scritte sono a 9-11px. Per un pubblico adulto,
      in sala poco illuminata, conta.
 
-3. **Un registro delle letture delle dispense** (vedi sezione sopra): oggi non
+4. **Un registro delle letture delle dispense** (vedi sezione sopra): oggi non
    si sa chi ha aperto cosa.
 
 ## Difetti trovati e non ancora corretti
@@ -208,19 +223,18 @@ un registro, una dispensa che gira si risale a chi l'ha aperta.
 Da tre revisioni approfondite. Ordinati per quanto costano davvero. Chi ne
 corregge uno, tolga la voce.
 
-### Punteggi e attestato — i due che mordono di più
+### Punteggi e attestato — risolti
 
-- **L'attestato si può prendere alla prima serata.** `certificate.ts:35-40`
-  considera "da fare" solo le lezioni che *in questo momento* hanno domande.
-  Corso di sei serate con le domande scritte solo per la prima: chi la fa
-  risulta averle fatte tutte, prende 100/100 e "Palato d'Oro". Da decidere: il
-  conto guarda le lezioni **presenti** nel corso o solo quelle già scritte?
-- **Il punteggio può superare 100.** I budget si ricalcolano sulla forma
-  attuale del corso, ma il punteggio di un tentativo resta quello di allora, e
-  nessuno riconcilia le due cose. Chi fa la lezione 1 quando è l'unica scritta
-  prende 100; scritte le altre, il totale può arrivare a 186 su 100 —
-  sull'anello di progresso e sull'attestato. Serve decidere se rinormalizzare
-  i punteggi storici o congelare i budget alla consegna.
+Due difetti gravi trovati da qui sono stati corretti: l'attestato richiede ora
+**tutte** le lezioni del corso, comprese quelle ancora senza domande
+(`certificate.ts`) — non si prende più alla prima serata di un corso a metà —
+e il punteggio totale non supera mai 100 (`clampToCourseTotal` in
+`scoring.ts`), anche quando il corso cresce dopo che qualcuno ha già finito le
+prime lezioni. L'attestato inoltre non mostra più il numero: solo il titolo di
+merito, per non stampare un punteggio basso su un ricordo da appendere.
+
+Resta aperto:
+
 - **Con molte lezioni, la maggior parte delle domande vale 0.** I 40 punti
   delle lezioni divisi per 12 serate lasciano 3-4 punti per serata da spartire
   fra 8 domande: 61 domande su 96 valgono zero. La somma resta 100, ma il
@@ -235,17 +249,28 @@ corregge uno, tolga la voce.
 - **L'ultima risposta può perdersi.** Il salvataggio della risposta non viene
   atteso prima di abilitare la consegna: toccando l'opzione e subito
   «Consegna», su rete lenta, la risposta giusta viene contata sbagliata.
+- **Due lezioni possono correre in parallelo.** Il vincolo impedisce due
+  tentativi sulla *stessa* lezione, ma non un tentativo aperto sulla lezione 1
+  e uno sulla 2 nello stesso momento: si vede un solo timer, e tornando al
+  primo il tempo è scaduto in silenzio.
+- **Il relatore può ora azzerare un tentativo** (in corso o consegnato) dal
+  pannello «Andamento della classe» — è la via prevista per un click su
+  «inizia» per sbaglio, non un pulsante che il corsista può premersi da solo.
 
 ### Conflitti che diventano errori 500
 
 Il database ferma sempre il dato sbagliato — quella parte è solida — ma
 nessuna route traduce il conflitto in una risposta sensata: doppia iscrizione,
-doppio avvio del quiz, doppio invio del codice giusto mostrano un errore
-generico a chi in quel momento **è** riuscito. Serve un `catch` sul vincolo di
-unicità che risponda "sei già iscritto" invece di "errore".
+doppio avvio del quiz, doppio invio del codice giusto, due domande create nello
+stesso istante nella stessa lezione mostrano un errore generico a chi in quel
+momento **è** riuscito. Serve un `catch` sul vincolo di unicità che risponda
+"sei già iscritto" invece di "errore".
 
 E il limite ai tentativi di indovinare i codici si conta prima di scrivere la
-riga: venti richieste lanciate insieme passano tutte.
+riga: venti richieste lanciate insieme passano tutte. Vale anche per
+l'iscrizione: la via con lo slug del corso (`/api/courses/[slug]/enroll`) ha un
+budget di tentativi **indipendente** da quella senza (`/api/enroll`) — chi
+tira a indovinare ha convenienza a passare dalla prima.
 
 ### Autorizzazioni (area relatore)
 
@@ -267,16 +292,25 @@ C'è l'interruttore IT/EN su ogni pagina, ma:
 
 ### Buchi nel pannello relatore
 
-- **Non si può creare un corso**: non esiste nessun `POST /api/admin/courses`.
-  I corsi nascono solo dal seed. Alla seconda edizione ci si blocca.
-- **Non si possono cambiare titolo e sottotitolo di un corso**: il server li
-  accetta, il modulo non li offre.
+Risolti stanotte: si può creare un corso dal pannello (`POST
+/api/admin/courses`, slug derivato dal titolo), e titolo/sottotitolo/luogo del
+corso sono modificabili dalla sezione «Titoli».
+
+Restano:
+
 - **Non si può sbloccare una serata a un singolo corsista** che ha perso la
   lezione, benché il modello lo preveda (`UnlockMethod.ADMIN`, mai usato).
 - **Non si possono caricare dispense generali del corso**: modello, vincolo e
   API ci sono, manca il pulsante.
 - I punti per domanda sono calcolati e mandati al client, ma la pagina del
   risultato non li mostra mai.
+- **Alcune route admin ignorano parte del proprio percorso**: una PATCH su una
+  lezione o una domanda inviata con lo slug/lessonId sbagliato tocca comunque
+  la riga giusta per id, senza controllare che appartenga a quel corso/lezione.
+  Non è una scalata di privilegi (il relatore può già tutto), ma un id
+  scambiato per errore scrive nel posto sbagliato senza protestare. Le nuove
+  route dei loghi (sotto) e l'azzeramento tentativo sono già al riparo da
+  questo difetto: verificano lo slug ad ogni chiamata.
 
 ### Resa responsive, ciò che resta
 

@@ -212,6 +212,12 @@ model Course {
   subtitleIt String?
   subtitleEn String?
 
+  /// Città dove si tiene il corso. Facoltativa: se il relatore la lascia
+  /// vuota, l'attestato mostra solo la data — com'era prima che esistesse
+  /// questo campo. Sta sul corso, non su un'impostazione unica per tutta
+  /// l'attività, perché due edizioni possono tenersi in città diverse.
+  location String?
+
   status         CourseStatus @default(DRAFT)
   /// Indipendente dallo stato: un corso può essere attivo ma chiuso a
   /// nuove iscrizioni dopo la prima serata.
@@ -232,18 +238,49 @@ model Course {
   lessonTimerMinutes Int @default(15)
   examTimerMinutes   Int @default(45)
 
+  /// Firma testuale in fondo all'attestato. Facoltativa: se il relatore la
+  /// svuota, quella riga sparisce — non ricade su un valore fisso scritto nel
+  /// codice. Nasce già valorizzata alla creazione del corso, ma resta un
+  /// campo qualunque, non una costante dell'applicazione.
+  certificateIssuer String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   lessons     CourseLesson[]
   enrollments Enrollment[]
   materials   Material[]
+  logos       CourseLogo[]
   attempts    QuizAttempt[]
   unlocks     LessonUnlock[]
   enrollmentAttempts EnrollmentAttempt[]
   unlockAttempts     UnlockAttempt[]
 
   @@index([status])
+}
+
+/// Loghi da mostrare sull'attestato al posto (o accanto) della firma
+/// testuale — il caso concreto: un'edizione realizzata con un partner, dove
+/// non deve comparire il nome dell'attività ma i marchi di chi la organizza
+/// insieme a lei.
+///
+/// Tabella propria e non un `Material`: un logo non è materiale didattico,
+/// non segue lo sblocco di una lezione, non ha un titolo per il corsista, e
+/// vive solo qui — mescolarlo alle dispense avrebbe confuso due cose che non
+/// si assomigliano, il difetto che l'intero modello a entità di questo
+/// progetto esiste per evitare.
+model CourseLogo {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  /// Stesso schema di Material.url ("blob:<percorso>"): stesso store privato,
+  /// stessa funzione per leggerlo (src/lib/materials.ts).
+  url String
+
+  createdAt DateTime @default(now())
+
+  @@index([courseId])
 }
 
 /// La lezione così come appare *dentro un corso*: con il suo numero, il suo
