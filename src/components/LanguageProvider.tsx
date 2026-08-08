@@ -78,7 +78,7 @@ export function LanguageToggle({ className = "" }: { className?: string }) {
 
   return (
     <div
-      className={`inline-flex items-center rounded-full border border-gold/25 p-0.5 text-xs ${className}`}
+      className={`inline-flex items-center rounded-full bg-cream/8 p-0.5 text-xs ${className}`}
       role="group"
       aria-label="Lingua / Language"
     >
@@ -88,10 +88,10 @@ export function LanguageToggle({ className = "" }: { className?: string }) {
           type="button"
           onClick={() => setLang(code)}
           aria-pressed={lang === code}
-          className={`press inline-flex min-h-10 items-center rounded-full px-3.5 uppercase tracking-wide transition-colors ${
+          className={`press inline-flex min-h-10 items-center rounded-full px-4 font-medium uppercase tracking-wide transition-colors ${
             lang === code
-              ? "bg-gold/20 text-gold"
-              : "text-cream/50 hover:text-cream/80"
+              ? "bg-gold text-charcoal"
+              : "text-cream/55 hover:text-cream/80"
           }`}
         >
           {code}
