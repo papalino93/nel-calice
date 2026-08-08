@@ -25,6 +25,8 @@ type QuestionRow = {
   id: number;
   textIt: string;
   textEn: string;
+  explanationIt: string | null;
+  explanationEn: string | null;
   position: number;
   options: OptionRow[];
 };
@@ -43,6 +45,8 @@ type LessonDetail = {
 type Draft = {
   textIt: string;
   textEn: string;
+  explanationIt: string;
+  explanationEn: string;
   options: { textIt: string; textEn: string; isCorrect: boolean }[];
 };
 
@@ -50,6 +54,8 @@ function draftFrom(q: QuestionRow): Draft {
   return {
     textIt: q.textIt,
     textEn: q.textEn,
+    explanationIt: q.explanationIt ?? "",
+    explanationEn: q.explanationEn ?? "",
     options: q.options.map((o) => ({
       textIt: o.textIt,
       textEn: o.textEn,
@@ -61,6 +67,8 @@ function draftFrom(q: QuestionRow): Draft {
 const emptyDraft: Draft = {
   textIt: "",
   textEn: "",
+  explanationIt: "",
+  explanationEn: "",
   options: [
     { textIt: "", textEn: "", isCorrect: true },
     { textIt: "", textEn: "", isCorrect: false },
@@ -529,6 +537,34 @@ function DraftFields({
       >
         + Aggiungi opzione
       </button>
+
+      <p className="mt-5 mb-2 text-xs text-cream/55">
+        Spiegazione mostrata dopo la risposta — facoltativa
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Spiegazione (italiano)">
+          <textarea
+            value={draft.explanationIt}
+            onChange={(e) =>
+              setDraft({ ...draft, explanationIt: e.target.value })
+            }
+            rows={2}
+            placeholder="Perché è (o non è) la risposta giusta"
+            className={inputClass}
+          />
+        </Field>
+        <Field label="Spiegazione (inglese)">
+          <textarea
+            value={draft.explanationEn}
+            onChange={(e) =>
+              setDraft({ ...draft, explanationEn: e.target.value })
+            }
+            rows={2}
+            placeholder="Se vuoto, usa l'italiano"
+            className={inputClass}
+          />
+        </Field>
+      </div>
     </>
   );
 }

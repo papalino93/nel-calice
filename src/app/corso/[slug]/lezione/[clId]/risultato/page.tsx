@@ -18,6 +18,8 @@ type ReviewQuestion = {
   id: number;
   textIt: string;
   textEn: string;
+  explanationIt: string | null;
+  explanationEn: string | null;
   options: { id: number; textIt: string; textEn: string }[];
   correctOptionId: number | null;
   selectedOptionId: number | null;
@@ -199,6 +201,16 @@ export default function ResultPage({
                     </p>
                   )}
                 </div>
+
+                {(question.explanationIt || question.explanationEn) && (
+                  <p className="mt-3 border-t border-cream/10 pt-3 text-sm leading-relaxed text-cream/65">
+                    {pick(
+                      lang,
+                      question.explanationIt || question.explanationEn || "",
+                      question.explanationEn || question.explanationIt || "",
+                    )}
+                  </p>
+                )}
               </li>
             );
           })}

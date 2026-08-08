@@ -18,6 +18,8 @@ export async function POST(
   const result = await saveQuestion(Number((await params).lessonId), null, {
     textIt: body.textIt,
     textEn: body.textEn || body.textIt,
+    explanationIt: body.explanationIt || null,
+    explanationEn: body.explanationEn || null,
     options: body.options,
   });
 

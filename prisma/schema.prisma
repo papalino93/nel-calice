@@ -123,6 +123,12 @@ model Question {
   textIt String
   textEn String
 
+  /// Mostrata al corsista dopo aver risposto, giusta o sbagliata che sia.
+  /// Facoltativa: se manca, la revisione mostra solo la risposta corretta,
+  /// com'era prima che questi due campi esistessero.
+  explanationIt String?
+  explanationEn String?
+
   /// Ordine dentro la lezione. Non è l'id: riordinare non cambia identità.
   position Int
 

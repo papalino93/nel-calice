@@ -528,6 +528,8 @@ export async function reviewView(
       id: true,
       textIt: true,
       textEn: true,
+      explanationIt: true,
+      explanationEn: true,
       options: {
         select: { id: true, textIt: true, textEn: true, isCorrect: true },
         orderBy: { position: "asc" },
@@ -550,6 +552,8 @@ export async function reviewView(
         id: q.id,
         textIt: q.textIt,
         textEn: q.textEn,
+        explanationIt: q.explanationIt,
+        explanationEn: q.explanationEn,
         options: q.options,
         correctOptionId: q.options.find((o) => o.isCorrect)?.id ?? null,
         selectedOptionId: answer?.selectedOptionId ?? null,

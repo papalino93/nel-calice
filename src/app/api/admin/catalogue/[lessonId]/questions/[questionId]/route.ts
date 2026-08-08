@@ -44,6 +44,8 @@ export async function PUT(
   const result = await saveQuestion(Number(lessonId), id, {
     textIt: body.textIt,
     textEn: body.textEn || body.textIt,
+    explanationIt: body.explanationIt || null,
+    explanationEn: body.explanationEn || null,
     options: body.options,
   });
 

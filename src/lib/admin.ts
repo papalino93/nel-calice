@@ -384,6 +384,8 @@ export async function lessonWithQuestions(lessonId: number) {
           id: true,
           textIt: true,
           textEn: true,
+          explanationIt: true,
+          explanationEn: true,
           position: true,
           options: {
             orderBy: { position: "asc" },
@@ -404,6 +406,8 @@ export async function lessonWithQuestions(lessonId: number) {
 export type QuestionInput = {
   textIt: string;
   textEn: string;
+  explanationIt?: string | null;
+  explanationEn?: string | null;
   options: { textIt: string; textEn: string; isCorrect: boolean }[];
 };
 
@@ -440,6 +444,8 @@ export async function saveQuestion(
         lessonId,
         textIt: input.textIt,
         textEn: input.textEn,
+        explanationIt: input.explanationIt || null,
+        explanationEn: input.explanationEn || null,
         position: (last?.position ?? -1) + 1,
         options: {
           create: input.options.map((o, i) => ({ ...o, position: i })),
@@ -456,6 +462,8 @@ export async function saveQuestion(
       data: {
         textIt: input.textIt,
         textEn: input.textEn,
+        explanationIt: input.explanationIt || null,
+        explanationEn: input.explanationEn || null,
         options: {
           create: input.options.map((o, i) => ({ ...o, position: i })),
         },
