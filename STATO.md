@@ -246,6 +246,23 @@ Resta aperto:
   delle lezioni divisi per 12 serate lasciano 3-4 punti per serata da spartire
   fra 8 domande: 61 domande su 96 valgono zero. La somma resta 100, ma il
   corsista risponde a domande che non contano e non lo sa.
+- **Il tetto a 100 nasconde un'incoerenza visibile fra il totale e le singole
+  lezioni.** `clampToCourseTotal` limita solo la somma mostrata: le carte di
+  ogni lezione (dashboard, tabella andamento classe) continuano a mostrare il
+  punteggio storico non ritoccato. Nello stesso corso allargato che produce
+  186 di somma, un relatore che sommi a mente le colonne della tabella vede
+  più di quanto dice il "Totale" nella stessa riga. Discende dalla stessa
+  causa del difetto sopra (§ "Punteggi e attestato — risolti") e si chiude
+  con la stessa decisione: rinormalizzare i punteggi storici o congelare i
+  budget alla consegna.
+- **Un tentativo scaduto (`EXPIRED`) vale come "fatto" anche per
+  l'attestato, senza soglia di punteggio.** Chi lascia scadere ogni quiz —
+  scheda aperta fino a zero, o una sola visita successiva — riceve comunque
+  l'attestato, con "Amico del Calice" e ogni lezione a 0 punti: non è mai
+  bloccato dal non aver davvero risposto. Probabilmente voluto (l'alternativa
+  sarebbe negare per sempre l'attestato a chi ha perso una serata), ma è una
+  scelta di prodotto da confermare esplicitamente, non un effetto collaterale
+  da correggere di nascosto.
 
 ### Quiz
 
@@ -256,6 +273,14 @@ Resta aperto:
 - **L'ultima risposta può perdersi.** Il salvataggio della risposta non viene
   atteso prima di abilitare la consegna: toccando l'opzione e subito
   «Consegna», su rete lenta, la risposta giusta viene contata sbagliata.
+- **Risolto: «Esci» non mentiva più quando il tempo era già scaduto.** Il
+  pulsante prometteva "non verrà registrato nulla" e poi ignorava se
+  l'abbandono fosse davvero riuscito; se il tempo era già scaduto nell'istante
+  esatto del click, il server rifiutava (giustamente: altrimenti si riapriva
+  il timer da capo, la falla corretta stanotte), ma il corsista tornava alla
+  dashboard credendo di non aver lasciato traccia, mentre al tocco successivo
+  quel tentativo si sarebbe chiuso da sé come scaduto. Ora l'esito si
+  controlla, e in quel caso lo dice prima di uscire.
 
 ### Conflitti che diventano errori 500
 
@@ -264,6 +289,11 @@ nessuna route traduce il conflitto in una risposta sensata: doppia iscrizione,
 doppio avvio del quiz, doppio invio del codice giusto mostrano un errore
 generico a chi in quel momento **è** riuscito. Serve un `catch` sul vincolo di
 unicità che risponda "sei già iscritto" invece di "errore".
+
+Fatto solo per la creazione di un corso: due richieste con lo stesso titolo
+nello stesso istante potevano ricevere "codice già usato" quando la vera causa
+era lo slug, non il codice — la route ora distingue le due cause guardando
+quale vincolo ha protestato.
 
 E il limite ai tentativi di indovinare i codici si conta prima di scrivere la
 riga: venti richieste lanciate insieme passano tutte.

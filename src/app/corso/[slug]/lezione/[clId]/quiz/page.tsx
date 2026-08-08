@@ -163,9 +163,22 @@ export default function QuizPage({
 
   async function exit() {
     if (!window.confirm(t.exitConfirm)) return;
-    await api(`/api/courses/${slug}/attempts/${attempt!.attemptId}`, {
-      method: "DELETE",
-    });
+
+    const result = await api(
+      `/api/courses/${slug}/attempts/${attempt!.attemptId}`,
+      { method: "DELETE" },
+    );
+
+    // Il server rifiuta di abbandonare un tentativo il cui tempo è già
+    // scaduto (giusto: altrimenti si cancellava e si ripartiva da capo con
+    // l'orologio intero). Ma in quel caso la promessa appena fatta col
+    // conferma — "non verrà registrato nulla" — diventa falsa: al prossimo
+    // tocco quel tentativo si chiude da sé come scaduto, con le risposte già
+    // date. Meglio dirlo qui che lasciarlo scoprire dopo.
+    if (!result.ok) {
+      window.alert(t.exitTooLate);
+    }
+
     router.push(`/corso/${slug}`);
   }
 

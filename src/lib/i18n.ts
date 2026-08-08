@@ -43,6 +43,8 @@ const it = {
   finish: "Consegna",
   exit: "Esci",
   exitConfirm: "Vuoi davvero abbandonare il quiz? Non verrà registrato nulla.",
+  exitTooLate:
+    "Il tempo è già scaduto: questo tentativo conterà come concluso, con le risposte date finora.",
   timeUp: "Tempo scaduto",
   // Risultato
   yourScore: "Il tuo punteggio",
@@ -103,6 +105,8 @@ const en: Strings = {
   finish: "Submit",
   exit: "Exit",
   exitConfirm: "Really leave the quiz? Nothing will be recorded.",
+  exitTooLate:
+    "Time had already run out: this attempt will count as concluded, with whatever you'd answered so far.",
   timeUp: "Time's up",
   yourScore: "Your score",
   reviewQuestions: "Review the questions",
