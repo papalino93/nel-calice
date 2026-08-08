@@ -132,23 +132,27 @@ build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
 
 ## Pronto ma non ancora in produzione
 
-Nel branch `claude/dove-eravamo-rimasti-si1q8h` c'è un corso di lavoro
-completo — luogo del corso, firma testuale dell'attestato removibile, fino a
-quattro loghi di partner che la sostituiscono — scritto, verificato nel
-disegno (screenshot renderizzati a mano) e verificato a livello di schema
-contro un vero Postgres (migrazione applicata, nessuna deriva rispetto a
-`schema.prisma`). **Non è su `main`**: è stato unito e poi *tolto* con un
-revert non distruttivo, perché portava un nuovo campo `Course.location`, un
-nuovo campo `Course.certificateIssuer` e una nuova tabella `CourseLogo` che
-il database di produzione non ha ancora — unirlo senza prima migrare avrebbe
-rotto ogni pagina di corso in produzione. Il codice del branch è integro e
-pronto; manca solo l'ordine giusto:
+Sul ramo **`certificate-branding-ready`** (non `claude/dove-eravamo-rimasti-si1q8h`:
+quel branch è stato riportato in pari con `main` dopo il revert, quindi in
+cima non ha più questo lavoro — bisognava lasciarlo raggiungibile per nome,
+non solo dentro la cronologia) c'è un corso di lavoro completo — luogo del
+corso, firma testuale dell'attestato removibile, fino a quattro loghi di
+partner che la sostituiscono — scritto, verificato nel disegno (screenshot
+renderizzati a mano) e verificato a livello di schema contro un vero Postgres
+(migrazione applicata, nessuna deriva rispetto a `schema.prisma`).
+
+**Non è su `main`**: è stato unito e poi *tolto* con un revert non
+distruttivo, perché portava un nuovo campo `Course.location`, un nuovo campo
+`Course.certificateIssuer` e una nuova tabella `CourseLogo` che il database di
+produzione non ha ancora — unirlo senza prima migrare avrebbe rotto ogni
+pagina di corso in produzione. Il codice del ramo è integro e pronto; manca
+solo l'ordine giusto:
 
 1. `npx prisma migrate deploy` puntato al database di produzione (le due
    migrazioni si chiamano `20260808060000_course_location` e
-   `20260808070000_certificate_branding`, e sono già scritte nel branch);
-2. **solo dopo**, riunire il branch in `main` (o rifare le stesse modifiche —
-   sono tutte lì, un `git log` sul branch le trova).
+   `20260808070000_certificate_branding`, e sono già scritte sul ramo);
+2. **solo dopo**, portare `certificate-branding-ready` su `main` — un merge
+   diretto basta, è stato staccato da lì.
 
 Non ancora provato dal vivo nemmeno lì: il giro di caricamento di un logo
 vero, perché da questo ambiente non si raggiunge lo store Vercel Blob.
