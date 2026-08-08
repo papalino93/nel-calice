@@ -3,6 +3,7 @@ import { isDenied, requireEnrollment } from "@/lib/guard";
 import { courseOverview } from "@/lib/course";
 import { prisma } from "@/lib/prisma";
 import { readStoredFile } from "@/lib/materials";
+import { readerLabel, stampPdf } from "@/lib/watermark";
 
 /**
  * Serve una dispensa a un iscritto.
@@ -72,11 +73,38 @@ export async function GET(
     .update({ where: { id }, data: { viewCount: { increment: 1 } } })
     .catch(() => {});
 
-  return new NextResponse(file.stream, {
-    headers: {
-      "Cache-Control": "private, no-cache",
-      "Content-Type": file.blob.contentType ?? "application/octet-stream",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+  const contentType = file.blob.contentType ?? "application/octet-stream";
+
+  const headers = {
+    // `no-store` e non `no-cache`: quest'ultimo lascia comunque il file sul
+    // disco del browser, e su un computer condiviso resterebbe leggibile
+    // dopo l'uscita.
+    "Cache-Control": "private, no-store",
+    "Content-Type": contentType,
+    "X-Content-Type-Options": "nosniff",
+    // Si apre dentro l'app invece di scendere nella cartella dei download:
+    // non impedisce niente, ma toglie il gesto automatico che trasforma una
+    // dispensa in un file da inoltrare.
+    "Content-Disposition": "inline",
+  };
+
+  // I PDF escono firmati con il nome di chi li sta aprendo (vedi
+  // src/lib/watermark.ts). Se la firma non riesce si serve l'originale:
+  // meglio una dispensa senza firma che un corsista senza dispensa.
+  if (contentType === "application/pdf") {
+    const original = new Uint8Array(await new Response(file.stream).arrayBuffer());
+    const label = readerLabel(ctx.user, new Date());
+    const stamped = await stampPdf(original, label);
+    const body = stamped ?? original;
+
+    return new NextResponse(
+      body.buffer.slice(
+        body.byteOffset,
+        body.byteOffset + body.byteLength,
+      ) as ArrayBuffer,
+      { headers },
+    );
+  }
+
+  return new NextResponse(file.stream, { headers });
 }
