@@ -130,6 +130,29 @@ corso il relatore può ora scrivere una lezione nuova sul posto, senza passare
 dal catalogo (resta comunque riusabile, e l'interfaccia lo dice). Test, lint e
 build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
 
+## Pronto ma non ancora in produzione
+
+Nel branch `claude/dove-eravamo-rimasti-si1q8h` c'è un corso di lavoro
+completo — luogo del corso, firma testuale dell'attestato removibile, fino a
+quattro loghi di partner che la sostituiscono — scritto, verificato nel
+disegno (screenshot renderizzati a mano) e verificato a livello di schema
+contro un vero Postgres (migrazione applicata, nessuna deriva rispetto a
+`schema.prisma`). **Non è su `main`**: è stato unito e poi *tolto* con un
+revert non distruttivo, perché portava un nuovo campo `Course.location`, un
+nuovo campo `Course.certificateIssuer` e una nuova tabella `CourseLogo` che
+il database di produzione non ha ancora — unirlo senza prima migrare avrebbe
+rotto ogni pagina di corso in produzione. Il codice del branch è integro e
+pronto; manca solo l'ordine giusto:
+
+1. `npx prisma migrate deploy` puntato al database di produzione (le due
+   migrazioni si chiamano `20260808060000_course_location` e
+   `20260808070000_certificate_branding`, e sono già scritte nel branch);
+2. **solo dopo**, riunire il branch in `main` (o rifare le stesse modifiche —
+   sono tutte lì, un `git log` sul branch le trova).
+
+Non ancora provato dal vivo nemmeno lì: il giro di caricamento di un logo
+vero, perché da questo ambiente non si raggiunge lo store Vercel Blob.
+
 ## Le dispense: cosa protegge davvero, e cosa no
 
 Richiesta del committente: i corsisti non devono poter condividere le
@@ -173,29 +196,23 @@ un registro, una dispensa che gira si risale a chi l'ha aperta.
    che compaia in catalogo, e che un codice già usato nella stessa edizione dia
    errore senza lasciare in giro una lezione a metà.
 
-2. **Resa su telefono e tablet: corretti i due difetti gravi, ne restano.**
-   Fatti: il pulsante donazione non copre più il pulsante del quiz (si toccava
-   quello sbagliato durante una prova a tempo), e l'uscita non è più tagliata
-   fuori dal riquadro sul telefono. Restano, in ordine di peso:
+2. **Resa su telefono e tablet: molto è stato corretto, resta il pezzo più
+   grosso.** Fatti: il pulsante donazione non copre più il pulsante del quiz
+   (si toccava quello sbagliato durante una prova a tempo), l'uscita non è più
+   tagliata fuori dal riquadro sul telefono, l'editor domande non sfonda più
+   sotto i 640px, timer e pulsante del quiz restano fissi in vista su schermi
+   bassi, i bersagli da toccare (commutatore di lingua, pillole, comandi
+   distruttivi) sono tutti almeno 40px, la dashboard passa a due colonne solo
+   da `lg:`, e i titoli troncati vanno a capo su due righe invece di tagliarsi
+   a metà parola. Restano:
 
-   - **editor domande, riga delle opzioni** (`relatore/catalogo/[lessonId]`,
-     ~riga 391): due campi di testo affiancati senza `flex-wrap` sfondano sotto
-     i 640px — l'unico punto dell'app che scorre in orizzontale. Impilarli con
-     `flex-col sm:flex-row` e `min-w-0`;
    - **attestato su telefono**: l'SVG scala in proporzione, quindi a 360px le
-     scritte minori vengono renderizzate a 3-6px, illeggibili; anche a 1280px
-     la dicitura finale è a 8px. Alzare i corpi minimi nel disegno e far
-     scorrere la pergamena su telefono invece di rimpicciolirla;
-   - **quiz su schermi bassi**: con 5-6 opzioni il pulsante primario finisce
-     sotto la piega e il timer scorre via in cima. Renderli fissi (`sticky`);
-   - **bersagli da toccare sotto i 40px**: il commutatore di lingua (24px, su
-     *ogni* pagina), le pillole, le caselle di spunta a 16px, e i comandi
-     distruttivi «Elimina»/«Togli dal corso» a 18px;
+     scritte minori vengono renderizzate a 3-6px, illeggibili. Alzare i corpi
+     minimi nel disegno e far scorrere la pergamena su telefono invece di
+     rimpicciolirla;
    - **tabella andamento classe**: scorre correttamente, ma la colonna del nome
      scorre via con le altre (renderla `sticky left-0`) e le intestazioni sono
      solo numeri con un `title` che sul touch non esiste — serve una legenda;
-   - **dashboard su tablet**: passa a due colonne già a 768px e la colonna
-     sinistra resta una strisciolina; portare a `lg:`;
    - **contrasto**: il testo informativo a `text-cream/40`–`/45` sta sotto il
      rapporto 4,5:1, e alcune scritte sono a 9-11px. Per un pubblico adulto,
      in sala poco illuminata, conta.
@@ -208,19 +225,19 @@ un registro, una dispensa che gira si risale a chi l'ha aperta.
 Da tre revisioni approfondite. Ordinati per quanto costano davvero. Chi ne
 corregge uno, tolga la voce.
 
-### Punteggi e attestato — i due che mordono di più
+### Punteggi e attestato — risolti
 
-- **L'attestato si può prendere alla prima serata.** `certificate.ts:35-40`
-  considera "da fare" solo le lezioni che *in questo momento* hanno domande.
-  Corso di sei serate con le domande scritte solo per la prima: chi la fa
-  risulta averle fatte tutte, prende 100/100 e "Palato d'Oro". Da decidere: il
-  conto guarda le lezioni **presenti** nel corso o solo quelle già scritte?
-- **Il punteggio può superare 100.** I budget si ricalcolano sulla forma
-  attuale del corso, ma il punteggio di un tentativo resta quello di allora, e
-  nessuno riconcilia le due cose. Chi fa la lezione 1 quando è l'unica scritta
-  prende 100; scritte le altre, il totale può arrivare a 186 su 100 —
-  sull'anello di progresso e sull'attestato. Serve decidere se rinormalizzare
-  i punteggi storici o congelare i budget alla consegna.
+- **L'attestato non si prende più alla prima serata.** `certificateFor` ora
+  richiede **tutte** le lezioni del corso, comprese quelle senza ancora
+  domande — non solo quelle già scritte. Un corso a metà non produce più un
+  attestato "di tutto il corso" dopo la prima sera.
+- **Il punteggio non supera più 100.** `clampToCourseTotal` (`scoring.ts`)
+  riporta a 100 la somma anche quando il corso cresce dopo che qualcuno ha
+  già finito le prime lezioni con budget diversi. Testato per il caso reale
+  trovato (186/100).
+
+Resta aperto:
+
 - **Con molte lezioni, la maggior parte delle domande vale 0.** I 40 punti
   delle lezioni divisi per 12 serate lasciano 3-4 punti per serata da spartire
   fra 8 domande: 61 domande su 96 valgono zero. La somma resta 100, ma il
@@ -267,8 +284,12 @@ C'è l'interruttore IT/EN su ogni pagina, ma:
 
 ### Buchi nel pannello relatore
 
-- **Non si può creare un corso**: non esiste nessun `POST /api/admin/courses`.
-  I corsi nascono solo dal seed. Alla seconda edizione ci si blocca.
+Risolto: **si può creare un corso dal pannello** (`POST /api/admin/courses`),
+con slug derivato dal titolo e reso unico da solo. Nasce vuoto, in
+preparazione: le lezioni si aggiungono dalla sua pagina.
+
+Restano:
+
 - **Non si possono cambiare titolo e sottotitolo di un corso**: il server li
   accetta, il modulo non li offre.
 - **Non si può sbloccare una serata a un singolo corsista** che ha perso la
