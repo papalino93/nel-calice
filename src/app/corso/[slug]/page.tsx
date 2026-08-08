@@ -122,10 +122,13 @@ export default function CoursePage({
 
   const { user, course } = overview;
 
-  // Il corso è completo quando non resta nessuna lezione svolgibile da fare.
-  const doable = overview.lessons.filter((l) => l.status !== "vuoto");
+  // Il corso è completo quando non resta nessuna lezione da fare — comprese
+  // quelle senza ancora domande, che quindi non possono mai dirsi fatte: la
+  // stessa regola di src/lib/certificate.ts, qui solo per mostrare il
+  // pulsante al momento giusto invece che deciderlo.
   const allDone =
-    doable.length > 0 && doable.every((l) => l.status === "fatto");
+    overview.lessons.length > 0 &&
+    overview.lessons.every((l) => l.status === "fatto");
 
   // Un corso da una o due serate non riempie due colonne: la destra
   // resterebbe quasi vuota accanto a una sinistra alta e pesante. Sotto le
