@@ -130,10 +130,35 @@ con revisione, attestato scaricabile in PNG, pannello relatore completo (corsi,
 catalogo, domande, andamento della classe) e dispense con caricamento diretto e
 accesso protetto.
 
-Fa eccezione una cosa, scritta ma **mai provata dal vivo**: dalla pagina del
-corso il relatore può ora scrivere una lezione nuova sul posto, senza passare
-dal catalogo (resta comunque riusabile, e l'interfaccia lo dice). Test, lint e
-build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
+Fanno eccezione tre cose, scritte e verdi a test/lint/build ma **mai provate
+dal vivo** — nessuno le ha ancora cliccate con un database vero:
+
+- dalla pagina del corso il relatore può scrivere una lezione nuova sul posto,
+  senza passare dal catalogo (resta comunque riusabile, e l'interfaccia lo
+  dice);
+- il pulsante «Traduci in inglese» nel catalogo (serve `ANTHROPIC_API_KEY`:
+  finché non è impostata su Vercel, risponde che non è configurato);
+- il codice di verifica dell'attestato, qui sotto.
+
+### L'attestato si può controllare
+
+Un attestato stampato non dimostra niente da solo: chiunque sa aprire un PNG e
+cambiarci il nome. Ora in fondo alla pergamena c'è un codice di sedici
+caratteri e l'indirizzo dove si controlla — `/verifica/<codice>`, pagina
+pubblica che non chiede di registrarsi (un controllo che richiede un account
+non lo fa nessuno). Risponde con nome, corso, titolo di merito e data
+dell'ultima consegna, letti dal server e non dal file.
+
+**Non ha richiesto migrazioni, ed è la scelta portante:** il codice si *ricava*
+dall'id dell'iscrizione invece di essere una colonna nuova — otto caratteri di
+localizzatore, che servono solo a ritrovare la riga con l'indice della chiave
+primaria, più quaranta bit di HMAC con una chiave derivata da
+`UNLOCK_CODE_KEY`, che sono ciò che rende il codice non inventabile. Quindi
+vale anche per gli attestati già scaricati, senza riempire niente a
+posteriori. Il prezzo: **un singolo attestato non si può revocare**, perché non
+c'è una riga da spegnere. Vedi `src/lib/verification.ts`; la parte che decide
+è isolata in `codeMatches` ed è coperta da otto test che non richiedono un
+database né una chiave nell'ambiente.
 
 ## Pronto ma non ancora in produzione
 
@@ -314,12 +339,23 @@ continuano a funzionare.
 
 ### La promessa bilingue, che oggi è disattesa
 
-C'è l'interruttore IT/EN su ogni pagina, ma:
+Risolto in parte: **i campi inglesi del catalogo si riempiono da soli.** Nella
+pagina di una lezione un pulsante «Traduci in inglese» manda il testo italiano
+a `POST /api/admin/translate` e riempie i campi inglesi — domanda, opzioni e
+spiegazione insieme (tradurre un'opzione senza la sua domanda perde il senso),
+e a parte titolo e sottotitolo della lezione. Non traduce al salvataggio: quel
+che torna resta modificabile, perché un testo che va davanti ai corsisti deve
+poter passare da un occhio umano. Serve `ANTHROPIC_API_KEY`; senza, il
+pulsante dice che non è configurato e il resto funziona.
 
-- **l'attestato è tutto in italiano fisso** — il pezzo che il corsista si porta
-  a casa non cambia una parola premendo EN;
+Resta disatteso:
+
+- **l'attestato è quasi tutto in italiano fisso** — il pezzo che il corsista si
+  porta a casa non cambia premendo EN (il codice di verifica non ha lingua, ma
+  tutto il resto sì);
 - **tutta l'area relatore** è in italiano fisso, fuori da `src/lib/i18n.ts`;
-- il titolo inglese di una dispensa non è scrivibile da nessun campo.
+- il titolo inglese di una dispensa non è scrivibile da nessun campo, quindi
+  non c'è nemmeno niente da tradurre.
 
 ### Buchi nel pannello relatore
 

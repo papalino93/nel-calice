@@ -71,6 +71,31 @@ export default function CertificatePage({
       {status.earned ? (
         <div className="rise-in">
           <CertificateView data={status.data} />
+
+          {/* Lo stesso codice è stampato sulla pergamena, ma là è alto dieci
+              pixel su mille: sul telefono non si legge e non si copia. Qui è
+              testo vero — si seleziona, e il link si tocca. */}
+          {status.data.verificationCode && (
+            <section className="no-print card mt-5 p-5">
+              <p className="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-gold/80">
+                {lang === "en" ? "Verification code" : "Codice di verifica"}
+              </p>
+              <p className="mt-2 font-mono text-base tracking-wide text-cream">
+                {status.data.verificationCode}
+              </p>
+              <p className="mt-3 text-xs leading-relaxed text-cream/60">
+                {lang === "en"
+                  ? "Anyone can check this certificate is genuine — no account needed:"
+                  : "Chiunque può controllare che l'attestato sia autentico, senza bisogno di un account:"}{" "}
+                <Link
+                  href={`/verifica/${status.data.verificationCode}`}
+                  className="text-gold underline underline-offset-4"
+                >
+                  {lang === "en" ? "open the check" : "apri la verifica"}
+                </Link>
+              </p>
+            </section>
+          )}
         </div>
       ) : (
         <div className="card mx-auto max-w-md p-6 text-center">

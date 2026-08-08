@@ -1,7 +1,9 @@
 import type { CertificateData } from "@/components/Certificate";
 import { courseOverview } from "./course";
 import type { EnrollmentRef } from "./enrollment";
+import { siteHost } from "./site";
 import { TOTAL_COURSE_POINTS, meritSubtitle, meritTitle, percentage } from "./scoring";
+import { formatVerificationCode, verificationCode } from "./verification";
 
 // Quando si ottiene l'attestato.
 //
@@ -51,6 +53,10 @@ export async function certificateFor(
       meritSubtitle: meritSubtitle(title),
       date: formatDate(new Date()),
       issuer: "L'Angolo del Vino",
+      // Ricavato dall'iscrizione, non salvato: vedi src/lib/verification.ts.
+      // Vale anche per gli attestati già scaricati prima che esistesse.
+      verificationCode: formatVerificationCode(verificationCode(enrollment.id)),
+      verificationHost: siteHost(),
     },
   };
 }
@@ -65,5 +71,9 @@ export function sampleCertificate(courseTitle: string): CertificateData {
     meritSubtitle: meritSubtitle(title),
     date: formatDate(new Date()),
     issuer: "L'Angolo del Vino",
+    // Un codice finto, ma della lunghezza giusta: l'anteprima serve a vedere
+    // l'ingombro. Cercarlo davvero risponde "non risulta", ed è corretto.
+    verificationCode: formatVerificationCode("ESEMPIO000000000"),
+    verificationHost: siteHost(),
   };
 }

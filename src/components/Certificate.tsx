@@ -40,6 +40,13 @@ export type CertificateData = {
   meritSubtitle: string;
   date: string;
   issuer: string;
+  /**
+   * Codice di verifica già formattato, e l'indirizzo dove si controlla.
+   * Facoltativi: l'anteprima del relatore non ne ha uno vero, e senza di
+   * essi la pergamena è esattamente com'era prima.
+   */
+  verificationCode?: string;
+  verificationHost?: string;
 };
 
 /** Sigillo dentellato, lo stesso dell'app ma ridisegnato in coordinate SVG. */
@@ -351,9 +358,11 @@ export function Certificate({
         {data.date}
       </text>
 
+      {/* Il piede si è alzato per fare posto alla riga di verifica: la
+          cornice interna finisce a 660, e tutto deve stare dentro. */}
       <text
         x={cx}
-        y="628"
+        y="616"
         textAnchor="middle"
         fill={GOLD_DEEP}
         fontFamily={SANS}
@@ -365,15 +374,32 @@ export function Certificate({
 
       <text
         x={cx}
-        y="650"
+        y="634"
         textAnchor="middle"
         fill={INK}
         fontFamily={SANS}
-        fontSize="9"
-        opacity="0.4"
+        fontSize="10"
+        opacity="0.5"
       >
         Corso amatoriale · non costituisce qualifica professionale
       </text>
+
+      {/* La riga che rende l'attestato controllabile. Chi lo riceve non deve
+          fidarsi del PNG — che chiunque saprebbe ritoccare — ma di quello
+          che il server risponde a questo indirizzo. */}
+      {data.verificationCode && data.verificationHost && (
+        <text
+          x={cx}
+          y="652"
+          textAnchor="middle"
+          fill={INK}
+          fontFamily={SANS}
+          fontSize="10"
+          opacity="0.55"
+        >
+          {`Verifica: ${data.verificationHost}/verifica/${data.verificationCode}`}
+        </text>
+      )}
     </svg>
   );
 }
