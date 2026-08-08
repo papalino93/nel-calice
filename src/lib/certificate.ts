@@ -5,13 +5,12 @@ import { TOTAL_COURSE_POINTS, meritSubtitle, meritTitle, percentage } from "./sc
 
 // Quando si ottiene l'attestato.
 //
-// Regola unica: quando l'iscritto ha svolto **tutte le lezioni del corso che
-// hanno domande**. Vale sia per un corso con la prova finale sia per uno
-// tematico che non ce l'ha — e non ci sarebbe altro modo di trattare i
-// secondi senza lasciarli senza riconoscimento.
-//
-// Le lezioni ancora senza domande non contano: non sono svolgibili, e
-// pretenderle bloccherebbe l'attestato per sempre.
+// Regola unica: quando l'iscritto ha svolto **tutte le lezioni del corso**,
+// comprese quelle che il relatore non ha ancora scritto. È deliberato: un
+// corso a metà — tre serate su sei ancora senza domande — non deve produrre
+// un attestato «di tutto il corso» dopo la prima sera. L'attestato arriva
+// alla fine dell'ultima lezione, non prima, e se una lezione manca ancora di
+// domande semplicemente non si può finire il corso finché non viene scritta.
 
 export type CertificateStatus =
   | { earned: true; data: CertificateData }
@@ -32,11 +31,11 @@ export async function certificateFor(
   const overview = await courseOverview(enrollment);
   if (!overview) return null;
 
-  const doable = overview.lessons.filter((l) => l.status !== "vuoto");
-  const done = doable.filter((l) => l.status === "fatto");
+  const required = overview.lessons;
+  const done = required.filter((l) => l.status === "fatto");
 
-  if (doable.length === 0 || done.length < doable.length) {
-    return { earned: false, done: done.length, required: doable.length };
+  if (required.length === 0 || done.length < required.length) {
+    return { earned: false, done: done.length, required: required.length };
   }
 
   const title = meritTitle(
@@ -50,8 +49,6 @@ export async function certificateFor(
       courseTitle: overview.course.titleIt,
       meritTitle: title,
       meritSubtitle: meritSubtitle(title),
-      score: overview.totalScore,
-      maxScore: TOTAL_COURSE_POINTS,
       date: formatDate(new Date()),
       issuer: "L'Angolo del Vino",
     },
@@ -66,8 +63,6 @@ export function sampleCertificate(courseTitle: string): CertificateData {
     courseTitle,
     meritTitle: title,
     meritSubtitle: meritSubtitle(title),
-    score: 96,
-    maxScore: TOTAL_COURSE_POINTS,
     date: formatDate(new Date()),
     issuer: "L'Angolo del Vino",
   };

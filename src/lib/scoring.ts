@@ -14,6 +14,19 @@
 
 export const TOTAL_COURSE_POINTS = 100;
 
+/**
+ * Riporta a 100 una somma di punteggi che potrebbe averlo superato.
+ *
+ * Ogni tentativo pesa quanto valeva il corso al momento della consegna
+ * (`QuizAttempt.maxScore` lo fotografa apposta, vedi sopra). Se il relatore
+ * aggiunge lezioni dopo che qualcuno ha già finito le prime, la somma dei
+ * punteggi storici può superare il totale attuale — non deve mai succedere
+ * che un attestato o un pannello mostrino più del massimo possibile.
+ */
+export function clampToCourseTotal(totalScore: number): number {
+  return Math.min(totalScore, TOTAL_COURSE_POINTS);
+}
+
 /** Quota dell'esame finale quando esistono anche lezioni normali con domande. */
 export const EXAM_SHARE = 60;
 

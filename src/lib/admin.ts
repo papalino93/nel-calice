@@ -1,7 +1,7 @@
 import { AttemptStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { codeLookup, decryptCode, encryptCode, normalizeCode } from "./codes";
-import { computeBudgets, describeLessonScoring } from "./scoring";
+import { clampToCourseTotal, computeBudgets, describeLessonScoring } from "./scoring";
 
 // Operazioni del relatore. Sono qui e non nelle route per un motivo preciso:
 // ognuna deve essere chiamata solo dopo `requireAdmin()`, e tenerle insieme
@@ -258,6 +258,49 @@ export type CoursePatch = {
   examTimerMinutes?: number;
 };
 
+function slugify(titleIt: string): string {
+  return (
+    titleIt
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // toglie gli accenti (NFD li isola)
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "corso"
+  );
+}
+
+/**
+ * Crea un corso nuovo, vuoto: nessuna lezione ancora dentro, si aggiungono
+ * dal pannello del corso appena creato — dal catalogo o scrivendole sul
+ * posto, come già si fa per le singole serate.
+ *
+ * Lo slug è derivato dal titolo e reso unico da soli, perché il relatore non
+ * deve inventarsi un indirizzo: se «Corso di Avvicinamento al Vino» esiste
+ * già, la seconda edizione diventa `corso-di-avvicinamento-al-vino-2`.
+ */
+export async function createCourse(input: {
+  titleIt: string;
+  titleEn?: string;
+  enrollmentCode: string;
+}) {
+  const base = slugify(input.titleIt);
+  let slug = base;
+  for (let n = 2; await prisma.course.findUnique({ where: { slug } }); n++) {
+    slug = `${base}-${n}`;
+  }
+
+  return prisma.course.create({
+    data: {
+      slug,
+      titleIt: input.titleIt,
+      titleEn: input.titleEn?.trim() || input.titleIt,
+      status: "DRAFT",
+      enrollmentCodeEncrypted: encryptCode(input.enrollmentCode),
+      enrollmentCodeLookup: codeLookup(input.enrollmentCode),
+    },
+  });
+}
+
 export async function updateCourse(slug: string, patch: CoursePatch) {
   return prisma.course.update({
     where: { slug },
@@ -457,13 +500,25 @@ export async function updateLesson(
 export type ClassOverview = {
   totalPoints: number;
   students: {
+    enrollmentId: string;
     name: string;
     email: string;
     enrolledAt: string;
     totalScore: number;
     doneCount: number;
-    /** Punteggio per lezione, indicizzato per courseLessonId. */
-    byLesson: Record<string, { score: number; maxScore: number } | null>;
+    /**
+     * Per lezione, indicizzato per courseLessonId. `null` significa che non
+     * esiste alcun tentativo — non c'è niente da azzerare. Un tentativo
+     * aperto (`inProgress: true`, senza punteggio) è quello che nasce da un
+     * click su "inizia" per sbaglio: senza questo campo restava indistinguibile
+     * da "non ancora iniziato", e il relatore non aveva modo di accorgersene.
+     */
+    byLesson: Record<
+      string,
+      | { inProgress: true; score: null; maxScore: null }
+      | { inProgress: false; score: number; maxScore: number }
+      | null
+    >;
   }[];
   lessons: {
     courseLessonId: string;
@@ -529,24 +584,29 @@ export async function classOverview(
 
     for (const cl of course.lessons) {
       const attempt = e.attempts.find((a) => a.courseLessonId === cl.id);
-      const done = attempt && attempt.status !== AttemptStatus.IN_PROGRESS;
-      if (done) {
+      if (!attempt) {
+        byLesson[cl.id] = null;
+      } else if (attempt.status === AttemptStatus.IN_PROGRESS) {
+        byLesson[cl.id] = { inProgress: true, score: null, maxScore: null };
+      } else {
         byLesson[cl.id] = {
+          inProgress: false,
           score: attempt.score ?? 0,
           maxScore: attempt.maxScore ?? 0,
         };
         totalScore += attempt.score ?? 0;
         doneCount += 1;
-      } else {
-        byLesson[cl.id] = null;
       }
     }
 
     return {
+      enrollmentId: e.id,
       name: e.user.name,
       email: e.user.email,
       enrolledAt: e.enrolledAt.toISOString(),
-      totalScore,
+      // Stessa cautela di courseOverview: un corso allargato dopo che
+      // qualcuno ha già finito può sommare oltre il massimo attuale.
+      totalScore: clampToCourseTotal(totalScore),
       doneCount,
       byLesson,
     };
@@ -605,6 +665,39 @@ export async function classOverview(
       // Le domande andate peggio in cima: sono quelle su cui tornare.
       .sort((a, b) => a.correctRate - b.correctRate),
   };
+}
+
+/**
+ * Azzera il tentativo di un corsista su una lezione, così può rifarlo.
+ *
+ * Il corsista non ha modo di farlo da solo — il vincolo che impedisce due
+ * tentativi sulla stessa lezione (§3.4) è voluto e resta per lui — ma
+ * capitano casi in cui serve il relatore: un click su "inizia" per sbaglio,
+ * un tentativo partito e mai davvero svolto. È lui a decidere quando vale la
+ * pena, non l'app da sola.
+ *
+ * Cancella solo il tentativo: lo sblocco della serata resta quello che era,
+ * così il corsista può ripartire senza dover richiedere anche quello.
+ *
+ * `courseId` nel filtro non è ridondante: senza, un `enrollmentId` o un
+ * `courseLessonId` scambiato per errore azzererebbe il tentativo sbagliato
+ * in tutt'altro corso.
+ */
+export async function resetAttempt(
+  slug: string,
+  enrollmentId: string,
+  courseLessonId: string,
+): Promise<boolean> {
+  const course = await prisma.course.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!course) return false;
+
+  const { count } = await prisma.quizAttempt.deleteMany({
+    where: { courseId: course.id, enrollmentId, courseLessonId },
+  });
+  return count > 0;
 }
 
 /** Sblocco o riblocco immediato di una lezione per tutti gli iscritti. */

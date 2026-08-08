@@ -38,8 +38,6 @@ export type CertificateData = {
   courseTitle: string;
   meritTitle: string;
   meritSubtitle: string;
-  score: number;
-  maxScore: number;
   date: string;
   issuer: string;
 };
@@ -338,7 +336,10 @@ export function Certificate({
         {data.meritSubtitle.toUpperCase()}
       </text>
 
-      {/* Punteggio e data */}
+      {/* Solo la data: niente numero. Il titolo di merito già dice come è
+          andata, in una forma che non mette mai in imbarazzo — un
+          "26/100" stampato su un ricordo da appendere lo farebbe, un
+          "Amico del Calice" no. */}
       <text
         x={cx}
         y="574"
@@ -347,11 +348,6 @@ export function Certificate({
         fontFamily={SANS}
         fontSize="14"
       >
-        Punteggio finale{" "}
-        <tspan fontWeight="bold">
-          {data.score} / {data.maxScore}
-        </tspan>
-        <tspan opacity="0.45">{"   ·   "}</tspan>
         {data.date}
       </text>
 

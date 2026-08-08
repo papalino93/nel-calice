@@ -2,6 +2,7 @@ import { AttemptStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import {
   TOTAL_COURSE_POINTS,
+  clampToCourseTotal,
   computeBudgets,
   meritTitle,
   percentage,
@@ -144,7 +145,12 @@ export async function courseOverview(
     };
   });
 
-  const totalScore = cards.reduce((sum, c) => sum + (c.score ?? 0), 0);
+  // Se il relatore allarga il corso dopo che qualcuno ha già finito le prime
+  // lezioni, la somma dei punteggi storici può superare il massimo attuale:
+  // non deve mai superare 100.
+  const totalScore = clampToCourseTotal(
+    cards.reduce((sum, c) => sum + (c.score ?? 0), 0),
+  );
   const exam = cards.find((c) => c.isExam);
 
   return {

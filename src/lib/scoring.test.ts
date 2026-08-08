@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampToCourseTotal,
   computeBudgets,
   describeLessonScoring,
   distributeEvenly,
@@ -217,5 +218,21 @@ describe("fasce di merito", () => {
   it("non divide per zero su un massimo nullo", () => {
     expect(percentage(0, 0)).toBe(0);
     expect(meritTitle(percentage(0, 0))).toBe("Amico del Calice");
+  });
+});
+
+describe("clampToCourseTotal", () => {
+  it("lascia intatta una somma che sta nel massimo", () => {
+    expect(clampToCourseTotal(0)).toBe(0);
+    expect(clampToCourseTotal(60)).toBe(60);
+    expect(clampToCourseTotal(100)).toBe(100);
+  });
+
+  it("riporta a 100 una somma di punteggi storici che l'ha superato", () => {
+    // Il caso reale: si fa una lezione quando è l'unica scritta (100 punti),
+    // poi il relatore ne scrive altre e i budget si restringono — la somma
+    // dei punteggi già consegnati può arrivare oltre il nuovo massimo.
+    expect(clampToCourseTotal(186)).toBe(100);
+    expect(clampToCourseTotal(101)).toBe(100);
   });
 });
