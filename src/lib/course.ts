@@ -6,6 +6,7 @@ import {
   computeBudgets,
   meritTitle,
   percentage,
+  rescaleToCurrentBudget,
 } from "./scoring";
 import type { EnrollmentRef } from "./enrollment";
 
@@ -138,16 +139,27 @@ export async function courseOverview(
       status,
       unlocked,
       points: budget?.budget ?? 0,
-      score: done ? (attempt.score ?? 0) : null,
-      maxScore: done ? (attempt.maxScore ?? 0) : null,
+      // Il punteggio mostrato qui è quello di OGGI, non quello congelato
+      // alla consegna: se il corso è cresciuto nel frattempo, il budget di
+      // questa lezione può essere cambiato, e mostrare il numero di allora
+      // farebbe sommare le carte a più del "Totale" accanto.
+      score: done
+        ? rescaleToCurrentBudget(
+            attempt.score ?? 0,
+            attempt.maxScore ?? 0,
+            budget?.budget ?? 0,
+          )
+        : null,
+      maxScore: done ? (budget?.budget ?? 0) : null,
       attemptId: attempt?.id ?? null,
       inProgress: attempt?.status === AttemptStatus.IN_PROGRESS,
     };
   });
 
-  // Se il relatore allarga il corso dopo che qualcuno ha già finito le prime
-  // lezioni, la somma dei punteggi storici può superare il massimo attuale:
-  // non deve mai superare 100.
+  // Ogni card è già rescalata al budget di oggi, quindi la somma non
+  // dovrebbe mai superare 100: il clamp resta solo come rete contro un
+  // arrotondamento indipendente per lezione che, sommato su molte lezioni,
+  // la faccia sforare di un punto.
   const totalScore = clampToCourseTotal(
     cards.reduce((sum, c) => sum + (c.score ?? 0), 0),
   );

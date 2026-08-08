@@ -6,6 +6,7 @@ import {
   distributeEvenly,
   meritTitle,
   percentage,
+  rescaleToCurrentBudget,
   totalAssignablePoints,
   type LessonForScoring,
 } from "./scoring";
@@ -234,5 +235,41 @@ describe("clampToCourseTotal", () => {
     // dei punteggi già consegnati può arrivare oltre il nuovo massimo.
     expect(clampToCourseTotal(186)).toBe(100);
     expect(clampToCourseTotal(101)).toBe(100);
+  });
+});
+
+describe("rescaleToCurrentBudget", () => {
+  it("non cambia nulla se il budget è rimasto lo stesso", () => {
+    expect(rescaleToCurrentBudget(8, 8, 8)).toBe(8);
+    expect(rescaleToCurrentBudget(0, 8, 8)).toBe(0);
+  });
+
+  it("riporta il punteggio al budget di oggi mantenendo la percentuale", () => {
+    // Perfetto quando la lezione valeva 100 (era l'unica scritta): oggi che
+    // il budget si è ristretto a 14, vale 14 — non più 100.
+    expect(rescaleToCurrentBudget(100, 100, 14)).toBe(14);
+    // Il 50% di allora resta il 50% di oggi, qualunque sia il nuovo budget.
+    expect(rescaleToCurrentBudget(50, 100, 14)).toBe(7);
+  });
+
+  it("regge anche se il budget è cresciuto, non solo ristretto", () => {
+    expect(rescaleToCurrentBudget(4, 4, 20)).toBe(20);
+  });
+
+  it("non divide per zero se il massimo di allora era 0", () => {
+    expect(rescaleToCurrentBudget(0, 0, 14)).toBe(0);
+  });
+
+  it("il caso reale che aveva rotto il totale: la somma ora sta nel budget per costruzione", () => {
+    // Lo stesso scenario di clampToCourseTotal: lezione fatta a 100/100
+    // quando era l'unica scritta, poi il corso cresce a 6 lezioni + esame.
+    // Prima si sommava il numero congelato (100) e si tagliava il totale;
+    // ora ogni lezione pesa già il proprio budget di oggi, quindi la somma
+    // non supera mai 100 — non serve più tagliarla.
+    const budgets = computeBudgets(course([8, 8, 8, 8, 8, 30], { examLast: true }));
+    const primaLezione = budgets[0];
+    const rescaled = rescaleToCurrentBudget(100, 100, primaLezione.budget);
+    expect(rescaled).toBe(primaLezione.budget);
+    expect(rescaled).toBeLessThan(100);
   });
 });

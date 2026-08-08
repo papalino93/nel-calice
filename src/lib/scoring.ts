@@ -15,13 +15,36 @@
 export const TOTAL_COURSE_POINTS = 100;
 
 /**
- * Riporta a 100 una somma di punteggi che potrebbe averlo superato.
+ * Riporta il punteggio di un tentativo già chiuso al budget di OGGI per
+ * quella lezione, mantenendo la percentuale con cui fu consegnato.
  *
- * Ogni tentativo pesa quanto valeva il corso al momento della consegna
- * (`QuizAttempt.maxScore` lo fotografa apposta, vedi sopra). Se il relatore
- * aggiunge lezioni dopo che qualcuno ha già finito le prime, la somma dei
- * punteggi storici può superare il totale attuale — non deve mai succedere
- * che un attestato o un pannello mostrino più del massimo possibile.
+ * `QuizAttempt.score`/`maxScore` restano quello che erano alla consegna —
+ * non li si tocca mai, un tentativo chiuso deve restare coerente con se
+ * stesso (vedi sopra). Ma se nel frattempo il relatore ha allargato il
+ * corso, il *peso* di quel tentativo nel totale dev'essere quello di oggi:
+ * altrimenti le carte delle singole lezioni continuano a mostrare il budget
+ * di allora, e la loro somma supera visibilmente il "Totale" mostrato
+ * accanto — un'incoerenza che chiunque sommi a mente le colonne nota subito.
+ *
+ * Con questa funzione la somma dei punteggi rescalati non può mai superare
+ * 100, per costruzione: ogni lezione pesa oggi non più del proprio budget
+ * attuale, e i budget attuali sommano sempre esattamente a 100
+ * (`computeBudgets`/`distributeEvenly` sono una partizione esatta).
+ */
+export function rescaleToCurrentBudget(
+  score: number,
+  maxScoreAtSubmission: number,
+  currentBudget: number,
+): number {
+  if (maxScoreAtSubmission <= 0) return 0;
+  return Math.round((score / maxScoreAtSubmission) * currentBudget);
+}
+
+/**
+ * Riporta a 100 una somma di punteggi. Con `rescaleToCurrentBudget` usato
+ * ovunque non dovrebbe più servire — resta come rete di sicurezza contro un
+ * arrotondamento che, sommato su molte lezioni, la faccia sforare di un
+ * punto o due.
  */
 export function clampToCourseTotal(totalScore: number): number {
   return Math.min(totalScore, TOTAL_COURSE_POINTS);

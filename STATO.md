@@ -235,9 +235,18 @@ corregge uno, tolga la voce.
   richiede **tutte** le lezioni del corso, comprese quelle senza ancora
   domande — non solo quelle già scritte. Un corso a metà non produce più un
   attestato "di tutto il corso" dopo la prima sera.
-- **Il punteggio non supera più 100.** `clampToCourseTotal` (`scoring.ts`)
-  riporta a 100 la somma anche quando il corso cresce dopo che qualcuno ha
-  già finito le prime lezioni con budget diversi. Testato per il caso reale
+- **Il punteggio non supera più 100, e le carte per lezione non sommano più
+  più del totale.** Un tentativo chiuso resta scritto com'era alla consegna
+  (`QuizAttempt.score`/`maxScore`, mai toccati: un tentativo deve restare
+  coerente con se stesso) — ma quello che si MOSTRA nelle carte per lezione
+  e nella tabella andamento classe è ora ricalcolato al budget di *oggi*,
+  mantenendo la percentuale di allora (`rescaleToCurrentBudget`,
+  `scoring.ts`). Chi ha fatto una lezione quando valeva 100 punti (era
+  l'unica scritta) la vede oggi valere quanto vale ora — 14, se il corso è
+  cresciuto a sei serate — non più 100. La somma delle carte non può quindi
+  più superare il "Totale" mostrato accanto: sono la stessa cosa, non due
+  calcoli indipendenti. `clampToCourseTotal` resta solo come rete contro un
+  arrotondamento indipendente per lezione. Testato anche sul caso reale
   trovato (186/100).
 
 Resta aperto:
@@ -246,15 +255,6 @@ Resta aperto:
   delle lezioni divisi per 12 serate lasciano 3-4 punti per serata da spartire
   fra 8 domande: 61 domande su 96 valgono zero. La somma resta 100, ma il
   corsista risponde a domande che non contano e non lo sa.
-- **Il tetto a 100 nasconde un'incoerenza visibile fra il totale e le singole
-  lezioni.** `clampToCourseTotal` limita solo la somma mostrata: le carte di
-  ogni lezione (dashboard, tabella andamento classe) continuano a mostrare il
-  punteggio storico non ritoccato. Nello stesso corso allargato che produce
-  186 di somma, un relatore che sommi a mente le colonne della tabella vede
-  più di quanto dice il "Totale" nella stessa riga. Discende dalla stessa
-  causa del difetto sopra (§ "Punteggi e attestato — risolti") e si chiude
-  con la stessa decisione: rinormalizzare i punteggi storici o congelare i
-  budget alla consegna.
 - **Un tentativo scaduto (`EXPIRED`) vale come "fatto" anche per
   l'attestato, senza soglia di punteggio.** Chi lascia scadere ogni quiz —
   scheda aperta fino a zero, o una sola visita successiva — riceve comunque

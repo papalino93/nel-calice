@@ -1,7 +1,12 @@
 import { AttemptStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { codeLookup, decryptCode, encryptCode, normalizeCode } from "./codes";
-import { clampToCourseTotal, computeBudgets, describeLessonScoring } from "./scoring";
+import {
+  clampToCourseTotal,
+  computeBudgets,
+  describeLessonScoring,
+  rescaleToCurrentBudget,
+} from "./scoring";
 
 // Operazioni del relatore. Sono qui e non nelle route per un motivo preciso:
 // ognuna deve essere chiamata solo dopo `requireAdmin()`, e tenerle insieme
@@ -554,7 +559,9 @@ export async function classOverview(
           position: true,
           isExam: true,
           lessonId: true,
-          lesson: { select: { titleIt: true } },
+          lesson: {
+            select: { titleIt: true, _count: { select: { questions: true } } },
+          },
         },
       },
       enrollments: {
@@ -577,6 +584,19 @@ export async function classOverview(
   });
   if (!course) return null;
 
+  // Stesso motivo di courseOverview (src/lib/course.ts): il budget di una
+  // lezione può essere cambiato da quando un tentativo è stato consegnato,
+  // e mostrare il numero congelato di allora farebbe sommare le colonne a
+  // più del "Totale" nella stessa riga.
+  const budgets = computeBudgets(
+    course.lessons.map((cl) => ({
+      id: cl.id,
+      isExam: cl.isExam,
+      questionCount: cl.lesson._count.questions,
+    })),
+  );
+  const budgetById = new Map(budgets.map((b) => [b.lessonId, b]));
+
   const students = course.enrollments.map((e) => {
     const byLesson: ClassOverview["students"][number]["byLesson"] = {};
     let totalScore = 0;
@@ -584,17 +604,20 @@ export async function classOverview(
 
     for (const cl of course.lessons) {
       const attempt = e.attempts.find((a) => a.courseLessonId === cl.id);
+      const currentBudget = budgetById.get(cl.id)?.budget ?? 0;
+
       if (!attempt) {
         byLesson[cl.id] = null;
       } else if (attempt.status === AttemptStatus.IN_PROGRESS) {
         byLesson[cl.id] = { inProgress: true, score: null, maxScore: null };
       } else {
-        byLesson[cl.id] = {
-          inProgress: false,
-          score: attempt.score ?? 0,
-          maxScore: attempt.maxScore ?? 0,
-        };
-        totalScore += attempt.score ?? 0;
+        const score = rescaleToCurrentBudget(
+          attempt.score ?? 0,
+          attempt.maxScore ?? 0,
+          currentBudget,
+        );
+        byLesson[cl.id] = { inProgress: false, score, maxScore: currentBudget };
+        totalScore += score;
         doneCount += 1;
       }
     }
