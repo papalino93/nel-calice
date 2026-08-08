@@ -8,6 +8,16 @@ Va aggiornato quando cambia lo stato, non a ogni commit.
 produzione <https://nuovo-corso-vino.vercel.app> · database Neon Postgres ·
 dispense su Vercel Blob (store privato `dispense`).
 
+**Il deploy non applica da solo le migrazioni.** `next build` non tocca il
+database: se `main` porta uno schema nuovo, va eseguito a mano
+`npx prisma migrate deploy` puntato al database di produzione — altrimenti il
+codice nuovo interroga colonne che non esistono ancora, e va in errore. È
+successo davvero l'8 agosto 2026: il campo `Course.location`/
+`certificateIssuer` e la tabella `CourseLogo` sono arrivati su `main` (e quindi
+in deploy) prima che qualcuno lanciasse la migrazione in produzione. Se leggi
+questo dopo quella data e le pagine dei corsi danno errore, è probabilmente
+questo: lancia la migrazione prima di cercare altrove.
+
 ## Cos'è
 
 Il corso di degustazione: gli iscritti seguono le serate, ogni serata si apre
