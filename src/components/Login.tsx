@@ -16,11 +16,7 @@ export function Login() {
       <div className="rise-in flex max-w-lg flex-col items-center text-center">
         <Seal size={116} />
 
-        <p className="mt-7 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-gold">
-          L&apos;Angolo del Vino
-        </p>
-
-        <h1 className="mt-3 font-serif text-4xl leading-[1.1] text-cream sm:text-5xl">
+        <h1 className="mt-7 font-serif text-4xl leading-[1.1] text-cream sm:text-5xl">
           {t.courseTitle}
         </h1>
 
