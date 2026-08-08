@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { codeLookup, encryptCode } from "../src/lib/codes";
+import { saveQuestion } from "../src/lib/admin";
+import { reviewView } from "../src/lib/quiz";
 
 const prisma = new PrismaClient();
 
@@ -303,6 +305,109 @@ async function main() {
     "corso A ancora in corso, corso B chiuso a 40/100",
   );
 
+  // Non è un vincolo del database, è un comportamento — ma è l'unico modo di
+  // provarlo senza cliccare due schermate a mano, e i due lati stanno lontani:
+  // il relatore scrive la spiegazione nel catalogo, il corsista la legge nella
+  // revisione dopo aver consegnato. Se si scollegassero non lo direbbe nessuno.
+  console.log("\n— La spiegazione dopo la risposta —");
+
+  // Lezione e serata tutte sue: così questa verifica non tocca le posizioni,
+  // i codici e i tentativi su cui poggiano i controlli qui sopra.
+  const lessonExpl = await prisma.lesson.create({
+    data: { titleIt: "Spiegazioni", titleEn: "Explanations" },
+  });
+  const clExpl = await prisma.courseLesson.create({
+    data: {
+      courseId: courseA.id,
+      lessonId: lessonExpl.id,
+      position: 2,
+      unlockCodeEncrypted: encryptCode("SPIEGA"),
+      unlockCodeLookup: codeLookup("SPIEGA"),
+    },
+  });
+
+  const written = await saveQuestion(lessonExpl.id, null, {
+    textIt: "Il tannino dà sensazione di…",
+    textEn: "Tannin gives a sensation of…",
+    explanationIt: "Astringenza: allega la bocca.",
+    explanationEn: "Astringency: it dries the mouth.",
+    options: [
+      { textIt: "Astringenza", textEn: "Astringency", isCorrect: true },
+      { textIt: "Dolcezza", textEn: "Sweetness", isCorrect: false },
+    ],
+  });
+
+  const stored = written.ok
+    ? await prisma.question.findUnique({
+        where: { id: written.questionId },
+        include: { options: true },
+      })
+    : null;
+
+  check(
+    "il pannello relatore salva davvero la spiegazione",
+    stored?.explanationIt === "Astringenza: allega la bocca." &&
+      stored?.explanationEn === "Astringency: it dries the mouth.",
+    stored ? "italiano e inglese scritti" : "domanda non creata",
+  );
+
+  // Una domanda senza spiegazione accanto a una che ce l'ha: serve a provare
+  // che la revisione resta com'era prima dove il campo è vuoto.
+  const plain = await saveQuestion(lessonExpl.id, null, {
+    textIt: "Senza spiegazione",
+    textEn: "No explanation",
+    options: [
+      { textIt: "A", textEn: "A", isCorrect: true },
+      { textIt: "B", textEn: "B", isCorrect: false },
+    ],
+  });
+
+  const reviewAttempt = await prisma.quizAttempt.create({
+    data: {
+      courseId: courseA.id,
+      enrollmentId: enrA.id,
+      courseLessonId: clExpl.id,
+      expiresAt: new Date(Date.now() + 900_000),
+      submittedAt: new Date(),
+      status: "SUBMITTED",
+      score: 1,
+      maxScore: 2,
+    },
+  });
+
+  if (stored && plain.ok) {
+    // Si risponde SBAGLIATO di proposito: la spiegazione deve arrivare
+    // comunque, ed è la metà della funzione che è facile perdere per strada.
+    await prisma.attemptAnswer.create({
+      data: {
+        attemptId: reviewAttempt.id,
+        questionId: stored.id,
+        selectedOptionId: stored.options.find((o) => !o.isCorrect)!.id,
+        isCorrect: false,
+        pointsAwarded: 0,
+      },
+    });
+
+    const review = await reviewView(reviewAttempt.id, {
+      id: enrA.id,
+      courseId: courseA.id,
+    });
+    const seen = review?.questions.find((q) => q.id === stored.id);
+    const empty = review?.questions.find((q) => q.id === plain.questionId);
+
+    check(
+      "e il corsista la legge anche quando ha sbagliato",
+      seen?.isCorrect === false &&
+        seen?.explanationIt === "Astringenza: allega la bocca.",
+      seen ? `isCorrect=${seen.isCorrect}` : "domanda assente dalla revisione",
+    );
+    check(
+      "dove la spiegazione non c'è, la revisione resta com'era prima",
+      empty?.explanationIt === null && empty?.explanationEn === null,
+      "nessun campo inventato",
+    );
+  }
+
   console.log("\n— Cancellazione di un corso —");
   const lessonsBefore = await prisma.lesson.count();
   await prisma.course.deleteMany({
@@ -324,7 +429,7 @@ async function main() {
 
   // Le lezioni di prova ora sono libere: nessun corso le usa più.
   await prisma.lesson.deleteMany({
-    where: { id: { in: [lesson.id, lesson2.id] } },
+    where: { id: { in: [lesson.id, lesson2.id, lessonExpl.id] } },
   });
   await prisma.user.deleteMany({ where: { id: { in: [user.id, other.id] } } });
   console.log("Dati di prova rimossi; il catalogo del seed resta intatto.");

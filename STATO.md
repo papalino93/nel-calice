@@ -103,8 +103,18 @@ npx prisma migrate deploy   # solo se il database è vuoto
 npm run dev
 ```
 
-Verifiche: `npm test` (unità), `npm run lint`, `npm run build`,
-`npm run test:db` (vincoli, richiede un database).
+Verifiche: `npm test` (unità), `npm run lint`, `npm run build`.
+
+Le due che parlano con un database vero, e che **non** sono la stessa cosa:
+
+| Comando | Cosa fa | Dove si può puntare |
+|---|---|---|
+| `npm run check:schema` | **Solo letture.** Stampa a quale database si è connesso, elenca le migrazioni applicate e controlla che le colonne che il codice si aspetta ci siano davvero, anche attraverso il client Prisma generato | ovunque, **produzione compresa** |
+| `npm run test:db` | Crea e cancella righe di prova per verificare i vincoli e il giro relatore→corsista | **solo sviluppo** |
+
+`check:schema` risponde in un comando alla domanda che dopo ogni migrazione
+torna sempre — *l'ho lanciata sul database giusto?* — perché la prima riga che
+stampa è l'host a cui si è connesso.
 
 ## Le dispense non hanno più un segreto da proteggere
 
@@ -130,15 +140,23 @@ con revisione, attestato scaricabile in PNG, pannello relatore completo (corsi,
 catalogo, domande, andamento della classe) e dispense con caricamento diretto e
 accesso protetto.
 
-Fanno eccezione tre cose, scritte e verdi a test/lint/build ma **mai provate
-dal vivo** — nessuno le ha ancora cliccate con un database vero:
+**La spiegazione dopo la risposta è provata contro un Postgres vero**, non
+solo compilata: `npm run test:db` copre ora entrambi i lati — il relatore che
+la salva dal catalogo e il corsista che la legge nella revisione *anche
+avendo sbagliato*, che è la metà facile da perdere per strada — più il caso
+in cui la spiegazione non c'è e la revisione deve restare com'era prima.
+Resta da cliccarla in produzione, ma non è più codice mai eseguito.
+
+Fanno eccezione tre cose, scritte e verdi a test/lint/build ma **mai eseguite
+con un database vero**:
 
 - dalla pagina del corso il relatore può scrivere una lezione nuova sul posto,
   senza passare dal catalogo (resta comunque riusabile, e l'interfaccia lo
   dice);
 - il pulsante «Traduci in inglese» nel catalogo (serve `ANTHROPIC_API_KEY`:
   finché non è impostata su Vercel, risponde che non è configurato);
-- il codice di verifica dell'attestato, qui sotto.
+- il codice di verifica dell'attestato, qui sotto — la parte che decide se un
+  codice è autentico è però coperta da otto test che non richiedono database.
 
 ### L'attestato si può controllare
 

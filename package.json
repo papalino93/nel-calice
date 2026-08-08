@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "postinstall": "prisma generate",
     "test:db": "tsx scripts/verify-constraints.ts",
+    "check:schema": "tsx scripts/check-schema.ts",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
