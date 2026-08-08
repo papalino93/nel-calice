@@ -1,18 +1,19 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { use, useCallback, useEffect, useState } from "react";
+import { api, errorMessage } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 import { AdminSection, AdminShell } from "@/components/admin/AdminShell";
 
 type ClassOverview = {
   totalPoints: number;
   students: {
+    enrollmentId: string;
     name: string;
     email: string;
     totalScore: number;
     doneCount: number;
-    byLesson: Record<string, { score: number; maxScore: number } | null>;
+    byLesson: Record<string, Cell>;
   }[];
   lessons: {
     courseLessonId: string;
@@ -29,6 +30,11 @@ type ClassOverview = {
   }[];
 };
 
+type Cell =
+  | { inProgress: true; score: null; maxScore: null }
+  | { inProgress: false; score: number; maxScore: number }
+  | null;
+
 export default function ClassPage({
   params,
 }: {
@@ -37,6 +43,8 @@ export default function ClassPage({
   const { slug } = use(params);
   const { t } = useLanguage();
   const [data, setData] = useState<ClassOverview | null>(null);
+  const [reloads, setReloads] = useState(0);
+  const reload = useCallback(() => setReloads((n) => n + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,7 +57,7 @@ export default function ClassPage({
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, reloads]);
 
   if (!data) {
     return (
@@ -67,7 +75,7 @@ export default function ClassPage({
     >
       <AdminSection
         title="Chi ha fatto cosa"
-        hint="Una riga per iscritto, una colonna per lezione. Il punteggio compare solo per le lezioni già consegnate."
+        hint="Una riga per iscritto, una colonna per lezione. Il punteggio compare solo per le lezioni già consegnate. Su un tentativo — in corso o già consegnato — puoi azzerarlo perché lo rifaccia: serve per un click su «inizia» per sbaglio, o un tentativo mai davvero svolto. Il corsista non può farlo da solo."
       >
         {data.students.length === 0 ? (
           <p className="card p-5 text-sm text-cream/45">
@@ -96,7 +104,7 @@ export default function ClassPage({
               <tbody>
                 {data.students.map((s) => (
                   <tr
-                    key={s.email}
+                    key={s.enrollmentId}
                     className="border-b border-cream/5 last:border-0"
                   >
                     <td className="p-3">
@@ -105,26 +113,16 @@ export default function ClassPage({
                         {s.email}
                       </span>
                     </td>
-                    {data.lessons.map((l) => {
-                      const cell = s.byLesson[l.courseLessonId];
-                      return (
-                        <td
-                          key={l.courseLessonId}
-                          className="p-3 text-center tabular-nums"
-                        >
-                          {cell ? (
-                            <span className="text-cream/85">
-                              {cell.score}
-                              <span className="text-cream/30">
-                                /{cell.maxScore}
-                              </span>
-                            </span>
-                          ) : (
-                            <span className="text-cream/20">—</span>
-                          )}
-                        </td>
-                      );
-                    })}
+                    {data.lessons.map((l) => (
+                      <StudentCell
+                        key={l.courseLessonId}
+                        slug={slug}
+                        enrollmentId={s.enrollmentId}
+                        courseLessonId={l.courseLessonId}
+                        cell={s.byLesson[l.courseLessonId]}
+                        onReset={reload}
+                      />
+                    ))}
                     <td className="p-3 text-right font-serif text-lg text-gold tabular-nums">
                       {s.totalScore}
                       <span className="text-cream/30">
@@ -186,5 +184,102 @@ export default function ClassPage({
         )}
       </AdminSection>
     </AdminShell>
+  );
+}
+
+/**
+ * Una cella della tabella: il punteggio (o "in corso", o "—"), più
+ * l'azzeramento quando c'è un tentativo da rifare.
+ *
+ * Il pulsante sta dietro un tocco in più apposta: è un'azione che tocca il
+ * lavoro di un'altra persona, e non deve essere a un clic di distanza da un
+ * numero che si sta solo leggendo.
+ */
+function StudentCell({
+  slug,
+  enrollmentId,
+  courseLessonId,
+  cell,
+  onReset,
+}: {
+  slug: string;
+  enrollmentId: string;
+  courseLessonId: string;
+  cell: Cell;
+  onReset: () => void;
+}) {
+  const { t } = useLanguage();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function reset() {
+    setBusy(true);
+    setMsg(null);
+    const result = await api(`/api/admin/courses/${slug}/class/attempts`, {
+      method: "DELETE",
+      body: JSON.stringify({ enrollmentId, courseLessonId }),
+    });
+    setBusy(false);
+    if (result.ok) {
+      setConfirming(false);
+      onReset();
+    } else {
+      setMsg(errorMessage(result, t));
+    }
+  }
+
+  if (confirming) {
+    return (
+      <td className="p-2 text-center">
+        <div className="inline-flex items-center gap-1.5">
+          <button
+            onClick={reset}
+            disabled={busy}
+            className="press rounded-full bg-red-400/15 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-400/25"
+          >
+            Conferma
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            disabled={busy}
+            className="press rounded-full px-2 py-1.5 text-xs text-cream/40 hover:text-cream/70"
+          >
+            Annulla
+          </button>
+        </div>
+        {msg && <p className="mt-1 text-[0.65rem] text-red-300">{msg}</p>}
+      </td>
+    );
+  }
+
+  return (
+    <td className="p-3 text-center tabular-nums">
+      <span className="inline-flex items-center gap-1.5">
+        {cell === null ? (
+          <span className="text-cream/20">—</span>
+        ) : cell.inProgress ? (
+          <span className="text-xs text-gold/70">in corso</span>
+        ) : (
+          <span className="text-cream/85">
+            {cell.score}
+            <span className="text-cream/30">/{cell.maxScore}</span>
+          </span>
+        )}
+        {cell !== null && (
+          // Sempre visibile, non solo al passaggio del mouse: su tablet e
+          // telefono non esiste un hover da cui farlo comparire, e sarebbe
+          // altrimenti irraggiungibile col tocco.
+          <button
+            onClick={() => setConfirming(true)}
+            title="Azzera il tentativo, perché lo rifaccia"
+            aria-label="Azzera il tentativo"
+            className="press grid min-h-8 min-w-8 place-items-center rounded-full text-sm text-cream/25 transition-colors hover:text-red-300"
+          >
+            ↺
+          </button>
+        )}
+      </span>
+    </td>
   );
 }
