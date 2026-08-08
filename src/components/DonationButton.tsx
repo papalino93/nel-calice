@@ -11,6 +11,13 @@ import { useLanguage } from "@/components/LanguageProvider";
  * e non disturba; ridotto alla sola icona in tutte le altre pagine, dove
  * ruberebbe attenzione al corso. Su desktop si riapre al passaggio del mouse;
  * su touch resta com'è, perché lì l'hover non esiste davvero.
+ *
+ * Bordeaux, non oro: l'oro è il colore riservato alle azioni primarie
+ * dell'app (consegnare il quiz, accedere), e un pulsante di supporto pieno
+ * oro pesava visivamente quanto quelle — è la stessa causa di colore dietro
+ * al bug che lo faceva confondere col pulsante del quiz su telefono. Il
+ * bordeaux è già il colore di marca nella palette: un invito a sostenere
+ * l'attività è più vicino a "chi siamo" che a "fai questo".
  */
 export function DonationButton({ href }: { href: string }) {
   const { lang } = useLanguage();
@@ -25,7 +32,7 @@ export function DonationButton({ href }: { href: string }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className={`no-print press group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-gold font-medium text-charcoal shadow-lg shadow-black/35 transition-all ${
+      className={`no-print press group fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-bordeaux font-medium text-cream shadow-lg shadow-black/35 transition-all hover:brightness-110 ${
         expanded ? "px-5 py-3" : "p-3.5"
       }`}
     >
