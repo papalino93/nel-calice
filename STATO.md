@@ -4,8 +4,9 @@ Documento di ripresa: chi arriva qui — persona o assistente, su qualsiasi
 macchina o account — deve poter riprendere senza farsi raccontare niente.
 Va aggiornato quando cambia lo stato, non a ogni commit.
 
-**Dove vive:** repo [papalino93/nuovo-corso-vino](https://github.com/papalino93/nuovo-corso-vino) ·
-produzione <https://nuovo-corso-vino.vercel.app> · database Neon Postgres ·
+**Dove vive:** repo [papalino93/nel-calice](https://github.com/papalino93/nel-calice)
+(rinominato da `nuovo-corso-vino` — vedi "Nome e dominio" più giù) ·
+produzione <https://nel-calice.vercel.app> · database Neon Postgres ·
 dispense su Vercel Blob (store privato `dispense`).
 
 ## Cos'è
@@ -102,7 +103,7 @@ l'ambiente incompleto.
 ## Ripartire su una macchina nuova
 
 ```bash
-git clone https://github.com/papalino93/nuovo-corso-vino && cd nuovo-corso-vino
+git clone https://github.com/papalino93/nel-calice && cd nel-calice
 npm install                 # genera anche il client Prisma
 vercel env pull             # scarica le variabili dal progetto Vercel
 npx prisma migrate deploy   # solo se il database è vuoto
@@ -192,6 +193,89 @@ un segreto da custodire — l'errore da cui questo progetto è appena uscito.
 In sviluppo locale il token OIDC arriva con `vercel env pull` ed è a scadenza
 breve: se le dispense smettono di funzionare sulla propria macchina, di norma è
 solo quello scaduto e basta rifare il pull.
+
+## Nome e dominio
+
+Il progetto si chiamava `nuovo-corso-vino` — un nome tecnico, non un nome. Il
+committente ha chiesto di cambiarlo con "qualcosa di caldo, bello", legato al
+calice già disegnato nell'icona e nel pulsante donazioni ("Offrimi un
+calice"): il nuovo nome è **Nel Calice**.
+
+**"L'Angolo del Vino" nei testi dell'app non è il nome del progetto** — è
+un'enoteca reale, un progetto separato, dove *questo* corso potrebbe
+tenersi. Resta scritto dove già compariva (titolo, descrizione, firma
+dell'attestato di default), volutamente non toccato: confonderlo col nome
+del progetto sarebbe stato l'errore opposto.
+
+Repository GitHub rinominato `nuovo-corso-vino` → `nel-calice` (redirect
+automatico di GitHub dal vecchio indirizzo, quindi anche chi ha ancora il
+link vecchio non trova un errore). Il progetto Vercel **non** è stato
+rinominato apposta: rinominarlo avrebbe cambiato l'indirizzo di produzione
+di scatto, rompendo la verifica di ogni attestato già scaricato (l'indirizzo
+di controllo è scritto nel PNG, non aggiornabile a posteriori) e il login
+finché non si fosse aggiornato anche Google Cloud Console. Invece:
+
+- `nel-calice.vercel.app` è stato aggiunto come **dominio in più** sullo
+  stesso progetto (`vercel domains add`, non il solo `vercel alias set` —
+  quello da solo lascia il nuovo indirizzo dietro il login Vercel, non
+  pubblico) — verificato dall'esterno, senza login, entrambi gli indirizzi
+  rispondono 200 sullo stesso identico deploy.
+- `nuovo-corso-vino.vercel.app` resta **intatto**, stesso progetto: chi ha
+  già un attestato scaricato o un segnalibro continua a funzionare.
+- `NEXT_PUBLIC_SITE_URL=https://nel-calice.vercel.app` impostata su Vercel
+  (produzione): `src/lib/site.ts` la legge prima di ogni ripiego, quindi da
+  ora ogni *nuovo* attestato porta il link di verifica col nome nuovo — i
+  vecchi attestati continuano a puntare al vecchio, che è ancora vivo.
+- Autorizzazione Google OAuth: **aggiunto** (non sostituito) l'URI di
+  reindirizzamento per il nuovo indirizzo in Google Cloud Console — il
+  login funziona su entrambi i domini, non solo sul nuovo.
+
+Non fatto apposta: rinominare il progetto Vercel stesso (solo etichetta nel
+pannello, nessun effetto su nessuno dei due indirizzi pubblici — non vale il
+rischio per un dettaglio cosmetico).
+
+## SEO e indicizzazione
+
+Prima: un titolo fisso, nessuna descrizione per i motori di ricerca, nessuna
+anteprima quando il link viene condiviso su WhatsApp o social (il link
+usciva spoglio), nessuna `sitemap.xml` né `robots.txt`.
+
+Aggiunto: metadati completi in `src/app/layout.tsx` (titolo con template,
+descrizione, URL canonico), un'immagine di anteprima social generata via
+`next/og` (`src/app/opengraph-image.tsx` — stessi colori e lo stesso
+grappolo del sigillo dell'attestato, ridisegnato senza il filtro di texture
+che quel renderer non sa disegnare), `robots.ts` (esclude `/relatore` e
+`/api` dalla scansione — l'area relatore richiede login, indicizzarla non
+avrebbe senso) e `sitemap.ts` (una sola voce, "/" — ogni altra pagina
+richiede un accesso, quindi per un motore di ricerca sarebbe comunque solo
+una schermata d'ingresso).
+
+Verificato tutto avviando l'app per davvero (non solo a occhio sul codice):
+letti i meta tag e l'immagine che il browser riceverebbe, entrambi corretti.
+
+**Proprietà verificata su Google Search Console** (metodo file HTML,
+`public/google6481f4a8f4f77cc3.html`), sitemap inviata, scansione richiesta
+col Controllo URL — fatto dal committente dopo che il file era in
+produzione e rispondeva stabile (un 404 iniziale era solo cache della CDN
+non ancora aggiornata dopo il deploy, sparito da sé in pochi minuti).
+
+**i-compiti e il-cerchio** (repository separati, stessa richiesta):
+entrambi avevano `noindex, nofollow` scritto apposta — sono strumenti
+pensati per essere usati solo tramite link condivisi in un gruppo WhatsApp
+(nessun account, stato dentro l'URL). Il committente ha confermato di
+volerli comunque indicizzabili ("chi vuole le può trovare, cade sulla
+pagina d'ingresso e non nel gruppo di qualcun altro"): tolto il blocco,
+aggiunti descrizione, anteprima social, `sitemap.xml`; `robots.txt` esclude
+comunque le pagine con un compito specifico (`?t=<payload>`) dalla scansione
+— quelle restano private per costruzione, solo la pagina d'ingresso è
+pensata per essere trovata.
+
+**sorso-taccuino**: reso pubblico su GitHub dal committente. Controllata
+tutta la cronologia (28 commit): nessuna chiave, token o password mai
+committata — `.env` sempre escluso, le credenziali (Google OAuth, Redis)
+sono sempre state lette da variabili d'ambiente. La SEO qui era già
+completa da prima (titolo, descrizione, canonical, Open Graph, Twitter
+card, sitemap, robots.txt) — nessun intervento necessario.
 
 ## Cosa è fatto
 
