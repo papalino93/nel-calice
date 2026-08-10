@@ -191,8 +191,35 @@ model Material {
   viewCount Int      @default(0)
   createdAt DateTime @default(now())
 
+  views MaterialView[]
+
   @@index([lessonId])
   @@index([courseId])
+}
+
+/// Una riga per ogni apertura di una dispensa da parte di un iscritto: chi,
+/// cosa e quando (§ registro delle letture). A differenza di
+/// `Material.viewCount` — un contatore che non dice né chi né quando, e che
+/// nessuna schermata mostra — questo è pensato per essere letto, dal
+/// relatore, riga per riga.
+///
+/// Un'apertura per riga, non l'ultima sola: un materiale riaperto molte
+/// volte dalla stessa persona è un segnale in sé (rileggere gli appunti, o
+/// farlo girare a chi non è iscritto), e comprimerlo in un solo timestamp lo
+/// nasconderebbe.
+model MaterialView {
+  id String @id @default(cuid())
+
+  materialId String
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  viewedAt DateTime @default(now())
+
+  @@index([materialId, viewedAt])
+  @@index([enrollmentId])
 }
 
 // ===========================================================================
@@ -356,8 +383,9 @@ model Enrollment {
 
   enrolledAt DateTime @default(now())
 
-  unlocks  LessonUnlock[]
-  attempts QuizAttempt[]
+  unlocks       LessonUnlock[]
+  attempts      QuizAttempt[]
+  materialViews MaterialView[]
 
   /// Una persona si iscrive una volta sola a un dato corso.
   @@unique([userId, courseId])
