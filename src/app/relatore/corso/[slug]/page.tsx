@@ -353,6 +353,16 @@ const LOGO_SIZE_LABELS: Record<LogoSize, string> = {
   LARGE: "L",
 };
 
+// Stesso rapporto delle taglie sulla pergamena (LOGO_BOX in Certificate.tsx:
+// 50/78/100), scalato per un'anteprima nell'editor: prima l'immagine restava
+// sempre alta 2.5rem qui, taglia scelta o no, e non si vedeva la differenza
+// finché non si guardava l'attestato vero.
+const LOGO_PREVIEW_HEIGHT: Record<LogoSize, string> = {
+  SMALL: "h-8",
+  MEDIUM: "h-12",
+  LARGE: "h-16",
+};
+
 /**
  * Riquadri che sostituiscono la firma testuale sull'attestato — il caso di
  * un'edizione realizzata con un partner, dove il marchio dell'attività non
@@ -458,7 +468,7 @@ function LogosSection({
                     <img
                       src={logo.url}
                       alt=""
-                      className="h-10 w-auto max-w-[7rem] object-contain"
+                      className={`${LOGO_PREVIEW_HEIGHT[logo.size]} w-auto max-w-[9rem] object-contain`}
                     />
                   ) : (
                     <span className="max-w-[9rem] truncate font-serif text-sm text-gold">
