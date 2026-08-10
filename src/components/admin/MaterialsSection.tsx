@@ -126,12 +126,26 @@ function UploadForm({
   t: { genericError: string; networkError: string };
 }) {
   const [titleIt, setTitleIt] = useState("");
+  const [titleEn, setTitleEn] = useState("");
   const [notes, setNotes] = useState("");
   const [type, setType] = useState<string>("PDF");
   const [videoUrl, setVideoUrl] = useState("");
   const [busy, setBusy] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  async function translate() {
+    setTranslating(true);
+    setMsg(null);
+    const result = await post<{ translations: string[] }>(
+      "/api/admin/translate",
+      { texts: [titleIt] },
+    );
+    setTranslating(false);
+    if (result.ok) setTitleEn(result.data.translations[0]);
+    else setMsg(errorMessage(result, t));
+  }
 
   const isVideo = type === "VIDEO";
 
@@ -180,6 +194,7 @@ function UploadForm({
         lessonId,
         type,
         titleIt,
+        titleEn: titleEn || null,
         url,
         notes: notes || null,
       });
@@ -187,6 +202,7 @@ function UploadForm({
       if (!result.ok) throw new Error(errorMessage(result, t));
 
       setTitleIt("");
+      setTitleEn("");
       setNotes("");
       setVideoUrl("");
       if (fileRef.current) fileRef.current.value = "";
@@ -203,10 +219,18 @@ function UploadForm({
       <p className="mb-3 text-sm text-cream/70">Aggiungi una dispensa</p>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Titolo">
+        <Field label="Titolo (italiano)">
           <input
             value={titleIt}
             onChange={(e) => setTitleIt(e.target.value)}
+            className={inputClass}
+          />
+        </Field>
+        <Field label="Titolo (inglese)">
+          <input
+            value={titleEn}
+            onChange={(e) => setTitleEn(e.target.value)}
+            placeholder="Se vuoto, usa l'italiano"
             className={inputClass}
           />
         </Field>
@@ -217,6 +241,21 @@ function UploadForm({
             className={inputClass}
           />
         </Field>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <button
+          type="button"
+          onClick={translate}
+          disabled={translating || !titleIt.trim()}
+          className="press inline-flex min-h-10 items-center rounded-full border border-cream/20 px-4 text-xs text-cream/70 transition-colors hover:text-cream disabled:opacity-40"
+        >
+          {translating ? "Traduco…" : "Traduci in inglese"}
+        </button>
+        <span className="text-xs leading-relaxed text-cream/55">
+          Riempie il titolo inglese partendo dall&apos;italiano. Resta
+          modificabile prima di caricare.
+        </span>
       </div>
 
       <p className="mt-4 mb-2 text-xs text-cream/55">Tipo</p>
