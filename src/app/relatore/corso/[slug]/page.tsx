@@ -689,7 +689,7 @@ function CourseSettings({
               spellCheck={false}
             />
           </Field>
-          <Field label="Durata lezioni (minuti)">
+          <Field label="Durata del quiz di lezione (minuti)">
             <input
               type="number"
               min={1}
@@ -698,7 +698,7 @@ function CourseSettings({
               className={inputClass}
             />
           </Field>
-          <Field label="Durata prova finale (minuti)">
+          <Field label="Durata del quiz della prova finale (minuti)">
             <input
               type="number"
               min={1}

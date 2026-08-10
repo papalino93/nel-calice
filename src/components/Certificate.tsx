@@ -114,19 +114,35 @@ export type LogoItem =
  * quadrato o verticale è vincolato dall'altezza, non dalla larghezza — con
  * un riquadro molto più largo che alto (com'era: 170×60, un rapporto di
  * quasi 3:1) restava piccolo anche in LARGE ogni logo che non fosse
- * panoramico quanto il riquadro stesso, indipendentemente da quanto la
- * larghezza venisse alzata. Corretto aumentando l'altezza sul serio (§7.16,
- * spazio nuovo in `CERTIFICATE_HEIGHT`) e riportando il rapporto larghezza/
- * altezza a circa 2:1, cioè quello di un logo tipico — non di un'insegna.
+ * panoramico quanto il riquadro stesso. Corretto aumentando l'altezza sul
+ * serio (§7.16, spazio nuovo in `CERTIFICATE_HEIGHT`).
+ *
+ * La larghezza qui sotto è invece deliberatamente generosa (fino a 320px
+ * per LARGE): un logotipo tipo "marchio.com" — largo, basso, un rapporto
+ * 4:1 o più — resta vincolato dalla LARGHEZZA anche con l'altezza appena
+ * corretta, se il riquadro non gliene lascia abbastanza. `LogoRow` more
+ * sotto restringe comunque tutta la fila insieme se non ci sta nello
+ * spazio della pergamena: qui si può essere larghi senza rischiare che un
+ * singolo logo panoramico esca dal foglio.
  */
 const LOGO_BOX: Record<
   LogoSize,
   { width: number; height: number; fontSize: number; letterSpacing: number }
 > = {
-  SMALL: { width: 100, height: 50, fontSize: 14, letterSpacing: 2.6 },
-  MEDIUM: { width: 145, height: 78, fontSize: 19, letterSpacing: 3.6 },
-  LARGE: { width: 190, height: 100, fontSize: 24, letterSpacing: 4.6 },
+  SMALL: { width: 160, height: 50, fontSize: 14, letterSpacing: 2.6 },
+  MEDIUM: { width: 230, height: 78, fontSize: 19, letterSpacing: 3.6 },
+  LARGE: { width: 320, height: 100, fontSize: 24, letterSpacing: 4.6 },
 };
+
+/**
+ * Larghezza massima per l'intera fila, riquadri e spazi fra loro compresi —
+ * lo spazio vero fra i due margini interni della cornice, con un margine di
+ * respiro. Se la somma nominale dei riquadri lo supera (molti loghi, o
+ * pochi ma molto larghi), la fila si restringe tutta insieme in proporzione
+ * — mai un riquadro isolato più piccolo degli altri, e mai un logo che esce
+ * dalla pergamena.
+ */
+const MAX_LOGO_ROW_WIDTH = 780;
 
 /** Sigillo dentellato, lo stesso dell'app ma ridisegnato in coordinate SVG. */
 function sealPoints(cx: number, cy: number, outer: number, inner: number) {
@@ -205,19 +221,29 @@ function estimateTextWidth(text: string, fontSize: number, letterSpacing: number
  */
 function LogoRow({ cx, centerY, logos }: { cx: number; centerY: number; logos: LogoItem[] }) {
   const gap = 16;
-  const widths = logos.map((item) => {
+  const naturalWidths = logos.map((item) => {
     const box = LOGO_BOX[item.size];
     return item.kind === "image"
       ? box.width
       : estimateTextWidth(item.text, box.fontSize, box.letterSpacing);
   });
-  const totalWidth = widths.reduce((sum, w) => sum + w, 0) + gap * (logos.length - 1);
+  const naturalTotal =
+    naturalWidths.reduce((sum, w) => sum + w, 0) + gap * (logos.length - 1);
+  // Sul nominale, non sul renderizzato: un'immagine reale può finire più
+  // stretta del suo riquadro (mantiene le proporzioni), ma qui si calcola
+  // sul caso peggiore apposta — è quello che garantisce che la fila non
+  // esca mai dalla pergamena, qualunque immagine venga caricata davvero.
+  const scale =
+    naturalTotal > MAX_LOGO_ROW_WIDTH ? MAX_LOGO_ROW_WIDTH / naturalTotal : 1;
+  const scaledGap = gap * scale;
+  const widths = naturalWidths.map((w) => w * scale);
+  const totalWidth = widths.reduce((sum, w) => sum + w, 0) + scaledGap * (logos.length - 1);
   // Un x di partenza per riquadro, calcolato una volta e non aggiornato
   // durante il map: mutare una variabile mentre si disegna è ciò che il
   // nuovo linter di React vieta (`react-hooks/immutability`).
   const startX = cx - totalWidth / 2;
   const xs = widths.reduce<number[]>((acc, w, i) => {
-    acc.push(i === 0 ? startX : acc[i - 1] + widths[i - 1] + gap);
+    acc.push(i === 0 ? startX : acc[i - 1] + widths[i - 1] + scaledGap);
     return acc;
   }, []);
 
@@ -226,27 +252,28 @@ function LogoRow({ cx, centerY, logos }: { cx: number; centerY: number; logos: L
       {logos.map((item, i) => {
         const box = LOGO_BOX[item.size];
         const width = widths[i];
+        const height = box.height * scale;
         const x = xs[i];
         return item.kind === "image" ? (
           <image
             key={i}
             href={item.src}
             x={x}
-            y={centerY - box.height / 2}
+            y={centerY - height / 2}
             width={width}
-            height={box.height}
+            height={height}
             preserveAspectRatio="xMidYMid meet"
           />
         ) : (
           <text
             key={i}
             x={x + width / 2}
-            y={centerY + box.fontSize * 0.35}
+            y={centerY + box.fontSize * scale * 0.35}
             textAnchor="middle"
             fill={GOLD_DEEP}
             fontFamily={SANS}
-            fontSize={box.fontSize}
-            letterSpacing={box.letterSpacing}
+            fontSize={box.fontSize * scale}
+            letterSpacing={box.letterSpacing * scale}
           >
             {item.text.toUpperCase()}
           </text>
