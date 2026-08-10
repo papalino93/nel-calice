@@ -555,6 +555,15 @@ deliberatamente in italiano fisso (decisione di chi l'ha scritta, invariata).
 Risolto anche: **il titolo inglese di una dispensa è ora scrivibile**, con
 lo stesso pulsante di traduzione automatica del catalogo.
 
+Risolto anche: **il pulsante c'è ora anche per titolo e sottotitolo del
+corso**, non solo per la lezione del catalogo — segnalato dal committente
+modificando il sottotitolo italiano di un corso e trovando l'inglese
+invariato, comprensibilmente scambiato per un difetto. `useTranslator` e
+`TranslateRow` erano già duplicati due volte nello stesso file
+(`catalogo/[lessonId]/page.tsx`); a un terzo punto d'uso in un file diverso
+sono stati condivisi per davvero (`src/lib/useTranslator.ts`, `TranslateRow`
+in `AdminShell.tsx`).
+
 Resta disatteso:
 
 - **tutta l'area relatore** è in italiano fisso, fuori da `src/lib/i18n.ts` —
@@ -569,8 +578,6 @@ preparazione: le lezioni si aggiungono dalla sua pagina.
 
 Restano:
 
-- **Non si possono cambiare titolo e sottotitolo di un corso**: il server li
-  accetta, il modulo non li offre.
 - **Non si può sbloccare una serata a un singolo corsista** che ha perso la
   lezione, benché il modello lo preveda (`UnlockMethod.ADMIN`, mai usato).
 - **Non si possono caricare dispense generali del corso**: modello, vincolo e
