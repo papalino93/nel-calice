@@ -2,6 +2,7 @@ import { AttemptStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { codeLookup, decryptCode, encryptCode, normalizeCode } from "./codes";
 import { isStoredFile, pathnameOf } from "./materials";
+import { secondsRemaining } from "./quiz";
 import {
   clampToCourseTotal,
   computeBudgets,
@@ -917,6 +918,167 @@ export async function setGlobalUnlock(
     where: { id: courseLessonId },
     data: { globallyUnlocked: unlocked },
   });
+}
+
+/**
+ * Cosa sta succedendo in aula proprio ora, su UNA lezione: chi ha aperto il
+ * quiz, dove è arrivato, e quante risposte sono giuste finora — mentre il
+ * corsista sta ancora rispondendo, non solo dopo la consegna (§7.19).
+ *
+ * `AttemptAnswer.isCorrect` non basta da solo: viene scritto dal server solo
+ * alla consegna (`finalizeAttempt`), quindi durante un tentativo IN_PROGRESS
+ * resta al suo valore di default. Qui la correttezza si calcola al volo
+ * confrontando `selectedOptionId` con l'opzione giusta, per costruzione mai
+ * scritta da nessuna parte: una lettura, non una correzione anticipata — il
+ * corsista non la vede, solo il relatore che guarda questa pagina.
+ */
+export type LiveLessonOverview = {
+  courseLessonId: string;
+  lessonTitleIt: string;
+  isExam: boolean;
+  totalQuestions: number;
+  students: {
+    enrollmentId: string;
+    name: string;
+    status: "non_iniziato" | "in_corso" | "consegnato" | "scaduto";
+    answeredCount: number;
+    correctCount: number;
+    /** Solo per un tentativo ancora in corso. */
+    secondsRemaining: number | null;
+  }[];
+  questions: {
+    questionId: number;
+    position: number;
+    textIt: string;
+    correct: number;
+    incorrect: number;
+    unanswered: number;
+  }[];
+};
+
+const ATTEMPT_STATUS_LABEL: Record<
+  AttemptStatus,
+  "in_corso" | "consegnato" | "scaduto"
+> = {
+  IN_PROGRESS: "in_corso",
+  SUBMITTED: "consegnato",
+  EXPIRED: "scaduto",
+};
+
+export async function liveLessonOverview(
+  slug: string,
+  courseLessonId: string,
+): Promise<LiveLessonOverview | null> {
+  const course = await prisma.course.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!course) return null;
+
+  // Stesso courseId nel filtro: una lezione di un altro corso, anche se
+  // l'id esiste, qui risulta inesistente — non "di un altro corso".
+  const courseLesson = await prisma.courseLesson.findFirst({
+    where: { id: courseLessonId, courseId: course.id },
+    select: {
+      id: true,
+      isExam: true,
+      lesson: {
+        select: {
+          titleIt: true,
+          questions: {
+            orderBy: { position: "asc" },
+            select: {
+              id: true,
+              position: true,
+              textIt: true,
+              options: { select: { id: true, isCorrect: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!courseLesson) return null;
+
+  const questions = courseLesson.lesson.questions;
+  const correctOptionByQuestion = new Map(
+    questions.map((q) => [q.id, q.options.find((o) => o.isCorrect)?.id ?? null]),
+  );
+  const tally = new Map(
+    questions.map((q) => [q.id, { correct: 0, incorrect: 0, unanswered: 0 }]),
+  );
+
+  const enrollments = await prisma.enrollment.findMany({
+    where: { courseId: course.id },
+    orderBy: { enrolledAt: "asc" },
+    select: {
+      id: true,
+      user: { select: { name: true } },
+      attempts: {
+        where: { courseLessonId },
+        select: {
+          status: true,
+          expiresAt: true,
+          answers: { select: { questionId: true, selectedOptionId: true } },
+        },
+      },
+    },
+  });
+
+  const students = enrollments.map((e) => {
+    // Un solo tentativo per iscrizione e lezione, per costruzione del
+    // pannello di avvio (§7.5): non serve gestire più di una riga.
+    const attempt = e.attempts[0] ?? null;
+    let answeredCount = 0;
+    let correctCount = 0;
+
+    if (attempt) {
+      const givenByQuestion = new Map(
+        attempt.answers.map((a) => [a.questionId, a.selectedOptionId]),
+      );
+      for (const q of questions) {
+        const t = tally.get(q.id)!;
+        const given = givenByQuestion.get(q.id) ?? null;
+        if (given === null) {
+          t.unanswered += 1;
+          continue;
+        }
+        answeredCount += 1;
+        if (given === correctOptionByQuestion.get(q.id)) {
+          correctCount += 1;
+          t.correct += 1;
+        } else {
+          t.incorrect += 1;
+        }
+      }
+    }
+
+    return {
+      enrollmentId: e.id,
+      name: e.user.name,
+      status: attempt ? ATTEMPT_STATUS_LABEL[attempt.status] : ("non_iniziato" as const),
+      answeredCount,
+      correctCount,
+      secondsRemaining:
+        attempt && attempt.status === AttemptStatus.IN_PROGRESS
+          ? secondsRemaining(attempt.expiresAt, new Date())
+          : null,
+    };
+  });
+
+  return {
+    courseLessonId: courseLesson.id,
+    lessonTitleIt: courseLesson.lesson.titleIt,
+    isExam: courseLesson.isExam,
+    totalQuestions: questions.length,
+    students,
+    questions: questions.map((q) => ({
+      questionId: q.id,
+      position: q.position,
+      textIt: q.textIt,
+      ...tally.get(q.id)!,
+    })),
+  };
 }
 
 export { normalizeCode };
