@@ -20,7 +20,14 @@ import type { Language } from "@/lib/i18n";
 import { GrapesEmblem } from "./icons";
 
 export const CERTIFICATE_WIDTH = 1000;
-export const CERTIFICATE_HEIGHT = 700;
+/**
+ * 700 di base, più 60 dedicati per intero alla fila dei loghi (§7.16): non
+ * spazio rubato al resto disegnandolo più in basso, ma altezza vera in più,
+ * perché il vincolo che rendeva "LARGE" ancora piccolo non era un numero da
+ * alzare ma i pochi pixel verticali rimasti fra la data e la dicitura legale
+ * — vedi il commento su `LOGO_BOX`.
+ */
+export const CERTIFICATE_HEIGHT = 760;
 
 /** Le uniche parole della pergamena che non arrivano dal server come dato:
  * la cornice del documento, non il suo contenuto. */
@@ -102,17 +109,23 @@ export type LogoItem =
 
 /**
  * Ingombro del riquadro per un'immagine, e corpo/spaziatura per un testo,
- * per ciascuna taglia. Il vincolo che le tiene tutte e tre dentro lo stesso
- * spazio verticale (fra la data e la dicitura legale, §7.11): anche LARGE
- * deve starci senza toccare la riga sotto.
+ * per ciascuna taglia. `height` è il vero limite di un'immagine: un'immagine
+ * si adatta al riquadro mantenendo le proporzioni (§7.11), quindi un logo
+ * quadrato o verticale è vincolato dall'altezza, non dalla larghezza — con
+ * un riquadro molto più largo che alto (com'era: 170×60, un rapporto di
+ * quasi 3:1) restava piccolo anche in LARGE ogni logo che non fosse
+ * panoramico quanto il riquadro stesso, indipendentemente da quanto la
+ * larghezza venisse alzata. Corretto aumentando l'altezza sul serio (§7.16,
+ * spazio nuovo in `CERTIFICATE_HEIGHT`) e riportando il rapporto larghezza/
+ * altezza a circa 2:1, cioè quello di un logo tipico — non di un'insegna.
  */
 const LOGO_BOX: Record<
   LogoSize,
   { width: number; height: number; fontSize: number; letterSpacing: number }
 > = {
-  SMALL: { width: 90, height: 30, fontSize: 10, letterSpacing: 2.2 },
-  MEDIUM: { width: 130, height: 46, fontSize: 14, letterSpacing: 3.2 },
-  LARGE: { width: 170, height: 60, fontSize: 18, letterSpacing: 4.2 },
+  SMALL: { width: 100, height: 50, fontSize: 14, letterSpacing: 2.6 },
+  MEDIUM: { width: 145, height: 78, fontSize: 19, letterSpacing: 3.6 },
+  LARGE: { width: 190, height: 100, fontSize: 24, letterSpacing: 4.6 },
 };
 
 /** Sigillo dentellato, lo stesso dell'app ma ridisegnato in coordinate SVG. */
@@ -518,20 +531,19 @@ export function Certificate({
       {/* I loghi, quando ci sono, prendono il posto della firma testuale
           invece di affiancarla: è il caso di un'edizione realizzata con un
           partner, dove non deve comparire il nome dell'organizzatore ma i
-          marchi di chi la fa insieme a lui. Centro fisso a 592: anche la
-          taglia LARGE (60px, alzata da 42 — restava piccola anche così)
-          ci sta fra la data sopra e la dicitura legale sotto senza toccare
-          né l'una né l'altra (misurato, non supposto — §7.11/§7.15, lo
-          stesso motivo per cui questa riga non è mai un calcolo "a
-          occhio"). Lo spazio è stato preso spostando in alto il titolo di
-          merito, non rimpicciolendo il resto. */}
+          marchi di chi la fa insieme a lui. Centro a 622, nei 60px nuovi di
+          `CERTIFICATE_HEIGHT`: anche la taglia LARGE (100px, non più 60 —
+          §7.16) ci sta fra la data sopra e la dicitura legale sotto senza
+          toccare né l'una né l'altra (misurato, non supposto — §7.11/§7.16,
+          lo stesso motivo per cui questa riga non è mai un calcolo "a
+          occhio"). */}
       {data.logos.length > 0 ? (
-        <LogoRow cx={cx} centerY={592} logos={data.logos} />
+        <LogoRow cx={cx} centerY={622} logos={data.logos} />
       ) : (
         data.issuer && (
           <text
             x={cx}
-            y="608"
+            y="638"
             textAnchor="middle"
             fill={GOLD_DEEP}
             fontFamily={SANS}
@@ -545,7 +557,7 @@ export function Certificate({
 
       <text
         x={cx}
-        y="636"
+        y="696"
         textAnchor="middle"
         fill={INK}
         fontFamily={SANS}
@@ -562,7 +574,7 @@ export function Certificate({
       {data.verificationCode && data.verificationHost && (
         <text
           x={cx}
-          y="654"
+          y="714"
           textAnchor="middle"
           fill={INK}
           fontFamily={SANS}
