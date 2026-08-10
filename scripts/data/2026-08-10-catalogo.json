@@ -1,0 +1,769 @@
+[
+  {
+    "lessonId": 1,
+    "questions": [
+      {
+        "textIt": "Quale dei 3 vini degustati spiccava per freschezza (acidità)?",
+        "textEn": "Which of the 3 wines tasted stood out for freshness (acidity)?",
+        "explanationIt": "Il Sauvignon Blanc è tipicamente il più fresco e acido dei tre: la sua acidità vivace è parte della sua identità varietale, mentre i due rossi hanno un profilo più caldo e strutturato.",
+        "explanationEn": "Sauvignon Blanc is typically the freshest and most acidic of the three: its lively acidity is part of its varietal identity, while the two reds have a warmer, more structured profile.",
+        "options": [
+          { "textIt": "Vino 1 (Sauvignon Blanc)", "textEn": "Wine 1 (Sauvignon Blanc)", "isCorrect": true },
+          { "textIt": "Vino 2 (Valpolicella)", "textEn": "Wine 2 (Valpolicella)", "isCorrect": false },
+          { "textIt": "Vino 3 (Cabernet)", "textEn": "Wine 3 (Cabernet)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "I sentori erbacei (foglia di pomodoro, peperone verde) del Sauvignon e del Cabernet derivano da composti chiamati:",
+        "textEn": "The herbaceous notes (tomato leaf, green pepper) in Sauvignon and Cabernet come from compounds called:",
+        "explanationIt": "Le pirazine (in particolare la metossipirazina) sono composti aromatici vegetali presenti soprattutto in Sauvignon Blanc e Cabernet, responsabili delle note di peperone verde ed erba.",
+        "explanationEn": "Pyrazines (methoxypyrazine in particular) are herbaceous aroma compounds found especially in Sauvignon Blanc and Cabernet, responsible for green pepper and grassy notes.",
+        "options": [
+          { "textIt": "Antociani", "textEn": "Anthocyanins", "isCorrect": false },
+          { "textIt": "Pirazine", "textEn": "Pyrazines", "isCorrect": true },
+          { "textIt": "Tannini", "textEn": "Tannins", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il colore rosso rubino impenetrabile apparteneva a:",
+        "textEn": "The impenetrable ruby red colour belonged to:",
+        "explanationIt": "Il Cabernet, uva a buccia spessa e ricca di antociani, dà solitamente un colore rosso rubino intenso e poco trasparente, più carico rispetto a un Valpolicella.",
+        "explanationEn": "Cabernet, a thick-skinned grape rich in anthocyanins, usually gives an intense, barely translucent ruby red colour — deeper than a Valpolicella.",
+        "options": [
+          { "textIt": "Vino 1 (Sauvignon Blanc)", "textEn": "Wine 1 (Sauvignon Blanc)", "isCorrect": false },
+          { "textIt": "Vino 2 (Valpolicella)", "textEn": "Wine 2 (Valpolicella)", "isCorrect": false },
+          { "textIt": "Vino 3 (Cabernet)", "textEn": "Wine 3 (Cabernet)", "isCorrect": true }
+        ]
+      },
+      {
+        "textIt": "La pungenza dell'anidride carbonica e l'astringenza del tannino sono sensazioni tattili trasmesse dal nervo:",
+        "textEn": "The prickle of carbon dioxide and the astringency of tannin are tactile sensations carried by the:",
+        "explanationIt": "Il nervo trigemino trasmette le sensazioni chimico-tattili come pungenza, astringenza e piccantezza: non è propriamente «gusto» né «olfatto», ma una terza via sensoriale spesso trascurata.",
+        "explanationEn": "The trigeminal nerve carries chemo-tactile sensations such as prickle, astringency and spiciness: not quite taste nor smell, but a third, often overlooked sensory pathway.",
+        "options": [
+          { "textIt": "Olfattivo", "textEn": "Olfactory nerve", "isCorrect": false },
+          { "textIt": "Trigemino", "textEn": "Trigeminal nerve", "isCorrect": true },
+          { "textIt": "Vago", "textEn": "Vagus nerve", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "A quale temperatura l'acidità di un vino bianco viene esaltata maggiormente, risultando più tagliente?",
+        "textEn": "At which temperature is a white wine's acidity most enhanced, tasting sharper?",
+        "explanationIt": "Il freddo accentua la percezione di acidità e attenua quella di alcol e dolcezza: è per questo che i bianchi freschi si servono ben freddi, mentre servirli troppo caldi li fa sembrare più «morbidi» e meno vivaci.",
+        "explanationEn": "Cold enhances the perception of acidity while muting alcohol and sweetness: that's why fresh whites are served well chilled — serving them too warm makes them taste softer and less lively.",
+        "options": [
+          { "textIt": "A temperature basse (8-10°C)", "textEn": "At low temperatures (8-10°C/46-50°F)", "isCorrect": true },
+          { "textIt": "A temperatura ambiente (18-20°C)", "textEn": "At room temperature (18-20°C/64-68°F)", "isCorrect": false },
+          { "textIt": "A temperature elevate (25°C)", "textEn": "At high temperatures (25°C/77°F)", "isCorrect": false }
+        ]
+      }
+    ]
+  },
+  {
+    "lessonId": 2,
+    "questions": [
+      {
+        "textIt": "La vinificazione in bianco si differenzia principalmente per:",
+        "textEn": "White winemaking is mainly distinguished by:",
+        "explanationIt": "Nella vinificazione in bianco il mosto viene separato dalle bucce subito dopo la pigiatura, così il vino non estrae colore né tannino dalle bucce, a differenza della vinificazione in rosso.",
+        "explanationEn": "In white winemaking the must is separated from the skins right after pressing, so the wine extracts no colour or tannin from them — unlike red winemaking.",
+        "options": [
+          { "textIt": "L'assenza di contatto tra mosto e bucce", "textEn": "No contact between must and skins", "isCorrect": true },
+          { "textIt": "L'utilizzo esclusivo di uve ancora acerbe", "textEn": "Using exclusively unripe grapes", "isCorrect": false },
+          { "textIt": "La bollitura del mosto prima della fermentazione", "textEn": "Boiling the must before fermentation", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Come si produce solitamente un vino rosato di qualità?",
+        "textEn": "How is a quality rosé wine usually made?",
+        "explanationIt": "Il rosato di qualità nasce da una breve macerazione delle bucce di uve rosse nel mosto (poche ore), che cede giusto un velo di colore: mescolare vino bianco e rosso è vietato dai disciplinari per i vini di qualità.",
+        "explanationEn": "Quality rosé comes from a short skin maceration of red grapes in the must (just a few hours), giving just a veil of colour: blending finished white and red wine is actually forbidden by quality wine regulations.",
+        "options": [
+          { "textIt": "Miscelando vino bianco e vino rosso", "textEn": "By blending white and red wine", "isCorrect": false },
+          { "textIt": "Con una breve macerazione delle bucce di uve a bacca nera nel mosto", "textEn": "With a brief maceration of black grape skins in the must", "isCorrect": true },
+          { "textIt": "Aggiungendo coloranti naturali estratti dai fiori", "textEn": "By adding natural colourants extracted from flowers", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "L'affinamento in barrique di rovere nuova conferisce solitamente aromi di:",
+        "textEn": "Ageing in new oak barriques usually gives aromas of:",
+        "explanationIt": "Il rovere nuovo cede al vino composti come la vanillina e i lattoni, insieme a note di tostatura dovute alla bruciatura interna della botte (la «tostatura» della barrique).",
+        "explanationEn": "New oak releases compounds like vanillin and oak lactones into the wine, along with toasty notes from the barrel's charred interior (the barrique's toast level).",
+        "options": [
+          { "textIt": "Fragola e ciliegia fresca", "textEn": "Strawberry and fresh cherry", "isCorrect": false },
+          { "textIt": "Vaniglia, spezie e tostatura", "textEn": "Vanilla, spice and toast", "isCorrect": true },
+          { "textIt": "Fiori bianchi e limone", "textEn": "White flowers and lemon", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Quale dei tre vini assaggiati ha svolto un passaggio in legno?",
+        "textEn": "Which of the three wines tasted went through oak?",
+        "explanationIt": "Lo Chardonnay è il vitigno bianco più affine al legno: la sua struttura e la sua relativa neutralità aromatica gli permettono di integrare bene le note di vaniglia e tostatura della barrique.",
+        "explanationEn": "Chardonnay is the white variety most suited to oak: its structure and relatively neutral aromatics let it integrate the barrique's vanilla and toast notes well.",
+        "options": [
+          { "textIt": "Vino 1 (Vermentino)", "textEn": "Wine 1 (Vermentino)", "isCorrect": false },
+          { "textIt": "Vino 2 (Chardonnay)", "textEn": "Wine 2 (Chardonnay)", "isCorrect": true },
+          { "textIt": "Vino 3 (Cerasuolo)", "textEn": "Wine 3 (Cerasuolo)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il colore del Cerasuolo d'Abruzzo tendeva a un:",
+        "textEn": "The colour of Cerasuolo d'Abruzzo tended toward a:",
+        "explanationIt": "Il Cerasuolo d'Abruzzo (da uve Montepulciano) è tra i rosati italiani più intensi di colore, con un rosa acceso che ricorda la ciliegia — da cui il nome — ben distinguibile dai rosati più tenui prodotti altrove.",
+        "explanationEn": "Cerasuolo d'Abruzzo (from Montepulciano grapes) is among the most deeply coloured Italian rosés, with a bright cherry pink — hence the name — clearly distinct from the paler rosés made elsewhere.",
+        "options": [
+          { "textIt": "Rosa pallido/cipria", "textEn": "Pale, powder pink", "isCorrect": false },
+          { "textIt": "Rosa cerasuolo brillante/intenso", "textEn": "Bright, intense cherry pink", "isCorrect": true },
+          { "textIt": "Aranciato scarico", "textEn": "Faint orange", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Le note di macchia mediterranea, erbe aromatiche e agrumi dominavano in:",
+        "textEn": "Notes of Mediterranean scrub, aromatic herbs and citrus dominated in:",
+        "explanationIt": "Il Vermentino, coltivato lungo le coste tirreniche e in Sardegna, esprime tipicamente sentori di macchia mediterranea, erbe aromatiche e agrumi, riflesso del suo terroir costiero.",
+        "explanationEn": "Vermentino, grown along the Tyrrhenian coast and in Sardinia, typically expresses Mediterranean scrub, aromatic herbs and citrus — a reflection of its coastal terroir.",
+        "options": [
+          { "textIt": "Vino 1 (Vermentino)", "textEn": "Wine 1 (Vermentino)", "isCorrect": true },
+          { "textIt": "Vino 2 (Chardonnay)", "textEn": "Wine 2 (Chardonnay)", "isCorrect": false },
+          { "textIt": "Vino 3 (Cerasuolo)", "textEn": "Wine 3 (Cerasuolo)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Qual è lo scopo principale del Bâtonnage (il rimescolamento delle fecce fini)?",
+        "textEn": "What is the main purpose of bâtonnage (stirring the fine lees)?",
+        "explanationIt": "Rimescolare periodicamente le fecce fini (lieviti esausti depositati) rilascia mannoproteine e altre sostanze che arrotondano la struttura del vino e ne aumentano la sensazione di volume in bocca.",
+        "explanationEn": "Periodically stirring the fine lees (spent yeast sediment) releases mannoproteins and other substances that round out the wine's texture and add a sense of body in the mouth.",
+        "options": [
+          { "textIt": "Scolorire il vino se è troppo scuro", "textEn": "To lighten the wine's colour if it's too dark", "isCorrect": false },
+          { "textIt": "Cedere mannoproteine per aumentare morbidezza e volume in bocca", "textEn": "To release mannoproteins that add roundness and body in the mouth", "isCorrect": true },
+          { "textIt": "Fermare l'attività dei lieviti in anticipo", "textEn": "To stop yeast activity early", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "La fermentazione Malolattica trasforma il pungente acido malico (tipico della mela verde) in un acido più morbido, ovvero:",
+        "textEn": "Malolactic fermentation turns the sharp malic acid (typical of green apple) into a softer acid, namely:",
+        "explanationIt": "La fermentazione malolattica, condotta da batteri lattici, converte l'acido malico (aspro, «verde») in acido lattico (più morbido, «cremoso»), addolcendo la percezione acida del vino — comune in molti bianchi da legno e in quasi tutti i rossi.",
+        "explanationEn": "Malolactic fermentation, carried out by lactic bacteria, converts malic acid (sharp, «green») into lactic acid (softer, «creamy»), softening the wine's perceived acidity — common in many oaked whites and in nearly all reds.",
+        "options": [
+          { "textIt": "Acido citrico", "textEn": "Citric acid", "isCorrect": false },
+          { "textIt": "Acido acetico", "textEn": "Acetic acid", "isCorrect": false },
+          { "textIt": "Acido lattico", "textEn": "Lactic acid", "isCorrect": true }
+        ]
+      },
+      {
+        "textIt": "Una vinificazione «riduttiva» (in ambiente povero di ossigeno) per un vino bianco punta a preservare soprattutto:",
+        "textEn": "A 'reductive' winemaking approach (in a low-oxygen environment) for a white wine mainly aims to preserve:",
+        "explanationIt": "Lavorare in assenza di ossigeno (vinificazione riduttiva) protegge gli aromi primari dell'uva dall'ossidazione, mantenendo un profilo fresco e fruttato — l'approccio tipico dei bianchi giovani da bere presto.",
+        "explanationEn": "Working with minimal oxygen exposure (reductive winemaking) protects the grape's primary aromas from oxidation, keeping a fresh, fruity profile — the typical approach for young whites meant to be drunk early.",
+        "options": [
+          { "textIt": "Gli aromi primari, freschi e fruttati dell'uva", "textEn": "The grape's primary, fresh and fruity aromas", "isCorrect": true },
+          { "textIt": "Le note di ossidazione e di frutta secca", "textEn": "Oxidative notes and dried-fruit character", "isCorrect": false },
+          { "textIt": "Il colore rosso del vino", "textEn": "The wine's red colour", "isCorrect": false }
+        ]
+      }
+    ]
+  },
+  {
+    "lessonId": 3,
+    "questions": [
+      {
+        "textIt": "Durante la macerazione in rosso, da dove viene estratto il colore?",
+        "textEn": "During red maceration, where does the colour come from?",
+        "explanationIt": "Il colore del vino rosso proviene dagli antociani contenuti nelle bucce, non dalla polpa (quasi sempre incolore anche nelle uve rosse) né dai semi, che cedono soprattutto tannini duri e amari se estratti in eccesso.",
+        "explanationEn": "Red wine colour comes from anthocyanins in the skins, not from the pulp (nearly colourless even in red grapes) nor from the seeds, which mainly contribute harsh, bitter tannins if over-extracted.",
+        "options": [
+          { "textIt": "Dalla polpa dell'uva", "textEn": "From the grape pulp", "isCorrect": false },
+          { "textIt": "Dalle bucce dell'uva", "textEn": "From the grape skins", "isCorrect": true },
+          { "textIt": "Dai vinaccioli (i semi)", "textEn": "From the seeds (vinaccioli)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "I profumi «terziari» (come cuoio, tabacco, goudron) indicano:",
+        "textEn": "'Tertiary' aromas (like leather, tobacco, tar) indicate:",
+        "explanationIt": "I profumi terziari nascono dall'evoluzione lenta del vino nel tempo, in botte e in bottiglia: non sono presenti nell'uva né si formano rapidamente, ma richiedono anni di affinamento.",
+        "explanationEn": "Tertiary aromas develop from the wine's slow evolution over time, in barrel and bottle: they're not present in the grape and don't form quickly — they need years of ageing.",
+        "options": [
+          { "textIt": "Un'uva raccolta troppo acerba", "textEn": "Grapes picked too unripe", "isCorrect": false },
+          { "textIt": "Un lungo affinamento in legno e/o bottiglia", "textEn": "Long ageing in wood and/or bottle", "isCorrect": true },
+          { "textIt": "Un difetto di ossidazione del vino", "textEn": "A wine oxidation fault", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Quale vino presentava il colore più scarico (trasparente) e tannini quasi impercettibili e setosi?",
+        "textEn": "Which wine had the palest, most translucent colour and almost imperceptible, silky tannins?",
+        "explanationIt": "Il Pinot Nero ha bucce sottili e povere di antociani e tannini: dà quindi vini di colore scarico e tannini finissimi, quasi setosi, ben diversi dalla trama più fitta di Sangiovese o Nebbiolo/Aglianico.",
+        "explanationEn": "Pinot Noir has thin skins low in anthocyanins and tannins: it gives pale-coloured wines with very fine, almost silky tannins, quite unlike the denser structure of Sangiovese or Nebbiolo/Aglianico.",
+        "options": [
+          { "textIt": "Vino 1 (Pinot Nero)", "textEn": "Wine 1 (Pinot Noir)", "isCorrect": true },
+          { "textIt": "Vino 2 (Chianti Classico)", "textEn": "Wine 2 (Chianti Classico)", "isCorrect": false },
+          { "textIt": "Vino 3 (Barolo/Aglianico)", "textEn": "Wine 3 (Barolo/Aglianico)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il vitigno principale alla base del Chianti Classico è:",
+        "textEn": "The main grape variety behind Chianti Classico is:",
+        "explanationIt": "Il Chianti Classico è prodotto principalmente con Sangiovese (minimo 80% da disciplinare): il Nebbiolo è il vitigno di Barolo e Barbaresco, il Montepulciano è un vitigno diverso, coltivato soprattutto in Abruzzo.",
+        "explanationEn": "Chianti Classico is made mainly from Sangiovese (at least 80% by regulation): Nebbiolo is the grape behind Barolo and Barbaresco, and Montepulciano is a different variety, grown mainly in Abruzzo.",
+        "options": [
+          { "textIt": "Nebbiolo", "textEn": "Nebbiolo", "isCorrect": false },
+          { "textIt": "Sangiovese", "textEn": "Sangiovese", "isCorrect": true },
+          { "textIt": "Montepulciano", "textEn": "Montepulciano", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "In quale vino si percepivano maggiormente le note terziarie, balsamiche e speziate?",
+        "textEn": "In which wine were tertiary, balsamic and spicy notes most noticeable?",
+        "explanationIt": "Barolo (Nebbiolo) e Aglianico sono vini strutturati e destinati a lunghi affinamenti: è in loro che si sviluppano più intensamente le note terziarie di sottobosco, spezie e balsamico, tipiche dei grandi rossi invecchiati.",
+        "explanationEn": "Barolo (Nebbiolo) and Aglianico are structured wines meant for long ageing: it's in these that tertiary notes of forest floor, spice and balsamic character develop most intensely, typical of great aged reds.",
+        "options": [
+          { "textIt": "Vino 1 (Pinot Nero)", "textEn": "Wine 1 (Pinot Noir)", "isCorrect": false },
+          { "textIt": "Vino 2 (Chianti Classico)", "textEn": "Wine 2 (Chianti Classico)", "isCorrect": false },
+          { "textIt": "Vino 3 (Barolo/Aglianico)", "textEn": "Wine 3 (Barolo/Aglianico)", "isCorrect": true }
+        ]
+      },
+      {
+        "textIt": "Con il passare degli anni in bottiglia, il colore di un grande vino rosso vira inevitabilmente verso il:",
+        "textEn": "As the years pass in bottle, the colour of a great red wine inevitably shifts toward:",
+        "explanationIt": "Con l'invecchiamento gli antociani si trasformano e precipitano parzialmente: il colore evolve dal porpora giovanile al rubino, fino al granato con la caratteristica «unghia» aranciata dei vini maturi.",
+        "explanationEn": "With age, anthocyanins transform and partly precipitate out: the colour evolves from youthful purple to ruby, and eventually to garnet with the characteristic orange rim of mature wines.",
+        "options": [
+          { "textIt": "Porpora violaceo", "textEn": "Violet-purple", "isCorrect": false },
+          { "textIt": "Rubino acceso", "textEn": "Bright ruby", "isCorrect": false },
+          { "textIt": "Granato con unghia aranciata", "textEn": "Garnet with an orange rim", "isCorrect": true }
+        ]
+      },
+      {
+        "textIt": "Qual è la differenza fondamentale tra Botte Grande (es. 50 hl) e Barrique (225 litri)?",
+        "textEn": "What's the key difference between a large cask (e.g. 50 hl) and a barrique (225 litres)?",
+        "explanationIt": "Il rapporto superficie/volume è molto più alto nella barrique: il vino è a contatto con più legno per litro, cede più aromi (vaniglia, tostatura) e si ossigena più rapidamente attraverso i pori del legno rispetto a una botte grande.",
+        "explanationEn": "The surface-to-volume ratio is much higher in a barrique: the wine is in contact with more wood per litre, picks up more aroma (vanilla, toast) and oxygenates faster through the wood's pores than it would in a large cask.",
+        "options": [
+          { "textIt": "La barrique cede profumi tostati e ossigena il vino più velocemente", "textEn": "The barrique gives toasty aromas and oxygenates the wine faster", "isCorrect": true },
+          { "textIt": "La botte grande è fatta di acciaio e non traspira", "textEn": "The large cask is made of steel and doesn't let the wine breathe", "isCorrect": false },
+          { "textIt": "La barrique si usa esclusivamente per i vini bianchi", "textEn": "The barrique is used exclusively for white wines", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Le molecole estratte dalle bucce, responsabili del colore rosso del vino, si chiamano:",
+        "textEn": "The molecules extracted from the skins, responsible for red wine's colour, are called:",
+        "explanationIt": "Gli antociani sono i pigmenti estratti dalle bucce durante la macerazione, responsabili del colore rosso/violaceo del vino; i flavoni contribuiscono più al colore dei bianchi, il resveratrolo è un polifenolo non legato al colore.",
+        "explanationEn": "Anthocyanins are the pigments extracted from the skins during maceration, responsible for the wine's red/purple colour; flavones contribute more to white wine colour, and resveratrol is a polyphenol unrelated to colour.",
+        "options": [
+          { "textIt": "Flavoni", "textEn": "Flavones", "isCorrect": false },
+          { "textIt": "Antociani", "textEn": "Anthocyanins", "isCorrect": true },
+          { "textIt": "Resveratrolo", "textEn": "Resveratrol", "isCorrect": false }
+        ]
+      }
+    ]
+  },
+  {
+    "lessonId": 4,
+    "questions": [
+      {
+        "textIt": "I profumi complessi di crosta di pane e pasticceria in uno spumante derivano da:",
+        "textEn": "The complex aromas of bread crust and pastry in a sparkling wine come from:",
+        "explanationIt": "L'autolisi — la lenta disgregazione delle cellule di lievito esauste durante la permanenza sui lieviti — rilascia composti che danno le note di crosta di pane, brioche e pasticceria tipiche degli spumanti Metodo Classico più affinati.",
+        "explanationEn": "Autolysis — the slow breakdown of spent yeast cells during time on the lees — releases compounds that give the bread crust, brioche and pastry notes typical of longer-aged traditional method sparkling wines.",
+        "options": [
+          { "textIt": "Il tipo di uva utilizzata", "textEn": "The grape variety used", "isCorrect": false },
+          { "textIt": "Il lungo contatto con i lieviti esausti in bottiglia (autolisi)", "textEn": "Long contact with spent yeast in the bottle (autolysis)", "isCorrect": true },
+          { "textIt": "L'aggiunta di lievito di birra nel mosto", "textEn": "Adding brewer's yeast to the must", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Quale dei tre spumanti assaggiati è prodotto con Metodo Martinotti/Charmat?",
+        "textEn": "Which of the three sparkling wines tasted is made with the Martinotti/Charmat method?",
+        "explanationIt": "Il Prosecco si produce con il metodo Martinotti/Charmat, in autoclave: Franciacorta, Trentodoc e Champagne sono invece Metodo Classico, con rifermentazione in bottiglia.",
+        "explanationEn": "Prosecco is made with the Martinotti/Charmat method, in pressurised tanks: Franciacorta, Trentodoc and Champagne, by contrast, use the traditional method, with refermentation in the bottle.",
+        "options": [
+          { "textIt": "Vino 1 (Prosecco)", "textEn": "Wine 1 (Prosecco)", "isCorrect": true },
+          { "textIt": "Vino 2 (Franciacorta/Trentodoc)", "textEn": "Wine 2 (Franciacorta/Trentodoc)", "isCorrect": false },
+          { "textIt": "Vino 3 (Champagne)", "textEn": "Wine 3 (Champagne)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il termine «Millesimato» su un'etichetta di spumante significa che:",
+        "textEn": "The term 'vintage' (millesimato) on a sparkling wine label means that:",
+        "explanationIt": "Uno spumante «millesimato» nasce (quasi) interamente da uve di un'unica vendemmia, indicata in etichetta: la maggior parte degli spumanti, invece, sono «senza annata», ottenuti mescolando più vendemmie per garantire uno stile costante.",
+        "explanationEn": "A 'vintage' sparkling wine comes (almost) entirely from grapes of a single harvest, stated on the label: most sparkling wines, by contrast, are 'non-vintage', blended from several harvests to keep a consistent house style.",
+        "options": [
+          { "textIt": "Lo spumante ha un prezzo superiore alla media", "textEn": "The sparkling wine is priced above average", "isCorrect": false },
+          { "textIt": "È prodotto quasi interamente con uve di una singola e specifica annata", "textEn": "It's made almost entirely from grapes of a single, specific vintage", "isCorrect": true },
+          { "textIt": "Ha riposato esattamente 1000 giorni sui lieviti", "textEn": "It rested exactly 1000 days on the lees", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il perlage (le bollicine) dello Champagne degustato risultava:",
+        "textEn": "The perlage (bubbles) of the Champagne tasted was:",
+        "explanationIt": "Un buon Metodo Classico, con una lunga permanenza sui lieviti e un'accurata presa di spuma, produce un perlage fine e persistente: è uno degli indicatori di qualità più immediati da valutare nel calice.",
+        "explanationEn": "A good traditional method wine, with long lees ageing and a carefully managed second fermentation, produces a fine, persistent perlage: it's one of the most immediate quality indicators to assess in the glass.",
+        "options": [
+          { "textIt": "Fine, numeroso e molto persistente", "textEn": "Fine, abundant and very persistent", "isCorrect": true },
+          { "textIt": "Grossolano ed evanescente", "textEn": "Coarse and short-lived", "isCorrect": false },
+          { "textIt": "Quasi assente (vino fermo)", "textEn": "Almost absent (a still wine)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Le note puramente fruttate, floreali e immediate dominavano in:",
+        "textEn": "Purely fruity, floral and immediate notes dominated in:",
+        "explanationIt": "Il Prosecco, vinificato in autoclave senza contatto prolungato con i lieviti, preserva gli aromi primari fruttati e floreali della Glera, mentre Franciacorta e Champagne acquisiscono note più complesse di autolisi.",
+        "explanationEn": "Prosecco, made in pressurised tanks without prolonged yeast contact, preserves the primary fruity and floral aromas of the Glera grape, while Franciacorta and Champagne pick up more complex autolytic notes.",
+        "options": [
+          { "textIt": "Vino 1 (Prosecco)", "textEn": "Wine 1 (Prosecco)", "isCorrect": true },
+          { "textIt": "Vino 2 (Franciacorta/Trentodoc)", "textEn": "Wine 2 (Franciacorta/Trentodoc)", "isCorrect": false },
+          { "textIt": "Vino 3 (Champagne)", "textEn": "Wine 3 (Champagne)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il «Liqueur de tirage», aggiunto per far partire la rifermentazione nel Metodo Classico, è composto da:",
+        "textEn": "The 'liqueur de tirage', added to start refermentation in the traditional method, is made of:",
+        "explanationIt": "Il liqueur de tirage è la miscela aggiunta al vino base prima dell'imbottigliamento per innescare la seconda fermentazione: fornisce zucchero e lieviti selezionati, insieme a sali minerali che ne favoriscono l'attività.",
+        "explanationEn": "The liqueur de tirage is the mixture added to the base wine before bottling to trigger the second fermentation: it supplies sugar and selected yeasts, plus mineral salts that support their activity.",
+        "options": [
+          { "textIt": "Solo alcol etilico puro", "textEn": "Only pure ethyl alcohol", "isCorrect": false },
+          { "textIt": "Vino base, zucchero di canna, lieviti scelti e sali minerali", "textEn": "Base wine, cane sugar, selected yeasts and mineral salts", "isCorrect": true },
+          { "textIt": "Mosto cotto e acqua", "textEn": "Cooked must and water", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Secondo la legislazione europea, uno spumante «Brut» contiene un residuo zuccherino compreso tra:",
+        "textEn": "Under EU law, a 'Brut' sparkling wine has a residual sugar content between:",
+        "explanationIt": "La categoria «Brut» ammette un residuo zuccherino tra 0 e 12 g/l: sotto c'è il Pas Dosé/Extra Brut (praticamente senza zucchero), sopra si passa a Extra Dry, Dry, Demi-Sec e infine Dolce (oltre 50 g/l).",
+        "explanationEn": "The 'Brut' category allows a residual sugar content between 0 and 12 g/l: below that sits Pas Dosé/Extra Brut (virtually sugar-free), above it come Extra Dry, Dry, Demi-Sec and finally Doux (over 50 g/l).",
+        "options": [
+          { "textIt": "0 e 6 g/l (grammi per litro)", "textEn": "0 and 6 g/l (grams per litre)", "isCorrect": false },
+          { "textIt": "0 e 12 g/l", "textEn": "0 and 12 g/l", "isCorrect": true },
+          { "textIt": "32 e 50 g/l", "textEn": "32 and 50 g/l", "isCorrect": false }
+        ]
+      }
+    ]
+  },
+  {
+    "lessonId": 5,
+    "questions": [
+      {
+        "textIt": "Per ottenere un vino Passito tradizionale è necessario:",
+        "textEn": "To make a traditional passito (raisin) wine, you need to:",
+        "explanationIt": "Il Passito nasce da uve fatte appassire, in pianta o su graticci in fruttaio, che perdono acqua e concentrano zuccheri, acidi e aromi: nessun zucchero viene aggiunto, è tutto naturale e concentrato dall'appassimento.",
+        "explanationEn": "Passito wines come from grapes left to dry, either on the vine or on racks in drying rooms, losing water and concentrating sugars, acids and aromas: no sugar is added — it's all natural and concentrated through drying.",
+        "options": [
+          { "textIt": "Aggiungere zucchero di canna al mosto", "textEn": "Add cane sugar to the must", "isCorrect": false },
+          { "textIt": "Disidratare l'uva (in pianta o in fruttaio) per concentrare gli zuccheri naturali", "textEn": "Dehydrate the grapes (on the vine or in drying rooms) to concentrate natural sugars", "isCorrect": true },
+          { "textIt": "Congelare le bottiglie prima della vendita", "textEn": "Freeze the bottles before selling them", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "La fortificazione (mutizzazione) di un vino per renderlo Liquoroso consiste in:",
+        "textEn": "Fortifying a wine to make it a 'liquoroso' (fortified wine) consists of:",
+        "explanationIt": "La fortificazione consiste nell'aggiungere alcol (acquavite o alcol etilico) al vino, durante o dopo la fermentazione: se avviene durante, blocca i lieviti e lascia zuccheri residui, come nel Porto.",
+        "explanationEn": "Fortification means adding spirit (brandy or ethyl alcohol) to the wine, during or after fermentation: if added during fermentation, it stops the yeasts and leaves residual sugar, as in Port.",
+        "options": [
+          { "textIt": "Aggiunta di abbondanti tannini per rinforzarlo", "textEn": "Adding plenty of tannin to strengthen it", "isCorrect": false },
+          { "textIt": "Aggiunta di alcol etilico o acquavite durante o dopo la fermentazione", "textEn": "Adding ethyl alcohol or spirit during or after fermentation", "isCorrect": true },
+          { "textIt": "Un lunghissimo invecchiamento in botti di rovere americano", "textEn": "A very long ageing period in American oak barrels", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il Moscato d'Asti degustato si differenzia per:",
+        "textEn": "The Moscato d'Asti tasted stood out for:",
+        "explanationIt": "Il Moscato d'Asti è un vino dolce, leggero (circa 5°-5,5°) e leggermente frizzante, ottenuto fermando la fermentazione presto per lasciare zuccheri residui e poca anidride carbonica naturale: un profilo molto diverso da un Passito o un liquoroso.",
+        "explanationEn": "Moscato d'Asti is a sweet, light wine (around 5–5.5% ABV) with gentle fizz, made by stopping fermentation early to preserve residual sugar and a little natural CO₂ — a very different profile from a passito or a fortified wine.",
+        "options": [
+          { "textIt": "Alta gradazione alcolica e assenza di bollicine", "textEn": "High alcohol and no fizz", "isCorrect": false },
+          { "textIt": "Bassa gradazione alcolica, dolcezza residua e leggera effervescenza", "textEn": "Low alcohol, residual sweetness and light effervescence", "isCorrect": true },
+          { "textIt": "Colore rosso rubino impenetrabile", "textEn": "Impenetrable ruby red colour", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "I sentori di albicocca disidratata, zafferano e miele sono tipici di:",
+        "textEn": "Notes of dried apricot, saffron and honey are typical of:",
+        "explanationIt": "Sauternes e gli altri vini da uve nobilitate dalla Botrytis Cinerea sviluppano tipicamente sentori di albicocca secca, zafferano e miele, dovuti sia alla concentrazione zuccherina che al metabolismo della muffa nobile.",
+        "explanationEn": "Sauternes and other wines from grapes affected by noble rot (Botrytis Cinerea) typically develop notes of dried apricot, saffron and honey, from both the sugar concentration and the metabolism of the noble mould itself.",
+        "options": [
+          { "textIt": "Vino 1 (Moscato d'Asti)", "textEn": "Wine 1 (Moscato d'Asti)", "isCorrect": false },
+          { "textIt": "Vino 2 (Sauternes / Vino Muffato)", "textEn": "Wine 2 (Sauternes / botrytised wine)", "isCorrect": true },
+          { "textIt": "Vino 3 (Porto)", "textEn": "Wine 3 (Port)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "La sensazione «pseudocalorica» (bruciore piacevole al petto dovuto all'alcol) era chiaramente dominante nel:",
+        "textEn": "The 'pseudo-warm' sensation (a pleasant burn in the chest from alcohol) was clearly dominant in:",
+        "explanationIt": "I vini fortificati come Porto e Marsala hanno una gradazione alcolica ben più alta (18-20°) grazie all'aggiunta di acquavite, e questo si traduce in una netta sensazione pseudocalorica, molto più marcata che in un Moscato o in un Sauternes.",
+        "explanationEn": "Fortified wines like Port and Marsala have a much higher alcohol content (18-20% ABV) thanks to added spirit, translating into a clear pseudo-warm sensation, far more pronounced than in a Moscato or a Sauternes.",
+        "options": [
+          { "textIt": "Vino 1 (Moscato d'Asti)", "textEn": "Wine 1 (Moscato d'Asti)", "isCorrect": false },
+          { "textIt": "Vino 2 (Sauternes / Vino Muffato)", "textEn": "Wine 2 (Sauternes / botrytised wine)", "isCorrect": false },
+          { "textIt": "Vino 3 (Porto / Marsala)", "textEn": "Wine 3 (Port / Marsala)", "isCorrect": true }
+        ]
+      },
+      {
+        "textIt": "In un vino dolce di estrema qualità, quale elemento deve bilanciare lo zucchero per evitare che risulti stucchevole?",
+        "textEn": "In a truly great sweet wine, what element must balance the sugar to keep it from feeling cloying?",
+        "explanationIt": "L'acidità è il contrappeso indispensabile dello zucchero: senza una freschezza adeguata, un vino dolce risulta pesante e stucchevole. È per questo che i migliori vini dolci — Sauternes, Tokaji, Riesling — hanno sempre un'acidità marcata.",
+        "explanationEn": "Acidity is the essential counterweight to sugar: without enough freshness, a sweet wine feels heavy and cloying. That's why the best sweet wines — Sauternes, Tokaji, Riesling — always carry pronounced acidity.",
+        "options": [
+          { "textIt": "Il tannino", "textEn": "Tannin", "isCorrect": false },
+          { "textIt": "L'acidità (freschezza)", "textEn": "Acidity (freshness)", "isCorrect": true },
+          { "textIt": "La gradazione alcolica", "textEn": "Alcohol level", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "La Botrytis Cinerea (Muffa Nobile) si sviluppa correttamente e in modo positivo solo con:",
+        "textEn": "Botrytis Cinerea (noble rot) develops correctly and beneficially only with:",
+        "explanationIt": "La muffa nobile ha bisogno di umidità mattutina (per insediarsi sulla buccia) seguita da pomeriggi asciutti e soleggiati (per evitare la marcescenza e favorire la disidratazione): è un equilibrio climatico delicato, tipico di zone come Sauternes o il Tokaj.",
+        "explanationEn": "Noble rot needs morning humidity (to establish on the skin) followed by dry, sunny afternoons (to prevent rot and encourage dehydration): a delicate climatic balance typical of areas like Sauternes or Tokaj.",
+        "options": [
+          { "textIt": "Freddo estremo e continuo sotto lo zero", "textEn": "Extreme, continuous below-zero cold", "isCorrect": false },
+          { "textIt": "Nebbia/umidità mattutina alternate a pomeriggi secchi, caldi e soleggiati", "textEn": "Morning fog/humidity alternating with dry, warm, sunny afternoons", "isCorrect": true },
+          { "textIt": "Piogge torrenziali costanti prima della vendemmia", "textEn": "Constant torrential rain before harvest", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il celebre Metodo «Solera», usato per produrre Sherry e Marsala, consiste in:",
+        "textEn": "The famous 'Solera' method, used to make Sherry and Marsala, consists of:",
+        "explanationIt": "Il sistema Solera è una fila di botti sovrapposte di età crescente: prelevando vino dalla botte più vecchia (quella in basso) e rabboccandola con quella superiore, si ottiene una miscela costante di annate diverse, garantendo uno stile uniforme nel tempo.",
+        "explanationEn": "The Solera system is a row of stacked barrels of increasing age: wine is drawn from the oldest barrel (at the bottom) and topped up from the one above it, producing a constant blend of different vintages that keeps the house style uniform over time.",
+        "options": [
+          { "textIt": "Far maturare le bottiglie sotto il sole diretto", "textEn": "Ageing the bottles under direct sunlight", "isCorrect": false },
+          { "textIt": "Una serie di botti sovrapposte dove si mescolano costantemente annate vecchie e nuove", "textEn": "A series of stacked barrels where older and newer vintages are constantly blended", "isCorrect": true },
+          { "textIt": "L'uso di uve rigorosamente coltivate su suolo vulcanico", "textEn": "Using grapes grown exclusively on volcanic soil", "isCorrect": false }
+        ]
+      }
+    ]
+  },
+  {
+    "lessonId": 6,
+    "questions": [
+      {
+        "textIt": "Il difetto «sa di tappo» è causato chimicamente da:",
+        "textEn": "The 'corked' wine fault is chemically caused by:",
+        "explanationIt": "Il TCA è un composto che si forma per contaminazione fungina del sughero (o del legno delle cantine), e dà al vino odori di cartone bagnato e muffa anche in quantità minime, mascherando i profumi del vino.",
+        "explanationEn": "TCA forms through fungal contamination of cork (or cellar wood), and gives wine a wet-cardboard, musty smell even in tiny amounts, masking the wine's true aromas.",
+        "options": [
+          { "textIt": "L'utilizzo di un tappo in silicone scadente", "textEn": "Using poor-quality silicone stoppers", "isCorrect": false },
+          { "textIt": "Un composto chimico fungino chiamato TCA (Tricloroanisolo)", "textEn": "A fungal chemical compound called TCA (trichloroanisole)", "isCorrect": true },
+          { "textIt": "Errata conservazione della bottiglia in frigorifero", "textEn": "Storing the bottle incorrectly in the fridge", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "La temperatura ideale per servire uno spumante Metodo Classico è:",
+        "textEn": "The ideal serving temperature for a traditional method sparkling wine is:",
+        "explanationIt": "6-8°C esalta la freschezza e il perlage senza spegnere i profumi: temperature troppo basse (2-4°C) anestetizzano gli aromi, mentre temperature più alte fanno perdere l'effervescenza troppo rapidamente.",
+        "explanationEn": "6-8°C highlights freshness and perlage without dulling the aromas: too cold (2-4°C) numbs the aromatics, while warmer temperatures make the fizz fade too quickly.",
+        "options": [
+          { "textIt": "6-8°C", "textEn": "6-8°C (43-46°F)", "isCorrect": true },
+          { "textIt": "12-14°C", "textEn": "12-14°C (54-57°F)", "isCorrect": false },
+          { "textIt": "2-4°C", "textEn": "2-4°C (36-39°F)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Roteare il calice prima di annusare serve a:",
+        "textEn": "Swirling the glass before smelling serves to:",
+        "explanationIt": "Roteare il calice aumenta la superficie di contatto tra vino e aria, favorendo la liberazione e l'evaporazione dei composti aromatici volatili, così da poterli percepire meglio al naso.",
+        "explanationEn": "Swirling increases the contact surface between wine and air, encouraging volatile aroma compounds to release and evaporate, making them easier to perceive on the nose.",
+        "options": [
+          { "textIt": "Ossigenare il vino per favorire l'evaporazione delle molecole odorose", "textEn": "Oxygenate the wine to help aroma molecules evaporate", "isCorrect": true },
+          { "textIt": "Far evaporare la parte acquosa del vino", "textEn": "Evaporate the wine's watery component", "isCorrect": false },
+          { "textIt": "Mescolare gli eventuali residui di lievito sul fondo", "textEn": "Mix any yeast sediment at the bottom", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "La sensazione di «sapidità» (sale/mineralità) viene percepita:",
+        "textEn": "The sensation of 'sapidity' (saltiness/minerality) is perceived:",
+        "explanationIt": "La sapidità è una delle componenti gustative vere e proprie, percepita dalle papille gustative sulla lingua e nel cavo orale, distinta dalle sensazioni tattili trigeminali (come pungenza o astringenza).",
+        "explanationEn": "Sapidity is a true taste component, perceived by the taste buds on the tongue and inside the mouth, distinct from trigeminal tactile sensations such as prickle or astringency.",
+        "options": [
+          { "textIt": "Per via olfattiva diretta (annusando)", "textEn": "Directly through smell (by sniffing)", "isCorrect": false },
+          { "textIt": "Sulla lingua e all'interno del cavo orale", "textEn": "On the tongue and inside the mouth", "isCorrect": true },
+          { "textIt": "Tramite il nervo trigemino (senso tattile)", "textEn": "Through the trigeminal nerve (a tactile sense)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Un vino con un altissimo grado alcolico e molta glicerina formerà sul calice:",
+        "textEn": "A wine with very high alcohol and glycerol will form on the glass:",
+        "explanationIt": "Più il vino è ricco di alcol e glicerina, più gli archetti risultano ampi e regolari, con gocce che scivolano lentamente sul vetro — segno di struttura e concentrazione.",
+        "explanationEn": "The richer a wine is in alcohol and glycerol, the wider and more regular its legs, with drops sliding slowly down the glass — a sign of body and concentration.",
+        "options": [
+          { "textIt": "Archetti stretti e gocce che scendono lentamente", "textEn": "Narrow legs with slow-falling drops", "isCorrect": true },
+          { "textIt": "Archetti molto ampi e gocce che scendono velocissime", "textEn": "Very wide legs with fast-falling drops", "isCorrect": false },
+          { "textIt": "Nessun archetto visibile", "textEn": "No visible legs at all", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Un vino «Blanc de Blancs» (riferito a Champagne o Franciacorta) è prodotto:",
+        "textEn": "A 'Blanc de Blancs' (Champagne or Franciacorta) is made:",
+        "explanationIt": "«Blanc de Blancs» significa letteralmente «bianco da bianchi»: indica uno spumante ottenuto solo da uve a bacca bianca, tipicamente Chardonnay. Il «Blanc de Noirs» è invece bianco ma da uve nere.",
+        "explanationEn": "'Blanc de Blancs' literally means 'white from whites': it denotes a sparkling wine made only from white grapes, typically Chardonnay. 'Blanc de Noirs', by contrast, is white but made from black grapes.",
+        "options": [
+          { "textIt": "Esclusivamente con uve a bacca bianca (es. Chardonnay)", "textEn": "Exclusively from white grapes (e.g. Chardonnay)", "isCorrect": true },
+          { "textIt": "Con uve a bacca rossa vinificate in bianco (es. Pinot Nero)", "textEn": "From red grapes vinified as white (e.g. Pinot Noir)", "isCorrect": false },
+          { "textIt": "Senza l'utilizzo di lieviti aggiunti", "textEn": "Without any added yeasts", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "La fermentazione malolattica ammorbidisce il vino trasformando:",
+        "textEn": "Malolactic fermentation softens the wine by transforming:",
+        "explanationIt": "Come già visto: la malolattica trasforma l'acido malico, più pungente, in acido lattico, più morbido — è il processo che ammorbidisce l'acidità di molti vini, soprattutto rossi.",
+        "explanationEn": "As seen earlier: malolactic fermentation turns the sharper malic acid into softer lactic acid — the process that mellows the acidity of many wines, especially reds.",
+        "options": [
+          { "textIt": "Gli zuccheri in alcol e anidride carbonica", "textEn": "Sugars into alcohol and carbon dioxide", "isCorrect": false },
+          { "textIt": "Il pungente acido malico in un più morbido acido lattico", "textEn": "The sharp malic acid into a softer lactic acid", "isCorrect": true },
+          { "textIt": "I tannini aggressivi in antociani coloranti", "textEn": "Aggressive tannins into colouring anthocyanins", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Durante la fermentazione primaria, i lieviti (Saccharomyces) si nutrono di zuccheri producendo principalmente:",
+        "textEn": "During primary fermentation, yeasts (Saccharomyces) feed on sugars, mainly producing:",
+        "explanationIt": "La fermentazione alcolica è la trasformazione degli zuccheri dell'uva in alcol etilico e anidride carbonica, operata dai lieviti: è la reazione chimica di base che trasforma il mosto in vino.",
+        "explanationEn": "Alcoholic fermentation is the transformation of grape sugars into ethyl alcohol and carbon dioxide, carried out by yeasts: the basic chemical reaction that turns must into wine.",
+        "options": [
+          { "textIt": "Alcol etilico e anidride carbonica (CO2)", "textEn": "Ethyl alcohol and carbon dioxide (CO2)", "isCorrect": true },
+          { "textIt": "Acido tartarico e acqua", "textEn": "Tartaric acid and water", "isCorrect": false },
+          { "textIt": "Glicerina e composti solforosi", "textEn": "Glycerol and sulphur compounds", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Se un vino bianco fermo si presenta con un colore giallo dorato intenso o ambrato, probabilmente:",
+        "textEn": "If a still white wine shows an intense golden yellow or amber colour, it probably:",
+        "explanationIt": "Un colore dorato o ambrato intenso in un bianco fermo è tipico di vini affinati in legno o di lungo invecchiamento, oppure di vini passiti: i bianchi giovani da acciaio sono invece paglierini, tendenti al verdolino.",
+        "explanationEn": "An intense golden or amber colour in a still white is typical of wood-aged or long-aged wines, or of passito wines: young, steel-aged whites, by contrast, are pale straw, often with greenish hints.",
+        "options": [
+          { "textIt": "È un vino giovanissimo e molto acido", "textEn": "Is a very young, highly acidic wine", "isCorrect": false },
+          { "textIt": "Ha subìto un forte sbalzo termico in cantina", "textEn": "Suffered a strong temperature shock in the cellar", "isCorrect": false },
+          { "textIt": "Ha subìto un invecchiamento in legno o è un vino passito", "textEn": "Has aged in wood or is a passito wine", "isCorrect": true }
+        ]
+      },
+      {
+        "textIt": "Il legno delle barrique, oltre ai profumi vanigliati e tostati, cosa cede al vino che vi affina?",
+        "textEn": "Besides vanilla and toasty aromas, what does barrique oak give to the wine ageing in it?",
+        "explanationIt": "Il legno cede anche tannini propri (ellagici e gallici), diversi da quelli dell'uva: contribuiscono a struttura e capacità di invecchiamento, oltre ai composti aromatici già visti.",
+        "explanationEn": "Wood also contributes its own tannins (ellagic and gallic), distinct from those in the grape: they add to structure and ageing potential, on top of the aromatic compounds already covered.",
+        "options": [
+          { "textIt": "Tannini ellagici e gallici (tannini del legno)", "textEn": "Ellagic and gallic tannins (wood tannins)", "isCorrect": true },
+          { "textIt": "Una percentuale di acido malico", "textEn": "A share of malic acid", "isCorrect": false },
+          { "textIt": "Antociani, arricchendo il colore", "textEn": "Anthocyanins, enriching the colour", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Se su un'etichetta trovi la menzione «Riserva», significa per legge che:",
+        "textEn": "If a label carries the term 'Riserva', it legally means that:",
+        "explanationIt": "«Riserva» è una menzione regolata dai disciplinari di produzione, che impone un periodo di invecchiamento minimo superiore a quello richiesto per la versione normale della stessa denominazione.",
+        "explanationEn": "'Riserva' is a term governed by production regulations, requiring a minimum ageing period longer than that required for the standard version of the same appellation.",
+        "options": [
+          { "textIt": "Il vino ha una gradazione alcolica inferiore al normale", "textEn": "The wine has lower-than-usual alcohol content", "isCorrect": false },
+          { "textIt": "Il vino ha subìto un invecchiamento più lungo rispetto alla versione base, secondo il disciplinare", "textEn": "The wine underwent longer ageing than the base version, per the regulations", "isCorrect": true },
+          { "textIt": "Le uve sono state leggermente appassite prima della pigiatura", "textEn": "The grapes were lightly dried before pressing", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "La sensazione astringente (allappante) del tannino nei vini rossi, con il passare del tempo:",
+        "textEn": "The astringent sensation of tannin in red wines, over time:",
+        "explanationIt": "Con l'invecchiamento le molecole di tannino si legano tra loro (polimerizzano) e in parte precipitano, riducendo la sensazione di asprezza e rendendo la trama tannica più levigata e morbida.",
+        "explanationEn": "As wine ages, tannin molecules link together (polymerise) and partly precipitate out, reducing harshness and making the tannic structure smoother and softer.",
+        "options": [
+          { "textIt": "Tende ad aumentare rendendo il vino imbevibile", "textEn": "Tends to increase, making the wine undrinkable", "isCorrect": false },
+          { "textIt": "Tende a polimerizzare, diventando più setosa, rotonda e morbida", "textEn": "Tends to polymerise, becoming silkier, rounder and softer", "isCorrect": true },
+          { "textIt": "Scompare del tutto in pochi mesi", "textEn": "Disappears completely within a few months", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Qual è il grande vitigno nobile alla base di vini piemontesi famosi nel mondo come Barolo e Barbaresco?",
+        "textEn": "What's the noble grape variety behind famous Piedmontese wines like Barolo and Barbaresco?",
+        "explanationIt": "Barolo e Barbaresco sono prodotti esclusivamente con uve Nebbiolo: la Barbera è un altro importante vitigno piemontese ma diverso, il Sangiovese è invece toscano (Chianti, Brunello).",
+        "explanationEn": "Barolo and Barbaresco are made exclusively from Nebbiolo grapes: Barbera is another important, but different, Piedmontese variety, while Sangiovese is Tuscan (Chianti, Brunello).",
+        "options": [
+          { "textIt": "Barbera", "textEn": "Barbera", "isCorrect": false },
+          { "textIt": "Sangiovese", "textEn": "Sangiovese", "isCorrect": false },
+          { "textIt": "Nebbiolo", "textEn": "Nebbiolo", "isCorrect": true }
+        ]
+      },
+      {
+        "textIt": "L'affinamento in solo acciaio, senza passaggi in botte, serve principalmente per:",
+        "textEn": "Ageing solely in steel, without any time in wood, mainly serves to:",
+        "explanationIt": "L'acciaio inox è un contenitore neutro e a tenuta d'aria: non cede aromi né favorisce l'ossigenazione, quindi preserva i profumi primari dell'uva intatti, freschi e fruttati.",
+        "explanationEn": "Stainless steel is a neutral, airtight vessel: it adds no aroma and doesn't promote oxygenation, so it keeps the grape's primary aromas intact, fresh and fruity.",
+        "options": [
+          { "textIt": "Esaltare i sentori di vaniglia e spezie", "textEn": "Enhance vanilla and spice notes", "isCorrect": false },
+          { "textIt": "Preservare intatti i profumi primari, freschi e fruttati dell'uva", "textEn": "Keep the grape's primary, fresh and fruity aromas intact", "isCorrect": true },
+          { "textIt": "Ossidare il vino rapidamente per renderlo maturo", "textEn": "Oxidise the wine quickly to make it mature faster", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Affinché un vino rosso possa sopportare decenni di invecchiamento, alla nascita deve possedere abbondanti «durezze», ovvero:",
+        "textEn": "For a red wine to withstand decades of ageing, at birth it must have plenty of 'durezze' (hard components), namely:",
+        "explanationIt": "Acidità e tannino sono le «durezze» che permettono a un vino di reggere il tempo: senza di esse, anche un vino ricco di alcol o frutto si affloscia rapidamente con l'invecchiamento.",
+        "explanationEn": "Acidity and tannin are the 'hard components' that let a wine hold up over time: without them, even a wine rich in alcohol or fruit will fade quickly with age.",
+        "options": [
+          { "textIt": "Alcol altissimo e quasi nessun tannino", "textEn": "Very high alcohol and almost no tannin", "isCorrect": false },
+          { "textIt": "Bassa acidità e molti zuccheri residui", "textEn": "Low acidity and lots of residual sugar", "isCorrect": false },
+          { "textIt": "Spiccata acidità e una trama tannica imponente", "textEn": "Pronounced acidity and an imposing tannic structure", "isCorrect": true }
+        ]
+      },
+      {
+        "textIt": "Nel Metodo Classico, l'operazione di «Sboccatura» (o Dégorgement) serve specificamente a:",
+        "textEn": "In the traditional method, the 'dégorgement' (disgorging) specifically serves to:",
+        "explanationIt": "Dopo il remuage, i lieviti esausti si concentrano nel collo della bottiglia (spesso ghiacciato): la sboccatura li espelle grazie alla pressione interna, lasciando il vino limpido.",
+        "explanationEn": "After riddling, the spent yeast collects in the bottle's neck (often frozen): dégorgement expels it thanks to the internal pressure, leaving the wine clear.",
+        "options": [
+          { "textIt": "Aggiungere lieviti freschi in bottiglia", "textEn": "Add fresh yeasts into the bottle", "isCorrect": false },
+          { "textIt": "Eliminare la capsula di lieviti morti depositata nel collo della bottiglia", "textEn": "Remove the plug of dead yeast sediment collected in the bottle's neck", "isCorrect": true },
+          { "textIt": "Inserire il tappo di sughero definitivo a fungo", "textEn": "Insert the final mushroom-shaped cork", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Lo sciroppo di dosaggio (Liqueur d'expédition) aggiunto dopo la sboccatura determina:",
+        "textEn": "The dosage syrup (liqueur d'expédition) added after disgorgement determines:",
+        "explanationIt": "Dopo la sboccatura si aggiunge un piccolo dosaggio di zucchero disciolto in vino (liqueur d'expédition), che determina la categoria finale di dolcezza dello spumante, da Pas Dosé a Doux.",
+        "explanationEn": "After disgorgement, a small dose of sugar dissolved in wine (liqueur d'expédition) is added, determining the sparkling wine's final sweetness category, from Pas Dosé to Doux.",
+        "options": [
+          { "textIt": "Il colore finale dello spumante", "textEn": "The sparkling wine's final colour", "isCorrect": false },
+          { "textIt": "Il grado di dolcezza finale (da Pas Dosé a Demi-Sec)", "textEn": "The final sweetness level (from Pas Dosé to Demi-Sec)", "isCorrect": true },
+          { "textIt": "La pressione e la quantità di bollicine", "textEn": "The pressure and amount of bubbles", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Tra le zone vitivinicole italiane, quale coppia è famosa a livello mondiale per l'eccellenza del Metodo Classico?",
+        "textEn": "Among Italian wine regions, which pair is world-famous for excellence in the traditional method?",
+        "explanationIt": "Franciacorta (Lombardia) e Trentodoc (Trentino) sono le due denominazioni italiane di riferimento per gli spumanti Metodo Classico, in stile analogo allo Champagne.",
+        "explanationEn": "Franciacorta (Lombardy) and Trentodoc (Trentino) are Italy's two benchmark appellations for traditional method sparkling wines, in a style similar to Champagne.",
+        "options": [
+          { "textIt": "Franciacorta e Trentodoc", "textEn": "Franciacorta and Trentodoc", "isCorrect": true },
+          { "textIt": "Valpolicella e Chianti Classico", "textEn": "Valpolicella and Chianti Classico", "isCorrect": false },
+          { "textIt": "Salento e Pantelleria", "textEn": "Salento and Pantelleria", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il Metodo Martinotti/Charmat (rifermentazione in autoclave) è ideale per uve aromatiche come Glera (Prosecco) o Moscato perché:",
+        "textEn": "The Martinotti/Charmat method (refermentation in tank) suits aromatic grapes like Glera (Prosecco) or Moscato because it:",
+        "explanationIt": "Il metodo Charmat è rapido (settimane, non anni) ed evita il lungo contatto con i lieviti: preserva quindi al meglio gli aromi primari fruttati e floreali di uve come Glera e Moscato, che andrebbero coperti da note di autolisi.",
+        "explanationEn": "The Charmat method is fast (weeks, not years) and avoids long yeast contact: it best preserves the primary fruity and floral aromas of grapes like Glera and Moscato, which would otherwise be masked by autolytic notes.",
+        "options": [
+          { "textIt": "È un metodo molto più lento e costoso del Metodo Classico", "textEn": "Is a much slower and more expensive method than the traditional method", "isCorrect": false },
+          { "textIt": "Preserva in pochi mesi gli aromi floreali e fruttati freschi dell'uva, senza coprirli con note di lievito", "textEn": "Preserves the grape's fresh floral and fruity aromas in just a few months, without masking them with yeasty notes", "isCorrect": true },
+          { "textIt": "Aumenta notevolmente la gradazione alcolica del vino", "textEn": "Significantly raises the wine's alcohol content", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Durante la rifermentazione in bottiglia (Metodo Classico), l'anidride carbonica si scioglie nel vino grazie al tappo a corona. Questo principio fisico è regolato dalla:",
+        "textEn": "During bottle refermentation (traditional method), carbon dioxide dissolves into the wine thanks to the crown cap. This physical principle is governed by:",
+        "explanationIt": "La legge di Henry descrive come la quantità di gas disciolto in un liquido sia proporzionale alla pressione: è per questo che, sotto tappo a corona, la CO2 prodotta dai lieviti si sciolga nel vino invece di disperdersi.",
+        "explanationEn": "Henry's law describes how the amount of gas dissolved in a liquid is proportional to pressure: that's why, under a crown cap, the CO2 produced by the yeasts dissolves into the wine instead of escaping.",
+        "options": [
+          { "textIt": "Legge di Newton", "textEn": "Newton's law", "isCorrect": false },
+          { "textIt": "Legge di Henry sui gas disciolti", "textEn": "Henry's law on dissolved gases", "isCorrect": true },
+          { "textIt": "Legge di Pasteur", "textEn": "Pasteur's law", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Che cos'è l'«Icewine» (Vino di Ghiaccio)?",
+        "textEn": "What is 'Icewine'?",
+        "explanationIt": "L'Icewine si ottiene vendemmiando uve rimaste sulla pianta fino a temperature molto basse: il congelamento dell'acqua nell'acino permette di pressare solo il mosto concentratissimo in zucchero, lasciando il ghiaccio nel torchio.",
+        "explanationEn": "Icewine is made by harvesting grapes left on the vine until very low temperatures: freezing the water inside the berry allows pressing out only the highly sugar-concentrated must, leaving the ice behind in the press.",
+        "options": [
+          { "textIt": "Un vino normale a cui si aggiungono cubetti di ghiaccio nel calice", "textEn": "A regular wine served with ice cubes in the glass", "isCorrect": false },
+          { "textIt": "Un vino dolce e concentrato, prodotto vendemmiando in pieno inverno uve congelate direttamente in pianta", "textEn": "A sweet, concentrated wine made by harvesting grapes frozen on the vine in the depths of winter", "isCorrect": true },
+          { "textIt": "Un distillato bianco servito a temperature sotto zero", "textEn": "A white spirit served at below-zero temperatures", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Porto, Marsala, Madeira e Sherry appartengono tutti alla prestigiosa categoria dei vini:",
+        "textEn": "Port, Marsala, Madeira and Sherry all belong to the prestigious category of:",
+        "explanationIt": "Tutti questi vini condividono l'aggiunta di alcol (fortificazione), anche se con tecniche diverse: distinguono questa categoria dai passiti (solo appassimento, nessuna aggiunta di alcol) e dagli aromatizzati (con erbe e spezie, come il Vermouth).",
+        "explanationEn": "All these wines share the addition of spirit (fortification), though via different techniques: this sets them apart from passiti (drying only, no added alcohol) and aromatised wines (with herbs and spices, like Vermouth).",
+        "options": [
+          { "textIt": "Fortificati (o Liquorosi)", "textEn": "Fortified wines", "isCorrect": true },
+          { "textIt": "Passiti naturali senza aggiunte", "textEn": "Natural passito wines with no additions", "isCorrect": false },
+          { "textIt": "Aromatizzati (come il Vermouth)", "textEn": "Aromatised wines (like Vermouth)", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Il vitigno base per il famoso Passito di Pantelleria è lo Zibibbo. Con quale altro nome è conosciuta quest'uva?",
+        "textEn": "The Zibibbo grape, base of the famous Passito di Pantelleria, is also known by another name:",
+        "explanationIt": "Zibibbo e Moscato di Alessandria sono lo stesso vitigno: un'uva aromatica a bacca bianca, coltivata soprattutto a Pantelleria, alla base sia di vini secchi che del celebre Passito.",
+        "explanationEn": "Zibibbo and Muscat of Alexandria are the same grape variety: an aromatic white grape grown mainly on Pantelleria, used for both dry wines and the celebrated Passito.",
+        "options": [
+          { "textIt": "Moscato di Alessandria", "textEn": "Muscat of Alexandria", "isCorrect": true },
+          { "textIt": "Malvasia delle Lipari", "textEn": "Malvasia delle Lipari", "isCorrect": false },
+          { "textIt": "Garganega", "textEn": "Garganega", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Perché l'acidità è un elemento vitale e ricercato nei grandi vini dolci?",
+        "textEn": "Why is acidity a vital, sought-after element in great sweet wines?",
+        "explanationIt": "Ribadendo un concetto chiave del corso: senza un'adeguata acidità, un vino dolce risulta stucchevole e pesante — è il contrasto fra dolcezza e freschezza che rende un grande vino dolce equilibrato e bevibile.",
+        "explanationEn": "Reinforcing a key idea from the course: without adequate acidity, a sweet wine feels cloying and heavy — it's the contrast between sweetness and freshness that makes a great sweet wine balanced and drinkable.",
+        "options": [
+          { "textIt": "Perché funge da antibatterico naturale", "textEn": "Because it acts as a natural antibacterial agent", "isCorrect": false },
+          { "textIt": "Perché bilancia la dolcezza, «pulendo» il palato ed evitando che lo zucchero risulti pesante e nauseante", "textEn": "Because it balances the sweetness, cleansing the palate and keeping the sugar from feeling heavy and cloying", "isCorrect": true },
+          { "textIt": "Non serve, i vini dolci di qualità non devono avere alcuna acidità", "textEn": "It isn't needed — quality sweet wines shouldn't have any acidity at all", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Nei vini fortificati portoghesi (come il Porto), l'aggiunta di acquavite avviene spesso durante la fermentazione. Qual è l'effetto?",
+        "textEn": "In Portuguese fortified wines (like Port), spirit is often added during fermentation. What's the effect?",
+        "explanationIt": "Aggiungendo acquavite mentre i lieviti stanno ancora fermentando, l'alcol raggiunge livelli che i lieviti non tollerano e la fermentazione si ferma di colpo: restano così zuccheri residui non fermentati, ed è così che nasce un Porto dolce.",
+        "explanationEn": "Adding spirit while the yeasts are still fermenting pushes alcohol to a level the yeasts can't survive, stopping fermentation abruptly: this leaves unfermented residual sugar behind — and that's how a sweet Port is born.",
+        "options": [
+          { "textIt": "Ferma bruscamente l'attività dei lieviti, lasciando il vino dolce e alzando simultaneamente il grado alcolico", "textEn": "It abruptly stops yeast activity, leaving the wine sweet while simultaneously raising its alcohol level", "isCorrect": true },
+          { "textIt": "Fa ripartire la fermentazione in modo violento", "textEn": "It restarts fermentation violently", "isCorrect": false },
+          { "textIt": "Elimina del tutto gli zuccheri residui seccando il vino", "textEn": "It completely removes residual sugar, drying out the wine", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Regola di abbinamento: Un cibo molto «grasso» (es. cotechino, mortadella, formaggio fuso) richiede per contrapposizione un vino con:",
+        "textEn": "Pairing rule: a very 'fatty' food (e.g. cotechino, mortadella, melted cheese) calls, by contrast, for a wine with:",
+        "explanationIt": "Per contrapposizione, un cibo grasso richiede un vino acido e/o effervescente: l'acidità «sgrassa» la bocca, mentre un vino altrettanto morbido e ricco di glicerina si limiterebbe a sommare pesantezza a pesantezza.",
+        "explanationEn": "By contrast, a fatty food calls for an acidic and/or effervescent wine: acidity cuts through the fat, whereas an equally soft, glycerol-rich wine would just pile heaviness onto heaviness.",
+        "options": [
+          { "textIt": "Elevata acidità e/o effervescenza per sgrassare e pulire il palato", "textEn": "High acidity and/or effervescence, to cut through the fat and cleanse the palate", "isCorrect": true },
+          { "textIt": "Moltissimo alcol per scaldare la bocca", "textEn": "Plenty of alcohol to warm the mouth", "isCorrect": false },
+          { "textIt": "Tanta glicerina, morbidezza e struttura", "textEn": "Lots of glycerol, softness and body", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Regola di abbinamento: Un piatto «succulento» (es. una bistecca fiorentina al sangue, che produce abbondanti liquidi in bocca) richiede:",
+        "textEn": "Pairing rule: a 'succulent' dish (e.g. a rare Florentine steak, which produces plenty of juices in the mouth) calls for:",
+        "explanationIt": "Un piatto succulento richiede un vino con tannino e struttura, capace di asciugare i liquidi in bocca per contrapposizione: un bianco leggero o uno spumante dolce sarebbero sopraffatti dalla sapidità e succulenza del piatto.",
+        "explanationEn": "A succulent dish needs a wine with tannin and structure, able to 'dry' the mouth's juices by contrast: a light white or a sweet sparkling wine would be overwhelmed by the dish's savouriness and succulence.",
+        "options": [
+          { "textIt": "Un vino bianco molto acido e leggero", "textEn": "A very acidic, light white wine", "isCorrect": false },
+          { "textIt": "Un vino rosso strutturato, alcolico e con un buon tannino che «asciughi» i liquidi", "textEn": "A structured, alcoholic red wine with good tannin to 'dry' the juices", "isCorrect": true },
+          { "textIt": "Uno spumante dolce", "textEn": "A sweet sparkling wine", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Regola di abbinamento: I dolci, le torte e il cioccolato si abbinano (per principio ferreo di concordanza) esclusivamente con:",
+        "textEn": "Pairing rule: desserts, cakes and chocolate pair (by the strict rule of concordance) exclusively with:",
+        "explanationIt": "La regola di concordanza vuole che un dolce non sia mai più secco del vino che lo accompagna: un vino asciutto (secco, tannico) risulterebbe acido e aggressivo a confronto con lo zucchero del piatto.",
+        "explanationEn": "The rule of concordance says a dessert should never be sweeter than the wine served with it: a dry (and especially tannic) wine would taste sour and harsh next to the dish's sugar.",
+        "options": [
+          { "textIt": "Vini dolci, passiti o liquorosi", "textEn": "Sweet, passito or fortified wines", "isCorrect": true },
+          { "textIt": "Spumanti Brut o Pas Dosé molto secchi", "textEn": "Very dry Brut or Pas Dosé sparkling wines", "isCorrect": false },
+          { "textIt": "Vini rossi molto invecchiati e asciutti", "textEn": "Very old, dry red wines", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "Regola di abbinamento: Se un piatto ha una spiccata «tendenza amarognola» (es. carciofi, radicchio alla griglia, fegato), andrà abbinato con:",
+        "textEn": "Pairing rule: a dish with a distinct bitter edge (e.g. artichokes, grilled radicchio, liver) should be paired with:",
+        "explanationIt": "Un piatto amarognolo va smorzato, non rincarato: un vino morbido, rotondo, magari con residuo zuccherino o affinato in legno, bilancia l'amaro invece di accentuarlo come farebbe un vino tannico e ruvido.",
+        "explanationEn": "A bitter-edged dish needs softening, not doubling down: a round, soft wine — perhaps with a touch of residual sugar or oak ageing — balances the bitterness instead of amplifying it, as a rough, tannic wine would.",
+        "options": [
+          { "textIt": "Un vino altrettanto amaro o carico di tannini ruvidi", "textEn": "An equally bitter wine, or one loaded with rough tannins", "isCorrect": false },
+          { "textIt": "Un vino molto morbido, magari con un leggero residuo zuccherino o affinato in legno, per smussare le asprezze", "textEn": "A very soft wine, perhaps with a touch of residual sugar or oak ageing, to smooth out the bitterness", "isCorrect": true },
+          { "textIt": "L'acqua, perché non ci sono vini adatti a coprire l'amaro", "textEn": "Water, because no wine can properly handle bitterness", "isCorrect": false }
+        ]
+      },
+      {
+        "textIt": "In abbinamento, la reazione di Maillard (la crosticina bruna della carne arrosto) crea note di tostatura. Per concordanza aromatica, il vino ideale dovrebbe:",
+        "textEn": "In pairing, the Maillard reaction (the browned crust on roasted meat) creates toasty notes. For aromatic concordance, the ideal wine should:",
+        "explanationIt": "Per concordanza aromatica, le note tostate e speziate di un vino affinato in legno richiamano e si armonizzano con quelle prodotte dalla reazione di Maillard sulla superficie di una carne arrostita o grigliata.",
+        "explanationEn": "By aromatic concordance, the toasty, spicy notes of an oak-aged wine echo and harmonise with those produced by the Maillard reaction on the surface of roasted or grilled meat.",
+        "options": [
+          { "textIt": "Essere completamente privo di profumi per non disturbare il cibo", "textEn": "Have no aroma at all, so as not to disturb the dish", "isCorrect": false },
+          { "textIt": "Aver subìto un passaggio in legno (barrique) per avere note tostate e speziate affini al piatto", "textEn": "Have gone through oak (barrique) ageing, for toasty, spicy notes that echo the dish", "isCorrect": true },
+          { "textIt": "Essere uno spumante giovanissimo affinato solo in acciaio", "textEn": "Be a very young sparkling wine aged only in steel", "isCorrect": false }
+        ]
+      }
+    ]
+  }
+]
