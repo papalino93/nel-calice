@@ -138,7 +138,7 @@ export default function LessonPage({
         </h2>
 
         {materials.length === 0 ? (
-          <p className="card p-5 text-sm text-cream/45">{t.noMaterials}</p>
+          <p className="card p-5 text-sm text-cream/60">{t.noMaterials}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {materials.map((material) => (
@@ -154,7 +154,7 @@ export default function LessonPage({
                       {pick(lang, material.titleIt, material.titleEn)}
                     </span>
                     {material.notes && (
-                      <span className="block truncate text-xs text-cream/45">
+                      <span className="block truncate text-xs text-cream/60">
                         {material.notes}
                       </span>
                     )}

@@ -277,7 +277,7 @@ function QuestionList({
               {i + 1}. {question.textIt || "(senza testo)"}
             </span>
             {question.hasAnswers && (
-              <span className="mt-0.5 block text-[0.7rem] text-cream/45">
+              <span className="mt-0.5 block text-[0.7rem] text-cream/60">
                 già risposta — non modificabile
               </span>
             )}

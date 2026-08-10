@@ -128,7 +128,7 @@ export default function Home() {
       </header>
 
       <div className="rise-in flex flex-1 flex-col items-center">
-        <p className="text-sm text-cream/45">
+        <p className="text-sm text-cream/60">
           {t.signedInAs} {data.user.email} ·{" "}
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
@@ -159,7 +159,7 @@ export default function Home() {
                       <span className="block font-serif text-xl text-cream">
                         {pick(lang, course.titleIt, course.titleEn)}
                       </span>
-                      <span className="block truncate text-xs text-cream/45">
+                      <span className="block truncate text-xs text-cream/60">
                         {pick(lang, course.subtitleIt, course.subtitleEn)}
                       </span>
                     </span>
@@ -170,7 +170,7 @@ export default function Home() {
             </ul>
 
             <details className="mt-8">
-              <summary className="cursor-pointer text-center text-sm text-cream/45 hover:text-cream/70">
+              <summary className="cursor-pointer text-center text-sm text-cream/60 hover:text-cream/70">
                 + {t.enrollTitle}
               </summary>
               <div className="mt-4 flex justify-center">

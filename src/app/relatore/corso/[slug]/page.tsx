@@ -120,7 +120,7 @@ export default function ManageCoursePage({
       backHref="/relatore"
       backLabel={t.adminArea}
     >
-      <div className="flex flex-wrap items-center gap-2 text-xs text-cream/45">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-cream/60">
         <span>/corso/{detail.slug}</span>
         <span>·</span>
         <span>{detail.enrolledCount} iscritti</span>
@@ -190,7 +190,7 @@ function CertificatePreview({ slug }: { slug: string }) {
       ) : data ? (
         <CertificateView data={data} showShare={false} />
       ) : (
-        <p className="text-sm text-cream/45">Un momento…</p>
+        <p className="text-sm text-cream/60">Un momento…</p>
       )}
     </AdminSection>
   );
@@ -290,7 +290,7 @@ function CourseTitles({
             />
           </Field>
         </div>
-        <p className="mt-3 text-xs text-cream/45">
+        <p className="mt-3 text-xs text-cream/60">
           Vuota, quella riga sparisce dall&apos;attestato. Se carichi almeno
           un logo qui sotto, i loghi prendono comunque il suo posto: per
           un&apos;edizione realizzata con un partner, il nome resta ma
@@ -409,10 +409,10 @@ function LogosSection({
             disabled={busy}
             className="text-sm text-cream/70 file:mr-3 file:rounded-full file:border-0 file:bg-gold/15 file:px-3 file:py-2 file:text-xs file:text-gold hover:file:bg-gold/25"
           />
-          <span className="text-xs text-cream/40">PNG, JPEG o WebP, fino a 2MB</span>
+          <span className="text-xs text-cream/60">PNG, JPEG o WebP, fino a 2MB</span>
         </div>
       ) : (
-        <p className="text-xs text-cream/45">
+        <p className="text-xs text-cream/60">
           Limite di 4 loghi raggiunto. Elimina un logo per caricarne un altro.
         </p>
       )}
@@ -592,7 +592,7 @@ function LessonsSection({
       </ul>
 
       {detail.lessons.length === 0 && (
-        <p className="card p-5 text-sm text-cream/45">
+        <p className="card p-5 text-sm text-cream/60">
           Nessuna lezione in questo corso, per ora.
         </p>
       )}
@@ -665,14 +665,14 @@ function LessonsSection({
         </div>
 
         {mode === "new" ? (
-          <p className="mt-3 text-xs text-cream/45">
+          <p className="mt-3 text-xs text-cream/60">
             La lezione nasce anche nel catalogo: resta riusabile in un&apos;altra
             edizione, con le sue domande e le sue dispense. Le domande le scrivi
             dopo, dal pulsante «Domande» della serata.
           </p>
         ) : (
           available.length === 0 && (
-            <p className="mt-3 text-xs text-cream/45">
+            <p className="mt-3 text-xs text-cream/60">
               Tutte le lezioni del catalogo sono già in questo corso.{" "}
               <button
                 onClick={() => setMode("new")}
@@ -704,7 +704,7 @@ function ModeButton({
     <button
       onClick={onClick}
       className={`press inline-flex min-h-10 items-center rounded-full px-4 text-xs transition ${
-        active ? "bg-gold/15 text-gold" : "text-cream/45 hover:text-cream/70"
+        active ? "bg-gold/15 text-gold" : "text-cream/60 hover:text-cream/70"
       }`}
     >
       {children}
@@ -763,7 +763,7 @@ function LessonRow({
             {lesson.isExam ? "Prova finale" : `Lezione ${lesson.position}`}
           </p>
           <p className="font-serif text-lg text-cream">{lesson.titleIt}</p>
-          <p className="mt-0.5 text-xs text-cream/45">{lesson.scoring}</p>
+          <p className="mt-0.5 text-xs text-cream/60">{lesson.scoring}</p>
         </div>
 
         <button

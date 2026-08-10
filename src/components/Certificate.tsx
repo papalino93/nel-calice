@@ -206,7 +206,12 @@ export function Certificate({
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label={s.ariaLabel(data.name)}
-      style={{ width: "100%", height: "auto", display: "block" }}
+      // Larghezza minima, non solo massima: sotto questa soglia le scritte
+      // più piccole diventano illeggibili (§ resa responsive). Sotto i
+      // 720px il contenitore in CertificateView scorre in orizzontale
+      // invece di continuare a rimpicciolire.
+      className="h-auto w-full min-w-[720px] print:min-w-0"
+      style={{ display: "block" }}
     >
       <defs>
         {/* Carta invecchiata: una texture leggera, non un effetto vistoso. */}
@@ -479,7 +484,7 @@ export function Certificate({
         textAnchor="middle"
         fill={INK}
         fontFamily={SANS}
-        fontSize="10"
+        fontSize="12"
         opacity="0.5"
       >
         {s.disclaimer}
@@ -496,7 +501,7 @@ export function Certificate({
           textAnchor="middle"
           fill={INK}
           fontFamily={SANS}
-          fontSize="10"
+          fontSize="12"
           opacity="0.55"
         >
           {`${s.verify}: ${data.verificationHost}/verifica/${data.verificationCode}`}

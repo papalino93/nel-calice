@@ -78,7 +78,7 @@ export default function ClassPage({
         hint="Una riga per iscritto, una colonna per lezione. Il punteggio compare solo per le lezioni già consegnate. Su un tentativo — in corso o già consegnato — puoi azzerarlo perché lo rifaccia: serve per un click su «inizia» per sbaglio, o un tentativo mai davvero svolto. Il corsista non può farlo da solo."
       >
         {data.students.length === 0 ? (
-          <p className="card p-5 text-sm text-cream/45">
+          <p className="card p-5 text-sm text-cream/60">
             Nessun iscritto, per ora.
           </p>
         ) : (
@@ -86,7 +86,9 @@ export default function ClassPage({
             <table className="w-full min-w-[36rem] text-sm">
               <thead>
                 <tr className="border-b border-gold/15 text-left">
-                  <th className="p-3 font-medium text-cream/60">Corsista</th>
+                  <th className="sticky left-0 z-10 border-r border-gold/10 bg-charcoal-soft p-3 font-medium text-cream/60">
+                    Corsista
+                  </th>
                   {data.lessons.map((l) => (
                     <th
                       key={l.courseLessonId}
@@ -107,9 +109,9 @@ export default function ClassPage({
                     key={s.enrollmentId}
                     className="border-b border-cream/5 last:border-0"
                   >
-                    <td className="p-3">
+                    <td className="sticky left-0 z-10 border-r border-gold/10 bg-charcoal-soft p-3">
                       <span className="block text-cream">{s.name}</span>
-                      <span className="block text-xs text-cream/40">
+                      <span className="block text-xs text-cream/60">
                         {s.email}
                       </span>
                     </td>
@@ -135,6 +137,22 @@ export default function ClassPage({
             </table>
           </div>
         )}
+
+        {/* Il `title` sulle intestazioni numeriche non esiste al tocco: chi
+            usa un telefono o un tablet non ha modo di sapere a quale
+            lezione corrisponda ogni colonna senza questa legenda. */}
+        {data.lessons.length > 0 && (
+          <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-cream/60">
+            {data.lessons.map((l) => (
+              <span key={l.courseLessonId}>
+                <span className="text-gold/80">
+                  {l.isExam ? "★" : l.position}
+                </span>{" "}
+                {l.titleIt}
+              </span>
+            ))}
+          </p>
+        )}
       </AdminSection>
 
       <AdminSection
@@ -142,7 +160,7 @@ export default function ClassPage({
         hint="Percentuale di risposte corrette sull'intera classe, dalla più sbagliata in giù. È il modo più diretto per capire quali argomenti non sono passati e su cui vale la pena tornare la serata dopo."
       >
         {data.questions.length === 0 ? (
-          <p className="card p-5 text-sm text-cream/45">
+          <p className="card p-5 text-sm text-cream/60">
             Nessuna risposta registrata, per ora.
           </p>
         ) : (
@@ -175,7 +193,7 @@ export default function ClassPage({
                     style={{ width: `${q.correctRate}%` }}
                   />
                 </div>
-                <p className="mt-1.5 text-xs text-cream/40">
+                <p className="mt-1.5 text-xs text-cream/60">
                   {q.correct} su {q.answered} risposte
                 </p>
               </li>
@@ -243,7 +261,7 @@ function StudentCell({
           <button
             onClick={() => setConfirming(false)}
             disabled={busy}
-            className="press rounded-full px-2 py-1.5 text-xs text-cream/40 hover:text-cream/70"
+            className="press rounded-full px-2 py-1.5 text-xs text-cream/60 hover:text-cream/70"
           >
             Annulla
           </button>

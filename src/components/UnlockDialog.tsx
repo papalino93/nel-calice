@@ -82,7 +82,7 @@ export function UnlockDialog({
             <h2 id="unlock-title" className="font-serif text-xl text-cream">
               {t.unlockTitle}
             </h2>
-            <p className="truncate text-xs text-cream/45">{lessonTitle}</p>
+            <p className="truncate text-xs text-cream/60">{lessonTitle}</p>
           </div>
         </div>
 

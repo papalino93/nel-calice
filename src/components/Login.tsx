@@ -35,7 +35,7 @@ export function Login() {
           <span className="underline underline-offset-4">{t.signIn}</span>
         </button>
 
-        <p className="mt-5 max-w-xs text-xs leading-relaxed text-cream/40">
+        <p className="mt-5 max-w-xs text-xs leading-relaxed text-cream/60">
           {t.signInHint}
         </p>
       </div>

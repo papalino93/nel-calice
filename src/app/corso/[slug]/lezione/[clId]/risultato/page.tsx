@@ -183,7 +183,7 @@ export default function ResultPage({
                     <p className="flex items-start gap-2 text-gold">
                       <CheckIcon className="mt-0.5 h-4 w-4 shrink-0" />
                       <span>
-                        <span className="text-cream/45">
+                        <span className="text-cream/60">
                           {t.correctAnswer}:{" "}
                         </span>
                         {pick(lang, correct.textIt, correct.textEn)}
@@ -195,7 +195,7 @@ export default function ResultPage({
                     <p className="flex items-start gap-2 text-red-300">
                       <CrossIcon className="mt-0.5 h-4 w-4 shrink-0" />
                       <span>
-                        <span className="text-cream/45">{t.yourAnswer}: </span>
+                        <span className="text-cream/60">{t.yourAnswer}: </span>
                         {pick(lang, given.textIt, given.textEn)}
                       </span>
                     </p>
