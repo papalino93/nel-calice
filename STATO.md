@@ -37,9 +37,12 @@ portante:
 - **Catalogo** (`Lesson`, `Question`, `Option`, `Material`): il contenuto, che
   esiste indipendentemente da chi lo usa. Una lezione scritta una volta serve
   più edizioni.
-- **Corso** (`Course`, `CourseLesson`): l'edizione. `CourseLesson` è il
-  collegamento, e porta ciò che è specifico di *quella* serata: numero, codice
-  di sblocco, se è la prova finale.
+- **Corso** (`Course`, `CourseLesson`, `CourseLogo`): l'edizione. `CourseLesson`
+  è il collegamento, e porta ciò che è specifico di *quella* serata: numero,
+  codice di sblocco, se è la prova finale. `CourseLogo` è deliberatamente
+  separata da `Material`: un logo per l'attestato non è materiale didattico,
+  non segue lo sblocco di una lezione, e mescolarlo alle dispense avrebbe
+  confuso due cose che non si assomigliano.
 - **Iscrizione** (`Enrollment`, `LessonUnlock`, `QuizAttempt`,
   `AttemptAnswer`): la storia del singolo corsista dentro una singola edizione.
 
@@ -339,7 +342,7 @@ un registro, una dispensa che gira si risale a chi l'ha aperta.
      rapporto 4,5:1, e alcune scritte sono a 9-11px. Per un pubblico adulto,
      in sala poco illuminata, conta.
 
-3. **Un registro delle letture delle dispense** (vedi sezione sopra): oggi non
+4. **Un registro delle letture delle dispense** (vedi sezione sopra): oggi non
    si sa chi ha aperto cosa.
 
 ## Difetti trovati e non ancora corretti
@@ -404,9 +407,10 @@ Resta aperto:
 
 Il database ferma sempre il dato sbagliato — quella parte è solida — ma
 nessuna route traduce il conflitto in una risposta sensata: doppia iscrizione,
-doppio avvio del quiz, doppio invio del codice giusto mostrano un errore
-generico a chi in quel momento **è** riuscito. Serve un `catch` sul vincolo di
-unicità che risponda "sei già iscritto" invece di "errore".
+doppio avvio del quiz, doppio invio del codice giusto, due domande create nello
+stesso istante nella stessa lezione mostrano un errore generico a chi in quel
+momento **è** riuscito. Serve un `catch` sul vincolo di unicità che risponda
+"sei già iscritto" invece di "errore".
 
 Fatto solo per la creazione di un corso: due richieste con lo stesso titolo
 nello stesso istante potevano ricevere "codice già usato" quando la vera causa
@@ -414,7 +418,10 @@ era lo slug, non il codice — la route ora distingue le due cause guardando
 quale vincolo ha protestato.
 
 E il limite ai tentativi di indovinare i codici si conta prima di scrivere la
-riga: venti richieste lanciate insieme passano tutte.
+riga: venti richieste lanciate insieme passano tutte. Vale anche per
+l'iscrizione: la via con lo slug del corso (`/api/courses/[slug]/enroll`) ha un
+budget di tentativi **indipendente** da quella senza (`/api/enroll`) — chi
+tira a indovinare ha convenienza a passare dalla prima.
 
 ### Autorizzazioni (area relatore)
 
@@ -469,6 +476,13 @@ Restano:
   API ci sono, manca il pulsante.
 - I punti per domanda sono calcolati e mandati al client, ma la pagina del
   risultato non li mostra mai.
+- **Alcune route admin ignorano parte del proprio percorso**: una PATCH su una
+  lezione o una domanda inviata con lo slug/lessonId sbagliato tocca comunque
+  la riga giusta per id, senza controllare che appartenga a quel corso/lezione.
+  Non è una scalata di privilegi (il relatore può già tutto), ma un id
+  scambiato per errore scrive nel posto sbagliato senza protestare. Le nuove
+  route dei loghi (sotto) e l'azzeramento tentativo sono già al riparo da
+  questo difetto: verificano lo slug ad ogni chiamata.
 
 ### Resa responsive, ciò che resta
 

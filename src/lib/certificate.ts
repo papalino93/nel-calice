@@ -1,6 +1,7 @@
 import type { CertificateData } from "@/components/Certificate";
 import { courseOverview } from "./course";
 import type { EnrollmentRef } from "./enrollment";
+import { readStoredFile } from "./materials";
 import { prisma } from "./prisma";
 import { siteHost } from "./site";
 import {
@@ -58,6 +59,33 @@ const MERIT_EN: Record<MeritTitle, { title: string; subtitle: string }> = {
   },
 };
 
+/**
+ * Legge i loghi dallo store e li trasforma in `data:` URI.
+ *
+ * Non basterebbe un indirizzo qualunque: l'attestato si converte in PNG
+ * ricalcando l'SVG su un `<canvas>` (src/lib/svgToPng.ts), e un'immagine
+ * esterna referenziata lì dentro "sporca" il canvas — il browser rifiuta poi
+ * di esportarlo, anche se l'immagine viene dallo stesso sito. Incorporare i
+ * byte direttamente nell'SVG toglie il problema alla radice: non è più una
+ * richiesta di rete al momento dell'esportazione, è già lì.
+ *
+ * Un logo che non si legge più (file rimosso a mano dallo store) viene
+ * saltato in silenzio: meglio un attestato con un logo in meno che nessun
+ * attestato.
+ */
+async function resolveLogos(urls: string[]): Promise<string[]> {
+  const files = await Promise.all(urls.map((url) => readStoredFile(url)));
+
+  const dataUris: string[] = [];
+  for (const file of files) {
+    if (!file) continue;
+    const bytes = Buffer.from(await new Response(file.stream).arrayBuffer());
+    const contentType = file.blob.contentType || "image/png";
+    dataUris.push(`data:${contentType};base64,${bytes.toString("base64")}`);
+  }
+  return dataUris;
+}
+
 export async function certificateFor(
   enrollment: EnrollmentRef,
   studentName: string,
@@ -98,9 +126,11 @@ export async function certificateFor(
       meritTitleEn: MERIT_EN[title].title,
       meritSubtitleIt: meritSubtitle(title),
       meritSubtitleEn: MERIT_EN[title].subtitle,
+      location: overview.course.location,
       dateIt: formatDate(completedOn, "it-IT"),
       dateEn: formatDate(completedOn, "en-US"),
-      issuer: "L'Angolo del Vino",
+      issuer: overview.course.certificateIssuer,
+      logos: await resolveLogos(overview.course.logoUrls),
       // Ricavato dall'iscrizione, non salvato: vedi src/lib/verification.ts.
       // Vale anche per gli attestati già scaricati prima che esistesse.
       verificationCode: formatVerificationCode(verificationCode(enrollment.id)),
@@ -110,10 +140,12 @@ export async function certificateFor(
 }
 
 /** Dati d'esempio per l'anteprima del relatore (§3.7a). */
-export function sampleCertificate(
+export async function sampleCertificate(
   courseTitleIt: string,
   courseTitleEn: string,
-): CertificateData {
+  issuer: string | null,
+  logoUrls: string[],
+): Promise<CertificateData> {
   const title = meritTitle(96);
   const now = new Date();
   return {
@@ -124,9 +156,13 @@ export function sampleCertificate(
     meritTitleEn: MERIT_EN[title].title,
     meritSubtitleIt: meritSubtitle(title),
     meritSubtitleEn: MERIT_EN[title].subtitle,
+    // Nell'anteprima non c'è un corso reale da cui prendere il luogo: resta
+    // vuoto, così il relatore vede l'ingombro senza un dato inventato.
+    location: null,
     dateIt: formatDate(now, "it-IT"),
     dateEn: formatDate(now, "en-US"),
-    issuer: "L'Angolo del Vino",
+    issuer,
+    logos: await resolveLogos(logoUrls),
     // Un codice finto, ma della lunghezza giusta: l'anteprima serve a vedere
     // l'ingombro. Cercarlo davvero risponde "non risulta", ed è corretto.
     verificationCode: formatVerificationCode("ESEMPIO000000000"),

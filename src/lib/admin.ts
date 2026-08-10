@@ -1,6 +1,7 @@
 import { AttemptStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { codeLookup, decryptCode, encryptCode, normalizeCode } from "./codes";
+import { isStoredFile, pathnameOf } from "./materials";
 import {
   clampToCourseTotal,
   computeBudgets,
@@ -20,6 +21,12 @@ export type AdminCourseDetail = {
   titleEn: string;
   subtitleIt: string | null;
   subtitleEn: string | null;
+  /** Città del corso. Facoltativa: se manca, l'attestato mostra solo la data. */
+  location: string | null;
+  /** Firma testuale sull'attestato. Facoltativa: vuota, quella riga sparisce. */
+  certificateIssuer: string | null;
+  /** Loghi che, se presenti, sostituiscono la firma testuale sull'attestato. */
+  logos: { id: string; url: string }[];
   status: string;
   enrollmentOpen: boolean;
   /** In chiaro: il relatore deve dirlo a voce. Solo per lui. */
@@ -53,6 +60,9 @@ export async function courseDetail(
       titleEn: true,
       subtitleIt: true,
       subtitleEn: true,
+      location: true,
+      certificateIssuer: true,
+      logos: { select: { id: true, url: true }, orderBy: { createdAt: "asc" } },
       status: true,
       enrollmentOpen: true,
       enrollmentCodeEncrypted: true,
@@ -96,6 +106,15 @@ export async function courseDetail(
     titleEn: course.titleEn,
     subtitleIt: course.subtitleIt,
     subtitleEn: course.subtitleEn,
+    location: course.location,
+    certificateIssuer: course.certificateIssuer,
+    // Il percorso interno non è utilizzabile da un <img>: si esce con
+    // l'indirizzo della route che serve il file dopo aver verificato che
+    // chi lo chiede è il relatore di questo corso.
+    logos: course.logos.map((logo) => ({
+      id: logo.id,
+      url: `/api/admin/courses/${course.slug}/logos/${logo.id}/file`,
+    })),
     status: course.status,
     enrollmentOpen: course.enrollmentOpen,
     enrollmentCode: decryptCode(course.enrollmentCodeEncrypted),
@@ -256,12 +275,16 @@ export type CoursePatch = {
   titleEn?: string;
   subtitleIt?: string | null;
   subtitleEn?: string | null;
+  location?: string | null;
+  certificateIssuer?: string | null;
   status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
   enrollmentOpen?: boolean;
   enrollmentCode?: string;
   lessonTimerMinutes?: number;
   examTimerMinutes?: number;
 };
+
+const DEFAULT_CERTIFICATE_ISSUER = "L'Angolo del Vino";
 
 function slugify(titleIt: string): string {
   return (
@@ -302,6 +325,11 @@ export async function createCourse(input: {
       status: "DRAFT",
       enrollmentCodeEncrypted: encryptCode(input.enrollmentCode),
       enrollmentCodeLookup: codeLookup(input.enrollmentCode),
+      // Valore di partenza, non una costante dell'applicazione: il relatore
+      // può cambiarlo o svuotarlo dalle impostazioni del corso — è quello
+      // che succede quando un'edizione nasce con un partner e l'attestato
+      // deve portare i suoi loghi al posto di questo nome.
+      certificateIssuer: DEFAULT_CERTIFICATE_ISSUER,
     },
   });
 }
@@ -317,6 +345,10 @@ export async function updateCourse(slug: string, patch: CoursePatch) {
         : {}),
       ...(patch.subtitleEn !== undefined
         ? { subtitleEn: patch.subtitleEn }
+        : {}),
+      ...(patch.location !== undefined ? { location: patch.location } : {}),
+      ...(patch.certificateIssuer !== undefined
+        ? { certificateIssuer: patch.certificateIssuer }
         : {}),
       ...(patch.status !== undefined ? { status: patch.status } : {}),
       ...(patch.enrollmentOpen !== undefined
@@ -746,6 +778,55 @@ export async function resetAttempt(
     where: { courseId: course.id, enrollmentId, courseLessonId },
   });
   return count > 0;
+}
+
+/**
+ * Non un limite tecnico dello store: è il layout dell'attestato che non
+ * regge più di tante insegne affiancate senza diventare illeggibile.
+ */
+const MAX_COURSE_LOGOS = 4;
+
+/** Aggiunge un logo all'attestato del corso. */
+export async function addCourseLogo(slug: string, url: string) {
+  const course = await prisma.course.findUnique({
+    where: { slug },
+    select: { id: true, _count: { select: { logos: true } } },
+  });
+  if (!course) return null;
+
+  if (course._count.logos >= MAX_COURSE_LOGOS) {
+    throw new Error(`Non più di ${MAX_COURSE_LOGOS} loghi per attestato.`);
+  }
+
+  return prisma.courseLogo.create({ data: { courseId: course.id, url } });
+}
+
+/**
+ * Il logo, cercato dentro questo corso e non per il solo id: un logoId
+ * scambiato per errore, o di un altro corso, non deve restituire né
+ * cancellare niente.
+ */
+export async function courseLogoFor(slug: string, logoId: string) {
+  return prisma.courseLogo.findFirst({
+    where: { id: logoId, course: { slug } },
+    select: { id: true, url: true },
+  });
+}
+
+/** Toglie un logo e il suo file dallo store. */
+export async function removeCourseLogo(slug: string, logoId: string) {
+  const logo = await courseLogoFor(slug, logoId);
+  if (!logo) return false;
+
+  if (isStoredFile(logo.url)) {
+    const { del } = await import("@vercel/blob");
+    await del(pathnameOf(logo.url)).catch(() => {
+      // Se il file non c'è più, la riga va comunque rimossa.
+    });
+  }
+
+  await prisma.courseLogo.delete({ where: { id: logo.id } });
+  return true;
 }
 
 /** Sblocco o riblocco immediato di una lezione per tutti gli iscritti. */
