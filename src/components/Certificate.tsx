@@ -110,9 +110,9 @@ const LOGO_BOX: Record<
   LogoSize,
   { width: number; height: number; fontSize: number; letterSpacing: number }
 > = {
-  SMALL: { width: 76, height: 22, fontSize: 9, letterSpacing: 2 },
-  MEDIUM: { width: 106, height: 32, fontSize: 11.5, letterSpacing: 3 },
-  LARGE: { width: 144, height: 42, fontSize: 15, letterSpacing: 3.6 },
+  SMALL: { width: 90, height: 30, fontSize: 10, letterSpacing: 2.2 },
+  MEDIUM: { width: 130, height: 46, fontSize: 14, letterSpacing: 3.2 },
+  LARGE: { width: 170, height: 60, fontSize: 18, letterSpacing: 4.2 },
 };
 
 /** Sigillo dentellato, lo stesso dell'app ma ridisegnato in coordinate SVG. */
@@ -468,10 +468,13 @@ export function Certificate({
         <line x1="14" y1="0" x2="120" y2="0" stroke={GOLD} strokeWidth="1" />
       </g>
 
-      {/* Titolo di merito — informale e giocoso (§2.2) */}
+      {/* Titolo di merito — informale e giocoso (§2.2). Spostato un po' più
+          in alto rispetto alla prima versione: serve spazio sotto per una
+          riga firma/loghi che si vede davvero (§7.15 — la taglia LARGE dei
+          loghi era ancora piccola con la vecchia scansione verticale). */}
       <text
         x={cx}
-        y="492"
+        y="486"
         textAnchor="middle"
         fill={BORDEAUX}
         fontFamily={SERIF}
@@ -483,7 +486,7 @@ export function Certificate({
 
       <text
         x={cx}
-        y="521"
+        y="514"
         textAnchor="middle"
         fill={GOLD_DEEP}
         fontFamily={SANS}
@@ -501,7 +504,7 @@ export function Certificate({
           la data, com'era prima che questo campo esistesse. */}
       <text
         x={cx}
-        y="568"
+        y="552"
         textAnchor="middle"
         fill={INK}
         fontFamily={SERIF}
@@ -515,18 +518,20 @@ export function Certificate({
       {/* I loghi, quando ci sono, prendono il posto della firma testuale
           invece di affiancarla: è il caso di un'edizione realizzata con un
           partner, dove non deve comparire il nome dell'organizzatore ma i
-          marchi di chi la fa insieme a lui. Centro fisso a 600: anche la
-          taglia LARGE (42px) ci sta fra la data sopra e la dicitura legale
-          sotto senza toccare né l'una né l'altra (misurato, non supposto —
-          §7.11, lo stesso motivo per cui questa riga non è mai un calcolo
-          "a occhio"). */}
+          marchi di chi la fa insieme a lui. Centro fisso a 592: anche la
+          taglia LARGE (60px, alzata da 42 — restava piccola anche così)
+          ci sta fra la data sopra e la dicitura legale sotto senza toccare
+          né l'una né l'altra (misurato, non supposto — §7.11/§7.15, lo
+          stesso motivo per cui questa riga non è mai un calcolo "a
+          occhio"). Lo spazio è stato preso spostando in alto il titolo di
+          merito, non rimpicciolendo il resto. */}
       {data.logos.length > 0 ? (
-        <LogoRow cx={cx} centerY={600} logos={data.logos} />
+        <LogoRow cx={cx} centerY={592} logos={data.logos} />
       ) : (
         data.issuer && (
           <text
             x={cx}
-            y="616"
+            y="608"
             textAnchor="middle"
             fill={GOLD_DEEP}
             fontFamily={SANS}
@@ -540,7 +545,7 @@ export function Certificate({
 
       <text
         x={cx}
-        y="634"
+        y="636"
         textAnchor="middle"
         fill={INK}
         fontFamily={SANS}
@@ -557,7 +562,7 @@ export function Certificate({
       {data.verificationCode && data.verificationHost && (
         <text
           x={cx}
-          y="652"
+          y="654"
           textAnchor="middle"
           fill={INK}
           fontFamily={SANS}
