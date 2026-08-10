@@ -7,10 +7,12 @@ import {
   AdminSection,
   AdminShell,
   Field,
+  TranslateRow,
   buttonClass,
   ghostButtonClass,
   inputClass,
 } from "@/components/admin/AdminShell";
+import { useTranslator } from "@/lib/useTranslator";
 import { CheckIcon, CrossIcon } from "@/components/icons";
 import { MaterialsSection } from "@/components/admin/MaterialsSection";
 
@@ -81,68 +83,6 @@ const emptyDraft: Draft = {
 
 /** L'id della domanda selezionata, o "new" per il modulo di creazione. */
 type Selection = number | "new";
-
-/**
- * Riempie i campi inglesi partendo dall'italiano.
- *
- * Non salva: restituisce i testi, che finiscono nel modulo e restano
- * modificabili. Chi scrive il corso non scrive in inglese — ma quello che
- * legge un corsista deve poter passare da un occhio umano prima di essere
- * scritto sul database.
- */
-function useTranslator() {
-  const { t } = useLanguage();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function translate(texts: string[]): Promise<string[] | null> {
-    setBusy(true);
-    setError(null);
-    const result = await post<{ translations: string[] }>(
-      "/api/admin/translate",
-      { texts },
-    );
-    setBusy(false);
-    if (result.ok) return result.data.translations;
-    setError(errorMessage(result, t));
-    return null;
-  }
-
-  return { translate, busy, error };
-}
-
-/** La riga col pulsante, uguale nei due moduli che la usano. */
-function TranslateRow({
-  onTranslate,
-  busy,
-  error,
-  disabled,
-}: {
-  onTranslate: () => void;
-  busy: boolean;
-  error: string | null;
-  disabled: boolean;
-}) {
-  return (
-    <>
-      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <button
-          type="button"
-          onClick={onTranslate}
-          disabled={disabled || busy}
-          className={ghostButtonClass}
-        >
-          {busy ? "Traduco…" : "Traduci in inglese"}
-        </button>
-        <span className="text-xs leading-relaxed text-cream/60">
-          Riempie i campi inglesi partendo dall&apos;italiano. Puoi correggerli
-          prima di salvare.
-        </span>
-      </div>
-      {error && <p className="mb-3 text-sm text-red-300">{error}</p>}
-    </>
-  );
-}
 
 export default function LessonEditorPage({
   params,
