@@ -114,3 +114,36 @@ export const buttonClass =
 
 export const ghostButtonClass =
   "press rounded-full border border-cream/20 px-4 py-2 text-sm text-cream/70 transition-colors hover:text-cream";
+
+/** Il pulsante «Traduci in inglese», uguale in ogni modulo che lo usa. */
+export function TranslateRow({
+  onTranslate,
+  busy,
+  error,
+  disabled,
+}: {
+  onTranslate: () => void;
+  busy: boolean;
+  error: string | null;
+  disabled: boolean;
+}) {
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <button
+          type="button"
+          onClick={onTranslate}
+          disabled={disabled || busy}
+          className={ghostButtonClass}
+        >
+          {busy ? "Traduco…" : "Traduci in inglese"}
+        </button>
+        <span className="text-xs leading-relaxed text-cream/60">
+          Riempie i campi inglesi partendo dall&apos;italiano. Puoi correggerli
+          prima di salvare.
+        </span>
+      </div>
+      {error && <p className="mb-3 text-sm text-red-300">{error}</p>}
+    </>
+  );
+}
