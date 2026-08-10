@@ -13,9 +13,9 @@ import {
  * modulo, dove resta modificabile, e viene scritto sul database solo se il
  * relatore preme Salva — come qualunque altra cosa abbia digitato a mano.
  *
- * È riservata al relatore, non perché i testi siano segreti (finiscono in
- * pagina), ma perché chiama un servizio a pagamento: aperta a chiunque
- * sarebbe una fattura scritta da estranei.
+ * Riservata al relatore: non perché i testi siano segreti (finiscono in
+ * pagina), ma perché non ha senso esporre a chiunque una comodità di
+ * scrittura che appartiene solo a chi scrive il corso.
  */
 export async function POST(request: Request) {
   const admin = await requireAdmin();
@@ -47,22 +47,16 @@ export async function POST(request: Request) {
   const result = await translateToEnglish(texts as string[]);
 
   if (!result.ok) {
-    // Le tre cause si distinguono, perché suggeriscono rimedi diversi: una
-    // chiave mancante la mette il proprietario del progetto, un rifiuto si
-    // aggira riscrivendo il testo, un guasto si riprova.
-    if (result.reason === "not-configured") {
+    // Le due cause suggeriscono rimedi diversi: una soglia esaurita si
+    // riprova più tardi (o si scrive a mano, per oggi), un guasto si
+    // riprova subito.
+    if (result.reason === "quota") {
       return NextResponse.json(
         {
           error:
-            "La traduzione automatica non è configurata: manca ANTHROPIC_API_KEY.",
+            "Il servizio di traduzione gratuito ha esaurito la soglia di oggi. Riprova più tardi, o scrivi l'inglese a mano per ora.",
         },
         { status: 503 },
-      );
-    }
-    if (result.reason === "refused") {
-      return NextResponse.json(
-        { error: "La traduzione è stata rifiutata per questo testo." },
-        { status: 422 },
       );
     }
     return NextResponse.json(

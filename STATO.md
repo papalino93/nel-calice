@@ -88,11 +88,13 @@ esegue l'app; in produzione sono già su Vercel.
 | `ADMIN_EMAILS` | elenco delle email che valgono come relatore |
 | `UNLOCK_CODE_KEY` | 32 byte in base64: cifra i codici di sblocco |
 | `BLOB_READ_WRITE_TOKEN` | store privato delle dispense |
-| `ANTHROPIC_API_KEY` | traduzione automatica dei testi del catalogo |
 
-`ANTHROPIC_API_KEY` è l'unica facoltativa: senza, tutto il resto funziona e il
-pulsante «Traduci in inglese» risponde che non è configurato, invece di dare
-errore.
+Nessuna chiave per la traduzione automatica: il pulsante «Traduci in
+inglese» chiama MyMemory (api.mymemory.translated.net), gratuito e senza
+registrazione — vincolo esplicito del committente, "mai un euro" anche a
+costo di una qualità più grezza di quella di un modello vero (§7.20). Prima
+usava Anthropic e serviva `ANTHROPIC_API_KEY`; non serve più, e non c'è più
+nel codice.
 
 Senza `UNLOCK_CODE_KEY` sei test falliscono: non è una regressione, è
 l'ambiente incompleto.
@@ -355,8 +357,9 @@ con un database vero**:
 - dalla pagina del corso il relatore può scrivere una lezione nuova sul posto,
   senza passare dal catalogo (resta comunque riusabile, e l'interfaccia lo
   dice);
-- il pulsante «Traduci in inglese» nel catalogo (serve `ANTHROPIC_API_KEY`:
-  finché non è impostata su Vercel, risponde che non è configurato);
+- il pulsante «Traduci in inglese» nel catalogo, provato da questo ambiente
+  contro il servizio vero (risposte corrette), ma non ancora cliccato in un
+  browser da relatore autenticato;
 - il codice di verifica dell'attestato, qui sotto — la parte che decide se un
   codice è autentico è però coperta da otto test che non richiedono database.
 
@@ -541,8 +544,8 @@ a `POST /api/admin/translate` e riempie i campi inglesi — domanda, opzioni e
 spiegazione insieme (tradurre un'opzione senza la sua domanda perde il senso),
 e a parte titolo e sottotitolo della lezione. Non traduce al salvataggio: quel
 che torna resta modificabile, perché un testo che va davanti ai corsisti deve
-poter passare da un occhio umano. Serve `ANTHROPIC_API_KEY`; senza, il
-pulsante dice che non è configurato e il resto funziona.
+poter passare da un occhio umano. Gratuito, senza chiave (§7.20: vedi
+`src/lib/translate.ts` per il motivo).
 
 Risolto anche: **l'attestato cambia davvero lingua.** Titolo del corso,
 titolo di merito, sottotitolo e data ora arrivano in coppia IT/En
