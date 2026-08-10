@@ -25,8 +25,18 @@ export type AdminCourseDetail = {
   location: string | null;
   /** Firma testuale sull'attestato. Facoltativa: vuota, quella riga sparisce. */
   certificateIssuer: string | null;
-  /** Loghi che, se presenti, sostituiscono la firma testuale sull'attestato. */
-  logos: { id: string; url: string }[];
+  /**
+   * Loghi che, se presenti, sostituiscono la firma testuale sull'attestato.
+   * `url` è la route che serve il file, non l'indirizzo dello store — vedi
+   * `courseDetail`. `null` per un riquadro di testo, che porta `text`
+   * invece.
+   */
+  logos: {
+    id: string;
+    url: string | null;
+    text: string | null;
+    size: "SMALL" | "MEDIUM" | "LARGE";
+  }[];
   status: string;
   enrollmentOpen: boolean;
   /** In chiaro: il relatore deve dirlo a voce. Solo per lui. */
@@ -62,7 +72,10 @@ export async function courseDetail(
       subtitleEn: true,
       location: true,
       certificateIssuer: true,
-      logos: { select: { id: true, url: true }, orderBy: { createdAt: "asc" } },
+      logos: {
+        select: { id: true, url: true, text: true, size: true },
+        orderBy: { createdAt: "asc" },
+      },
       status: true,
       enrollmentOpen: true,
       enrollmentCodeEncrypted: true,
@@ -110,10 +123,16 @@ export async function courseDetail(
     certificateIssuer: course.certificateIssuer,
     // Il percorso interno non è utilizzabile da un <img>: si esce con
     // l'indirizzo della route che serve il file dopo aver verificato che
-    // chi lo chiede è il relatore di questo corso.
+    // chi lo chiede è il relatore di questo corso. Un logo di testo non ha
+    // un file da servire: resta `null`, e porta `text` invece.
     logos: course.logos.map((logo) => ({
       id: logo.id,
-      url: `/api/admin/courses/${course.slug}/logos/${logo.id}/file`,
+      url:
+        logo.url !== null
+          ? `/api/admin/courses/${course.slug}/logos/${logo.id}/file`
+          : null,
+      text: logo.text,
+      size: logo.size as "SMALL" | "MEDIUM" | "LARGE",
     })),
     status: course.status,
     enrollmentOpen: course.enrollmentOpen,
@@ -816,8 +835,9 @@ export async function resetAttempt(
  */
 const MAX_COURSE_LOGOS = 4;
 
-/** Aggiunge un logo all'attestato del corso. */
-export async function addCourseLogo(slug: string, url: string) {
+export type LogoSizeValue = "SMALL" | "MEDIUM" | "LARGE";
+
+async function assertRoomForLogo(slug: string) {
   const course = await prisma.course.findUnique({
     where: { slug },
     select: { id: true, _count: { select: { logos: true } } },
@@ -827,8 +847,25 @@ export async function addCourseLogo(slug: string, url: string) {
   if (course._count.logos >= MAX_COURSE_LOGOS) {
     throw new Error(`Non più di ${MAX_COURSE_LOGOS} loghi per attestato.`);
   }
+  return course;
+}
 
+/** Aggiunge un logo-immagine all'attestato del corso. */
+export async function addCourseLogoImage(slug: string, url: string) {
+  const course = await assertRoomForLogo(slug);
+  if (!course) return null;
   return prisma.courseLogo.create({ data: { courseId: course.id, url } });
+}
+
+/**
+ * Aggiunge un logo-testo: lo stesso riquadro di un logo, ma con una scritta
+ * al posto di un'immagine — per chi non ha (o non vuole) un file del
+ * proprio marchio pronto all'occorrenza.
+ */
+export async function addCourseLogoText(slug: string, text: string) {
+  const course = await assertRoomForLogo(slug);
+  if (!course) return null;
+  return prisma.courseLogo.create({ data: { courseId: course.id, text } });
 }
 
 /**
@@ -839,16 +876,28 @@ export async function addCourseLogo(slug: string, url: string) {
 export async function courseLogoFor(slug: string, logoId: string) {
   return prisma.courseLogo.findFirst({
     where: { id: logoId, course: { slug } },
-    select: { id: true, url: true },
+    select: { id: true, url: true, text: true },
   });
 }
 
-/** Toglie un logo e il suo file dallo store. */
+/** Cambia la taglia di un riquadro, immagine o testo che sia. */
+export async function updateCourseLogoSize(
+  slug: string,
+  logoId: string,
+  size: LogoSizeValue,
+) {
+  const logo = await courseLogoFor(slug, logoId);
+  if (!logo) return false;
+  await prisma.courseLogo.update({ where: { id: logo.id }, data: { size } });
+  return true;
+}
+
+/** Toglie un logo e, se ne aveva uno, il suo file dallo store. */
 export async function removeCourseLogo(slug: string, logoId: string) {
   const logo = await courseLogoFor(slug, logoId);
   if (!logo) return false;
 
-  if (isStoredFile(logo.url)) {
+  if (logo.url !== null && isStoredFile(logo.url)) {
     const { del } = await import("@vercel/blob");
     await del(pathnameOf(logo.url)).catch(() => {
       // Se il file non c'è più, la riga va comunque rimossa.

@@ -19,9 +19,11 @@ import {
   ghostButtonClass,
   inputClass,
 } from "@/components/admin/AdminShell";
-import { ArrowRightIcon, EyeIcon, LockIcon } from "@/components/icons";
+import { ArrowRightIcon, EyeIcon, LockIcon, RefreshIcon } from "@/components/icons";
 import type { CertificateData } from "@/components/Certificate";
 import { CertificateView } from "@/components/CertificateView";
+
+type LogoSize = "SMALL" | "MEDIUM" | "LARGE";
 
 type CourseLessonRow = {
   courseLessonId: string;
@@ -44,7 +46,7 @@ type Detail = {
   subtitleEn: string | null;
   location: string | null;
   certificateIssuer: string | null;
-  logos: { id: string; url: string }[];
+  logos: { id: string; url: string | null; text: string | null; size: LogoSize }[];
   status: string;
   enrollmentOpen: boolean;
   enrollmentCode: string | null;
@@ -143,9 +145,7 @@ export default function ManageCoursePage({
 
       <CourseTitles detail={detail} onSaved={reload} />
 
-      <LogosSection slug={slug} logos={detail.logos} onChanged={reload} />
-
-      <CertificatePreview slug={slug} />
+      <CertificateSection slug={slug} detail={detail} onSaved={reload} />
 
       <CourseSettings detail={detail} onSaved={reload} />
 
@@ -156,43 +156,6 @@ export default function ManageCoursePage({
         onChanged={reload}
       />
     </AdminShell>
-  );
-}
-
-/** Anteprima dell'attestato con dati d'esempio (§3.7a). */
-function CertificatePreview({ slug }: { slug: string }) {
-  const [data, setData] = useState<CertificateData | null>(null);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open || data) return;
-    let cancelled = false;
-    void (async () => {
-      const result = await api<{ data: CertificateData }>(
-        `/api/admin/courses/${slug}/certificate-preview`,
-      );
-      if (!cancelled && result.ok) setData(result.data.data);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, data, slug]);
-
-  return (
-    <AdminSection
-      title="Anteprima attestato"
-      hint="Con dati d'esempio, per controllare come verrà prima che lo riceva qualcuno. È lo stesso disegno che vedranno i corsisti: quello che scarichi qui è identico al loro."
-    >
-      {!open ? (
-        <button onClick={() => setOpen(true)} className={ghostButtonClass}>
-          Mostra anteprima
-        </button>
-      ) : data ? (
-        <CertificateView data={data} showShare={false} />
-      ) : (
-        <p className="text-sm text-cream/60">Un momento…</p>
-      )}
-    </AdminSection>
   );
 }
 
@@ -208,10 +171,6 @@ function CourseTitles({
   const [titleEn, setTitleEn] = useState(detail.titleEn);
   const [subtitleIt, setSubtitleIt] = useState(detail.subtitleIt ?? "");
   const [subtitleEn, setSubtitleEn] = useState(detail.subtitleEn ?? "");
-  const [location, setLocation] = useState(detail.location ?? "");
-  const [certificateIssuer, setCertificateIssuer] = useState(
-    detail.certificateIssuer ?? "",
-  );
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -225,8 +184,6 @@ function CourseTitles({
         titleEn,
         subtitleIt: subtitleIt || null,
         subtitleEn: subtitleEn || null,
-        location: location.trim() || null,
-        certificateIssuer: certificateIssuer.trim() || null,
       }),
     });
     setBusy(false);
@@ -241,7 +198,7 @@ function CourseTitles({
   return (
     <AdminSection
       title="Titoli"
-      hint="Il luogo è facoltativo: se lo lasci vuoto, l'attestato mostra solo la data. Sta bene compilato quando questa edizione si tiene altrove dalla solita sede."
+      hint="Titolo e sottotitolo del corso, come compaiono ovunque nell'app — luogo e firma per l'attestato sono più giù, nella sezione «Attestato»."
     >
       <div className="card p-5">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -273,6 +230,87 @@ function CourseTitles({
               className={inputClass}
             />
           </Field>
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <button onClick={save} disabled={busy} className={buttonClass}>
+            Salva
+          </button>
+          {msg && <span className="text-xs text-cream/60">{msg}</span>}
+        </div>
+      </div>
+    </AdminSection>
+  );
+}
+
+/**
+ * Tutto quello che finisce sulla pergamena, in un'unica sezione: prima era
+ * sparso fra «Titoli», «Loghi» e «Anteprima», con «Impostazioni del corso»
+ * (codice d'iscrizione, durate, stato — niente a che fare con l'aspetto
+ * dell'attestato) in mezzo a loghi e anteprima. Qui invece si modifica e si
+ * controlla il risultato senza uscire dal blocco.
+ */
+function CertificateSection({
+  slug,
+  detail,
+  onSaved,
+}: {
+  slug: string;
+  detail: Detail;
+  onSaved: () => void;
+}) {
+  return (
+    <AdminSection
+      title="Attestato"
+      hint="Luogo, firma, loghi (o testo al loro posto) e l'anteprima che li mostra insieme — nell'ordine in cui si usano: si cambia qui sopra, si controlla qui sotto."
+    >
+      <div className="flex flex-col gap-6">
+        <CertificateFields detail={detail} onSaved={onSaved} />
+        <LogosSection slug={slug} logos={detail.logos} onChanged={onSaved} />
+        <CertificatePreview slug={slug} />
+      </div>
+    </AdminSection>
+  );
+}
+
+function CertificateFields({
+  detail,
+  onSaved,
+}: {
+  detail: Detail;
+  onSaved: () => void;
+}) {
+  const { t } = useLanguage();
+  const [location, setLocation] = useState(detail.location ?? "");
+  const [certificateIssuer, setCertificateIssuer] = useState(
+    detail.certificateIssuer ?? "",
+  );
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    setMsg(null);
+    const result = await api(`/api/admin/courses/${detail.slug}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        location: location.trim() || null,
+        certificateIssuer: certificateIssuer.trim() || null,
+      }),
+    });
+    setBusy(false);
+    if (result.ok) {
+      setMsg("Salvato.");
+      onSaved();
+    } else {
+      setMsg(errorMessage(result, t));
+    }
+  }
+
+  return (
+    <div>
+      <p className="mb-2 text-sm text-cream/70">Luogo e firma</p>
+      <div className="card p-5">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Luogo (per l'attestato)">
             <input
               value={location}
@@ -291,10 +329,12 @@ function CourseTitles({
           </Field>
         </div>
         <p className="mt-3 text-xs text-cream/60">
-          Vuota, quella riga sparisce dall&apos;attestato. Se carichi almeno
-          un logo qui sotto, i loghi prendono comunque il suo posto: per
-          un&apos;edizione realizzata con un partner, il nome resta ma
-          l&apos;attestato mostra i marchi, non lo scrive.
+          Il luogo è facoltativo: vuoto, l&apos;attestato mostra solo la
+          data. La firma sparisce dalla riga se la lasci vuota; se invece
+          aggiungi almeno un riquadro qui sotto, i riquadri prendono
+          comunque il suo posto — per un&apos;edizione realizzata con un
+          partner, il nome resta qui ma l&apos;attestato mostra i riquadri,
+          non lo scrive.
         </p>
         <div className="mt-4 flex items-center gap-3">
           <button onClick={save} disabled={busy} className={buttonClass}>
@@ -303,15 +343,24 @@ function CourseTitles({
           {msg && <span className="text-xs text-cream/60">{msg}</span>}
         </div>
       </div>
-    </AdminSection>
+    </div>
   );
 }
 
+const LOGO_SIZE_LABELS: Record<LogoSize, string> = {
+  SMALL: "S",
+  MEDIUM: "M",
+  LARGE: "L",
+};
+
 /**
- * Loghi che sostituiscono la firma testuale sull'attestato — il caso di
+ * Riquadri che sostituiscono la firma testuale sull'attestato — il caso di
  * un'edizione realizzata con un partner, dove il marchio dell'attività non
- * basta più da solo. Fino a quattro: oltre, sulla riga dell'attestato non
- * ci starebbero leggibili.
+ * basta più da solo. Ognuno è un'immagine caricata O un testo scritto al
+ * suo posto (non tutti hanno un file del proprio marchio pronto), e ha una
+ * sua taglia: chi ha provato a caricarne uno e l'ha trovato piccolissimo lo
+ * ingrandisce da qui, senza dover ritagliare o rifare il file. Fino a
+ * quattro: oltre, sulla riga dell'attestato non ci starebbero leggibili.
  */
 function LogosSection({
   slug,
@@ -319,15 +368,17 @@ function LogosSection({
   onChanged,
 }: {
   slug: string;
-  logos: { id: string; url: string }[];
+  logos: { id: string; url: string | null; text: string | null; size: LogoSize }[];
   onChanged: () => void;
 }) {
   const { t } = useLanguage();
+  const [mode, setMode] = useState<"image" | "text">("image");
+  const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  async function upload() {
+  async function uploadImage() {
     const file = fileRef.current?.files?.[0];
     if (!file) return;
 
@@ -362,6 +413,30 @@ function LogosSection({
     setBusy(false);
   }
 
+  async function addText() {
+    if (!text.trim()) return;
+    setBusy(true);
+    setMsg(null);
+    const result = await post(`/api/admin/courses/${slug}/logos`, {
+      text: text.trim(),
+    });
+    setBusy(false);
+    if (result.ok) {
+      setText("");
+      onChanged();
+    } else {
+      setMsg(errorMessage(result, t));
+    }
+  }
+
+  async function resize(id: string, size: LogoSize) {
+    await api(`/api/admin/courses/${slug}/logos/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ size }),
+    });
+    onChanged();
+  }
+
   async function remove(id: string) {
     setBusy(true);
     await api(`/api/admin/courses/${slug}/logos/${id}`, { method: "DELETE" });
@@ -370,54 +445,180 @@ function LogosSection({
   }
 
   return (
-    <AdminSection
-      title="Loghi dell'attestato"
-      hint="Al posto della firma testuale — non accanto. Pensati per un'edizione realizzata con un partner: carica il suo marchio insieme al proprio, o al posto del proprio."
-    >
-      {logos.length > 0 && (
-        <ul className="mb-4 flex flex-wrap gap-3">
-          {logos.map((logo) => (
-            <li
-              key={logo.id}
-              className="card flex items-center gap-3 p-3"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- immagine autenticata, non ottimizzabile da next/image */}
-              <img
-                src={logo.url}
-                alt=""
-                className="h-10 w-auto max-w-[7rem] object-contain"
-              />
-              <button
-                onClick={() => remove(logo.id)}
-                disabled={busy}
-                className="press inline-flex min-h-8 items-center px-1 text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
-              >
-                Elimina
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div>
+      <p className="mb-2 text-sm text-cream/70">Loghi, o testo al loro posto</p>
+      <div className="card p-5">
+        {logos.length > 0 && (
+          <ul className="mb-4 flex flex-wrap gap-3">
+            {logos.map((logo) => (
+              <li key={logo.id} className="card flex flex-col gap-2 p-3">
+                <div className="flex items-center gap-3">
+                  {logo.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- immagine autenticata, non ottimizzabile da next/image
+                    <img
+                      src={logo.url}
+                      alt=""
+                      className="h-10 w-auto max-w-[7rem] object-contain"
+                    />
+                  ) : (
+                    <span className="max-w-[9rem] truncate font-serif text-sm text-gold">
+                      {logo.text}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => remove(logo.id)}
+                    disabled={busy}
+                    className="press inline-flex min-h-8 items-center px-1 text-xs text-red-300/80 underline underline-offset-4 hover:text-red-300"
+                  >
+                    Elimina
+                  </button>
+                </div>
+                <div
+                  className="inline-flex items-center gap-1 self-start rounded-full border border-cream/10 p-0.5"
+                  role="group"
+                  aria-label="Taglia"
+                >
+                  {(["SMALL", "MEDIUM", "LARGE"] as const).map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => resize(logo.id, size)}
+                      aria-pressed={logo.size === size}
+                      title={
+                        size === "SMALL"
+                          ? "Piccolo"
+                          : size === "MEDIUM"
+                            ? "Medio"
+                            : "Grande"
+                      }
+                      className={`press min-h-7 min-w-7 rounded-full text-xs transition-colors ${
+                        logo.size === size
+                          ? "bg-gold/20 text-gold"
+                          : "text-cream/50 hover:text-cream/70"
+                      }`}
+                    >
+                      {LOGO_SIZE_LABELS[size]}
+                    </button>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {logos.length < 4 ? (
-        <div className="card flex flex-wrap items-center gap-3 p-4">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={upload}
-            disabled={busy}
-            className="text-sm text-cream/70 file:mr-3 file:rounded-full file:border-0 file:bg-gold/15 file:px-3 file:py-2 file:text-xs file:text-gold hover:file:bg-gold/25"
-          />
-          <span className="text-xs text-cream/60">PNG, JPEG o WebP, fino a 2MB</span>
-        </div>
-      ) : (
-        <p className="text-xs text-cream/60">
-          Limite di 4 loghi raggiunto. Elimina un logo per caricarne un altro.
+        {logos.length < 4 ? (
+          <>
+            <div className="mb-3 flex gap-1.5">
+              <ModeButton active={mode === "image"} onClick={() => setMode("image")}>
+                Immagine
+              </ModeButton>
+              <ModeButton active={mode === "text"} onClick={() => setMode("text")}>
+                Testo
+              </ModeButton>
+            </div>
+            {mode === "image" ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={uploadImage}
+                  disabled={busy}
+                  className="text-sm text-cream/70 file:mr-3 file:rounded-full file:border-0 file:bg-gold/15 file:px-3 file:py-2 file:text-xs file:text-gold hover:file:bg-gold/25"
+                />
+                <span className="text-xs text-cream/60">
+                  PNG, JPEG o WebP, fino a 2MB
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Per esempio: Cantina Sociale"
+                  className={`${inputClass} max-w-xs`}
+                />
+                <button
+                  onClick={addText}
+                  disabled={busy || !text.trim()}
+                  className={buttonClass}
+                >
+                  Aggiungi
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-cream/60">
+            Limite di 4 riquadri raggiunto. Elimina un riquadro per
+            aggiungerne un altro.
+          </p>
+        )}
+        {msg && <p className="mt-2 text-sm text-red-300">{msg}</p>}
+      </div>
+    </div>
+  );
+}
+
+/** Anteprima dell'attestato con dati d'esempio (§3.7a). */
+function CertificatePreview({ slug }: { slug: string }) {
+  const [data, setData] = useState<CertificateData | null>(null);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void (async () => {
+      if (cancelled) return;
+      setLoading(true);
+      const result = await api<{ data: CertificateData }>(
+        `/api/admin/courses/${slug}/certificate-preview`,
+      );
+      if (!cancelled) {
+        if (result.ok) setData(result.data.data);
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, reloadKey, slug]);
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-sm text-cream/70">Anteprima</p>
+        {open && (
+          <button
+            onClick={() => setReloadKey((n) => n + 1)}
+            disabled={loading}
+            title="Aggiorna con luogo, firma e loghi appena salvati"
+            className="press inline-flex items-center gap-1.5 text-xs text-cream/60 transition-colors hover:text-cream disabled:opacity-40"
+          >
+            <RefreshIcon className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Aggiorna
+          </button>
+        )}
+      </div>
+      <div className="card p-5">
+        <p className="mb-3 text-xs leading-relaxed text-cream/60">
+          Con dati d&apos;esempio, per controllare come verrà prima che lo
+          riceva qualcuno. È lo stesso disegno che vedranno i corsisti:
+          quello che scarichi qui è identico al loro. Non si aggiorna da
+          sola dopo un cambiamento qui sopra: premi «Aggiorna» per vederlo.
         </p>
-      )}
-      {msg && <p className="mt-2 text-sm text-red-300">{msg}</p>}
-    </AdminSection>
+        {!open ? (
+          <button onClick={() => setOpen(true)} className={ghostButtonClass}>
+            Mostra anteprima
+          </button>
+        ) : data ? (
+          <CertificateView data={data} showShare={false} />
+        ) : (
+          <p className="text-sm text-cream/60">Un momento…</p>
+        )}
+      </div>
+    </div>
   );
 }
 

@@ -13,7 +13,7 @@ export async function GET(
 
   const { slug, logoId } = await params;
   const logo = await courseLogoFor(slug, logoId);
-  if (!logo) {
+  if (!logo || logo.url === null) {
     return NextResponse.json({ error: "logo inesistente" }, { status: 404 });
   }
 

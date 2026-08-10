@@ -1,4 +1,4 @@
-import type { CertificateData } from "@/components/Certificate";
+import type { CertificateData, LogoItem, LogoSize } from "@/components/Certificate";
 import { courseOverview } from "./course";
 import type { EnrollmentRef } from "./enrollment";
 import { readStoredFile } from "./materials";
@@ -59,31 +59,48 @@ const MERIT_EN: Record<MeritTitle, { title: string; subtitle: string }> = {
   },
 };
 
+export type CourseLogoInput = {
+  url: string | null;
+  text: string | null;
+  size: LogoSize;
+};
+
 /**
- * Legge i loghi dallo store e li trasforma in `data:` URI.
+ * Trasforma i loghi del corso in ciò che l'SVG sa disegnare: un'immagine
+ * letta dallo store e convertita in `data:` URI, o un testo passato tale e
+ * quale — non ha bisogno di essere letto da nessuna parte.
  *
- * Non basterebbe un indirizzo qualunque: l'attestato si converte in PNG
- * ricalcando l'SVG su un `<canvas>` (src/lib/svgToPng.ts), e un'immagine
- * esterna referenziata lì dentro "sporca" il canvas — il browser rifiuta poi
- * di esportarlo, anche se l'immagine viene dallo stesso sito. Incorporare i
- * byte direttamente nell'SVG toglie il problema alla radice: non è più una
- * richiesta di rete al momento dell'esportazione, è già lì.
+ * Per le immagini, non basterebbe un indirizzo qualunque: l'attestato si
+ * converte in PNG ricalcando l'SVG su un `<canvas>` (src/lib/svgToPng.ts), e
+ * un'immagine esterna referenziata lì dentro "sporca" il canvas — il
+ * browser rifiuta poi di esportarlo, anche se l'immagine viene dallo stesso
+ * sito. Incorporare i byte direttamente nell'SVG toglie il problema alla
+ * radice: non è più una richiesta di rete al momento dell'esportazione, è
+ * già lì.
  *
- * Un logo che non si legge più (file rimosso a mano dallo store) viene
- * saltato in silenzio: meglio un attestato con un logo in meno che nessun
+ * Un'immagine che non si legge più (file rimosso a mano dallo store) viene
+ * saltata in silenzio: meglio un attestato con un logo in meno che nessun
  * attestato.
  */
-async function resolveLogos(urls: string[]): Promise<string[]> {
-  const files = await Promise.all(urls.map((url) => readStoredFile(url)));
-
-  const dataUris: string[] = [];
-  for (const file of files) {
-    if (!file) continue;
-    const bytes = Buffer.from(await new Response(file.stream).arrayBuffer());
-    const contentType = file.blob.contentType || "image/png";
-    dataUris.push(`data:${contentType};base64,${bytes.toString("base64")}`);
-  }
-  return dataUris;
+async function resolveLogos(logos: CourseLogoInput[]): Promise<LogoItem[]> {
+  const items = await Promise.all(
+    logos.map(async (logo): Promise<LogoItem | null> => {
+      if (logo.text !== null) {
+        return { kind: "text", text: logo.text, size: logo.size };
+      }
+      if (logo.url === null) return null;
+      const file = await readStoredFile(logo.url);
+      if (!file) return null;
+      const bytes = Buffer.from(await new Response(file.stream).arrayBuffer());
+      const contentType = file.blob.contentType || "image/png";
+      return {
+        kind: "image",
+        src: `data:${contentType};base64,${bytes.toString("base64")}`,
+        size: logo.size,
+      };
+    }),
+  );
+  return items.filter((item): item is LogoItem => item !== null);
 }
 
 export async function certificateFor(
@@ -130,7 +147,7 @@ export async function certificateFor(
       dateIt: formatDate(completedOn, "it-IT"),
       dateEn: formatDate(completedOn, "en-US"),
       issuer: overview.course.certificateIssuer,
-      logos: await resolveLogos(overview.course.logoUrls),
+      logos: await resolveLogos(overview.course.logos),
       // Ricavato dall'iscrizione, non salvato: vedi src/lib/verification.ts.
       // Vale anche per gli attestati già scaricati prima che esistesse.
       verificationCode: formatVerificationCode(verificationCode(enrollment.id)),
@@ -144,7 +161,7 @@ export async function sampleCertificate(
   courseTitleIt: string,
   courseTitleEn: string,
   issuer: string | null,
-  logoUrls: string[],
+  logos: CourseLogoInput[],
 ): Promise<CertificateData> {
   const title = meritTitle(96);
   const now = new Date();
@@ -162,7 +179,7 @@ export async function sampleCertificate(
     dateIt: formatDate(now, "it-IT"),
     dateEn: formatDate(now, "en-US"),
     issuer,
-    logos: await resolveLogos(logoUrls),
+    logos: await resolveLogos(logos),
     // Nessun codice qui: un attestato vero ne mostra uno che risponde
     // davvero su /verifica/<codice>. Uno finto nell'anteprima confonderebbe
     // il relatore, che non ha modo di distinguerlo da uno rotto.

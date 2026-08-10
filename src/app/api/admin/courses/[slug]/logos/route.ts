@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { isDenied, requireAdmin } from "@/lib/guard";
-import { addCourseLogo } from "@/lib/admin";
+import { addCourseLogoImage, addCourseLogoText } from "@/lib/admin";
 
-/** Registra un logo appena caricato sullo store. */
+/**
+ * Registra un riquadro dell'attestato: un'immagine appena caricata sullo
+ * store (`pathname`), oppure un testo al suo posto (`text`) — mai entrambi,
+ * lo stesso vincolo che il database impone alla riga.
+ */
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> },
@@ -12,12 +16,26 @@ export async function POST(
 
   const body = await request.json().catch(() => null);
   const pathname = typeof body?.pathname === "string" ? body.pathname : "";
-  if (!pathname) {
-    return NextResponse.json({ error: "Serve il file caricato." }, { status: 400 });
+  const text = typeof body?.text === "string" ? body.text.trim() : "";
+
+  if (!pathname && !text) {
+    return NextResponse.json(
+      { error: "Serve il file caricato, o un testo." },
+      { status: 400 },
+    );
+  }
+  if (pathname && text) {
+    return NextResponse.json(
+      { error: "Un riquadro è un'immagine o un testo, non entrambi." },
+      { status: 400 },
+    );
   }
 
   try {
-    const logo = await addCourseLogo((await params).slug, `blob:${pathname}`);
+    const slug = (await params).slug;
+    const logo = pathname
+      ? await addCourseLogoImage(slug, `blob:${pathname}`)
+      : await addCourseLogoText(slug, text);
     if (!logo) {
       return NextResponse.json({ error: "corso inesistente" }, { status: 404 });
     }

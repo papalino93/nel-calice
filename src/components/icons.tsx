@@ -164,6 +164,16 @@ export function EyeIcon(props: IconProps) {
   );
 }
 
+export function RefreshIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 12a8 8 0 0 1 14-5.2M4 12a8 8 0 0 0 14 5.2" />
+      <path d="M18 3v4.5h-4.5" />
+      <path d="M6 21v-4.5h4.5" />
+    </Icon>
+  );
+}
+
 export function ClockIcon(props: IconProps) {
   return (
     <Icon {...props}>

@@ -292,10 +292,26 @@ model Course {
   @@index([status])
 }
 
+/// Le taglie fra cui il relatore scegle per un riquadro dell'attestato — sia
+/// un'immagine sia un testo. Tre e non un numero libero in pixel: bastano a
+/// coprire "sta bene accanto agli altri" fino a "voglio che si veda", senza
+/// rischiare un riquadro che deforma la riga o esce dalla pergamena.
+enum LogoSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
 /// Loghi da mostrare sull'attestato al posto (o accanto) della firma
 /// testuale — il caso concreto: un'edizione realizzata con un partner, dove
 /// non deve comparire il nome dell'attività ma i marchi di chi la organizza
 /// insieme a lei.
+///
+/// Ogni riquadro è un'immagine caricata OPPURE un testo scritto al suo
+/// posto — mai entrambi, mai nessuno dei due (stesso schema di
+/// `Material._exactly_one_owner`): non tutti hanno un file del proprio
+/// marchio pronto, e un testo scritto a mano vale lo stesso scopo in quel
+/// riquadro.
 ///
 /// Tabella propria e non un `Material`: un logo non è materiale didattico,
 /// non segue lo sblocco di una lezione, non ha un titolo per il corsista, e
@@ -309,7 +325,10 @@ model CourseLogo {
 
   /// Stesso schema di Material.url ("blob:<percorso>"): stesso store privato,
   /// stessa funzione per leggerlo (src/lib/materials.ts).
-  url String
+  url  String?
+  text String?
+
+  size LogoSize @default(MEDIUM)
 
   createdAt DateTime @default(now())
 
