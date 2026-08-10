@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
 
 // Controlla che il database puntato dall'ambiente abbia davvero quello che il
 // codice si aspetta. **Non scrive niente**: solo SELECT, quindi si può
@@ -12,8 +12,10 @@ import { PrismaClient } from "@prisma/client";
 // domanda, ed è quella che stamattina ha richiesto tre giri per rispondere —
 // *l'ho lanciata sul database giusto?* Qui la risposta arriva in un comando,
 // e la prima riga stampata è l'indirizzo del database a cui si è connesso.
-
-const prisma = new PrismaClient();
+//
+// Riusa il client condiviso apposta: da un ambiente senza TCP diretto verso
+// Postgres, con PRISMA_NEON_HTTP=1 passa da sé al driver HTTP di Neon (vedi
+// src/lib/prisma.ts) — un `new PrismaClient()` locale non lo saprebbe fare.
 
 let failed = false;
 
@@ -50,9 +52,13 @@ const EXPECTED_COLUMNS: {
 async function main() {
   // Dove siamo. Senza credenziali: l'host si ricava dall'URL, la password no.
   const host = (process.env.DATABASE_URL ?? "").match(/@([^/:?]+)/)?.[1];
+  // Il cast a text serve solo quando si passa dal driver HTTP di Neon
+  // (PRISMA_NEON_HTTP=1): quel driver non sa deserializzare il tipo
+  // `name` di Postgres che current_database() restituirebbe altrimenti.
+  // Innocuo sul motore nativo che usa la produzione.
   const [{ current_database: database }] = await prisma.$queryRaw<
     { current_database: string }[]
-  >`SELECT current_database()`;
+  >`SELECT current_database()::text`;
 
   console.log(`\nDatabase: ${database} @ ${host ?? "host sconosciuto"}`);
   console.log(
