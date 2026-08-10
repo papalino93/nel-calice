@@ -277,6 +277,22 @@ migrato in produzione): prima c'era solo `Material.viewCount`, un contatore
 che non diceva né chi né quando e che nessuna schermata mostrava. Si legge
 nella sezione "Letture dispense" della pagina andamento classe.
 
+**Le sezioni della pagina corso e della pagina lezione del catalogo si
+richiudono.** Erano tutte sempre aperte insieme (Titoli, Attestato, Loghi,
+Impostazioni, Lezioni da un lato; Titoli, Domande, Dispense dall'altro): la
+pagina era un lungo muro di card, senza un modo per restringere lo sguardo
+a una sola cosa. `AdminSection` (in `src/components/admin/AdminShell.tsx`)
+è ora un `<details>`/`<summary>`: intestazione cliccabile con freccia che
+ruota, contenuto che resta montato alla chiusura (nessuno stato perso),
+nessuna libreria in più. Aperte di default solo le sezioni di lavoro
+quotidiano — «Lezioni di questo corso» e «Domande» — le altre chiuse finché
+non servono. Le altre pagine che usano `AdminSection` (andamento classe,
+catalogo) non sono state toccate: continuano ad aprirsi come prima, non
+erano nell'ambito di questo giro. Verificato rendendo il componente con la
+CSS reale del build (React a markup statico, non l'app intera: da questo
+ambiente non si raggiunge un login Google né un database per cliccare la
+pagina vera) — cliccare in un browser vero resta da fare.
+
 Fanno eccezione tre cose, scritte e verdi a test/lint/build ma **mai eseguite
 con un database vero**:
 
