@@ -116,6 +116,37 @@ Le due che parlano con un database vero, e che **non** sono la stessa cosa:
 torna sempre — *l'ho lanciata sul database giusto?* — perché la prima riga che
 stampa è l'host a cui si è connesso.
 
+## Operare sul database di produzione da un ambiente senza TCP diretto
+
+Da un ambiente cloud come questo, la connessione Postgres diretta (TCP,
+porta 5432) verso Neon non è raggiungibile: solo l'HTTPS lo è. `src/lib/prisma.ts`
+sa passare al driver HTTP/WebSocket di `@neondatabase/serverless`
+(tunnelizzato sullo stesso `HTTPS_PROXY` di sistema) quando la variabile
+`PRISMA_NEON_HTTP=1` è impostata. In produzione (Vercel) questa variabile
+non c'è mai: il motore resta il TCP nativo di sempre, comportamento
+invariato per l'app.
+
+Per uno script una tantum contro produzione, da un ambiente così:
+
+```bash
+npx vercel login                              # un click di conferma
+npx vercel link                                # collega la cartella al progetto
+npx vercel env pull .env.production --environment production
+set -a && source .env.production && set +a
+export PRISMA_NEON_HTTP=1
+npx tsx scripts/il-tuo-script.ts
+```
+
+**Importante:** spostare `.env.production`/`.env.local` fuori dalla cartella
+del progetto subito dopo l'uso. `next build` li carica in automatico se li
+trova nella working directory, e questo rompe la build (l'ha fatto una
+volta, qui).
+
+`scripts/import-questions.ts` è il primo di questi strumenti: importa
+domande in blocco da un file JSON passando da `saveQuestion()`, la stessa
+funzione validata del pannello — non scrive SQL a mano. Riusabile per la
+prossima importazione di contenuti.
+
 ## Come va in produzione
 
 Vercel distribuisce da sé a ogni push su `main`: non c'è nessun pulsante da
@@ -163,6 +194,21 @@ codice, sblocco della serata, quiz a tempo con correzione sul server, risultato
 con revisione, attestato scaricabile in PNG, pannello relatore completo (corsi,
 catalogo, domande, andamento della classe) e dispense con caricamento diretto e
 accesso protetto.
+
+**Il catalogo ha ora domande su tutte le lezioni.** Prima quattro delle sei
+lezioni erano vuote (0 domande). Aggiunte 67 domande — con spiegazione e
+traduzione inglese per ognuna — verificate una per una contro quelle già
+esistenti per non duplicare lo stesso fatto due volte: Sensi 9, Bianchi e
+Rosati 9, Grandi Rossi 8, Bollicine 10, Vini Dolci 8, Esame Finale 30 (vedi
+`scripts/data/2026-08-10-catalogo.json`). Restano da scrivere le dispense
+per le lezioni che non ne hanno.
+
+**L'attestato è bilingue anche nel contenuto**, non solo nell'interfaccia
+attorno: titolo del corso, titolo di merito e data cambiano davvero con il
+commutatore IT/EN (prima restavano fissi in italiano). Il campo titolo
+inglese delle dispense, previsto dal modello ma assente dal modulo di
+caricamento, è stato aggiunto con lo stesso pulsante di traduzione già
+usato per le domande.
 
 **La spiegazione dopo la risposta è provata contro un Postgres vero**, non
 solo compilata: `npm run test:db` copre ora entrambi i lati — il relatore che
@@ -390,14 +436,22 @@ che torna resta modificabile, perché un testo che va davanti ai corsisti deve
 poter passare da un occhio umano. Serve `ANTHROPIC_API_KEY`; senza, il
 pulsante dice che non è configurato e il resto funziona.
 
+Risolto anche: **l'attestato cambia davvero lingua.** Titolo del corso,
+titolo di merito, sottotitolo e data ora arrivano in coppia IT/En
+(`certificateFor`/`sampleCertificate`), e il componente `Certificate`
+sceglie anche le parole fisse della cornice in base alla lingua corrente.
+Il codice di verifica resta senza lingua per scelta: è un indirizzo, non un
+testo. La pagina pubblica `/verifica/<codice>`, invece, resta
+deliberatamente in italiano fisso (decisione di chi l'ha scritta, invariata).
+
+Risolto anche: **il titolo inglese di una dispensa è ora scrivibile**, con
+lo stesso pulsante di traduzione automatica del catalogo.
+
 Resta disatteso:
 
-- **l'attestato è quasi tutto in italiano fisso** — il pezzo che il corsista si
-  porta a casa non cambia premendo EN (il codice di verifica non ha lingua, ma
-  tutto il resto sì);
-- **tutta l'area relatore** è in italiano fisso, fuori da `src/lib/i18n.ts`;
-- il titolo inglese di una dispensa non è scrivibile da nessun campo, quindi
-  non c'è nemmeno niente da tradurre.
+- **tutta l'area relatore** è in italiano fisso, fuori da `src/lib/i18n.ts` —
+  scelta deliberata per ora: la usa solo il relatore, che è di madrelingua
+  italiana, quindi il valore pratico di tradurla è basso.
 
 ### Buchi nel pannello relatore
 
