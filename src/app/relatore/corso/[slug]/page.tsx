@@ -145,9 +145,9 @@ export default function ManageCoursePage({
 
       <LogosSection slug={slug} logos={detail.logos} onChanged={reload} />
 
-      <CourseSettings detail={detail} onSaved={reload} />
-
       <CertificatePreview slug={slug} />
+
+      <CourseSettings detail={detail} onSaved={reload} />
 
       <LessonsSection
         slug={slug}
