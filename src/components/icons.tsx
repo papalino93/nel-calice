@@ -147,6 +147,14 @@ export function ArrowRightIcon(props: IconProps) {
   );
 }
 
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 9l6 6 6-6" />
+    </Icon>
+  );
+}
+
 export function StarIcon(props: IconProps) {
   return (
     <Icon {...props}>

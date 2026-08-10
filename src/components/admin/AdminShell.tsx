@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
-import { Seal } from "@/components/icons";
+import { ChevronDownIcon, Seal } from "@/components/icons";
 
 /** Intestazione comune a tutte le pagine dell'area relatore. */
 export function AdminShell({
@@ -50,28 +50,44 @@ export function AdminShell({
   );
 }
 
-/** Sezione con intestazione in maiuscoletto oro e nota esplicativa. */
+/**
+ * Sezione richiudibile: intestazione in maiuscoletto oro, nota esplicativa,
+ * e tutto il resto sotto — chiuso o aperto senza perdere lo stato di quello
+ * che c'è dentro (`<details>` lascia il contenuto montato, non lo distrugge
+ * alla chiusura). `defaultOpen` decide solo il primo caricamento della
+ * pagina: da lì in poi è il relatore a scegliere cosa vedere, sezione per
+ * sezione, invece di scorrere sempre tutto quanto insieme.
+ */
 export function AdminSection({
   title,
   hint,
+  defaultOpen = true,
   children,
 }: {
   title: string;
   hint?: string;
+  defaultOpen?: boolean;
   children: ReactNode;
 }) {
   return (
-    <section className="mt-9">
-      <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
-        {title}
-      </h2>
-      {hint && (
-        <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-cream/60">
-          {hint}
-        </p>
-      )}
-      <div className="mt-3">{children}</div>
-    </section>
+    <details className="group mt-9" open={defaultOpen}>
+      <summary className="list-none [&::-webkit-details-marker]:hidden">
+        <div className="press -mx-1 flex cursor-pointer items-start gap-2 rounded-lg px-1 py-1">
+          <ChevronDownIcon className="mt-0.5 h-4 w-4 flex-none text-gold/60 transition-transform group-open:rotate-180" />
+          <div className="min-w-0">
+            <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
+              {title}
+            </h2>
+            {hint && (
+              <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-cream/60">
+                {hint}
+              </p>
+            )}
+          </div>
+        </div>
+      </summary>
+      <div className="ml-6 mt-3">{children}</div>
+    </details>
   );
 }
 

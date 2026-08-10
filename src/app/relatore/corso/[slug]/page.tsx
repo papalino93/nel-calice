@@ -199,6 +199,7 @@ function CourseTitles({
     <AdminSection
       title="Titoli"
       hint="Titolo e sottotitolo del corso, come compaiono ovunque nell'app — luogo e firma per l'attestato sono più giù, nella sezione «Attestato»."
+      defaultOpen={false}
     >
       <div className="card p-5">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -262,6 +263,7 @@ function CertificateSection({
     <AdminSection
       title="Attestato"
       hint="Luogo, firma, loghi (o testo al loro posto) e l'anteprima che li mostra insieme — nell'ordine in cui si usano: si cambia qui sopra, si controlla qui sotto."
+      defaultOpen={false}
     >
       <div className="flex flex-col gap-6">
         <CertificateFields detail={detail} onSaved={onSaved} />
@@ -674,6 +676,7 @@ function CourseSettings({
     <AdminSection
       title="Impostazioni del corso"
       hint="Il codice d'iscrizione è quello che comunichi alla prima serata: è unico fra tutti i corsi, quindi chi lo digita finisce qui e non altrove. Le durate valgono per ogni tentativo di questo corso."
+      defaultOpen={false}
     >
       <div className="card p-5">
         <div className="grid gap-4 sm:grid-cols-3">
