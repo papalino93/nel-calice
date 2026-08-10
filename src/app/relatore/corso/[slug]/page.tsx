@@ -1030,6 +1030,15 @@ function LessonRow({
           <ArrowRightIcon className="h-3.5 w-3.5" />
         </Link>
 
+        <Link
+          href={`/relatore/corso/${slug}/lezione/${lesson.courseLessonId}`}
+          className={`${ghostButtonClass} mb-1.5 inline-flex items-center gap-1.5`}
+          title="Chi ha aperto il quiz, a che punto è, quante risposte sono giuste finora"
+        >
+          Diretta
+          <ArrowRightIcon className="h-3.5 w-3.5" />
+        </Link>
+
         <button
           onClick={remove}
           disabled={busy}
