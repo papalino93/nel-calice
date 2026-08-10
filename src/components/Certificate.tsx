@@ -16,10 +16,33 @@
 // Vincolo di contenuto (§2.2): è un attestato di *partecipazione* a un corso
 // amatoriale. Niente che suggerisca una qualifica professionale.
 
+import type { Language } from "@/lib/i18n";
 import { GrapesEmblem } from "./icons";
 
 export const CERTIFICATE_WIDTH = 1000;
 export const CERTIFICATE_HEIGHT = 700;
+
+/** Le uniche parole della pergamena che non arrivano dal server come dato:
+ * la cornice del documento, non il suo contenuto. */
+const STRINGS = {
+  it: {
+    ariaLabel: (name: string) => `Attestato di partecipazione per ${name}`,
+    banner: "ATTESTATO DI PARTECIPAZIONE",
+    attestsThat: "Si attesta che",
+    earnedTitle: "ha partecipato al corso, meritandosi il titolo di",
+    disclaimer: "Corso amatoriale · non costituisce qualifica professionale",
+    verify: "Verifica",
+  },
+  en: {
+    ariaLabel: (name: string) => `Certificate of participation for ${name}`,
+    banner: "CERTIFICATE OF PARTICIPATION",
+    attestsThat: "This certifies that",
+    earnedTitle: "took part in the course, earning the title of",
+    disclaimer:
+      "Amateur course · does not constitute a professional qualification",
+    verify: "Verify",
+  },
+} as const;
 
 const SERIF =
   "Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Times New Roman', serif";
@@ -35,10 +58,14 @@ const INK = "#3A3128";
 
 export type CertificateData = {
   name: string;
-  courseTitle: string;
-  meritTitle: string;
-  meritSubtitle: string;
-  date: string;
+  courseTitleIt: string;
+  courseTitleEn: string;
+  meritTitleIt: string;
+  meritTitleEn: string;
+  meritSubtitleIt: string;
+  meritSubtitleEn: string;
+  dateIt: string;
+  dateEn: string;
   issuer: string;
   /**
    * Codice di verifica già formattato, e l'indirizzo dove si controlla.
@@ -108,12 +135,20 @@ function Vine({ x, y, mirrored }: { x: number; y: number; mirrored: boolean }) {
 
 export function Certificate({
   data,
+  lang = "it",
   id = "attestato",
 }: {
   data: CertificateData;
+  lang?: Language;
   id?: string;
 }) {
   const cx = CERTIFICATE_WIDTH / 2;
+  const s = STRINGS[lang];
+  const courseTitle = lang === "en" ? data.courseTitleEn : data.courseTitleIt;
+  const meritTitle = lang === "en" ? data.meritTitleEn : data.meritTitleIt;
+  const meritSubtitle =
+    lang === "en" ? data.meritSubtitleEn : data.meritSubtitleIt;
+  const date = lang === "en" ? data.dateEn : data.dateIt;
 
   return (
     <svg
@@ -121,7 +156,7 @@ export function Certificate({
       viewBox={`0 0 ${CERTIFICATE_WIDTH} ${CERTIFICATE_HEIGHT}`}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label={`Attestato di partecipazione per ${data.name}`}
+      aria-label={s.ariaLabel(data.name)}
       style={{ width: "100%", height: "auto", display: "block" }}
     >
       <defs>
@@ -258,7 +293,7 @@ export function Certificate({
           fontSize="14"
           letterSpacing="4.5"
         >
-          ATTESTATO DI PARTECIPAZIONE
+          {s.banner}
         </text>
       </g>
 
@@ -271,7 +306,7 @@ export function Certificate({
         fontFamily={SERIF}
         fontSize="21"
       >
-        {data.courseTitle}
+        {courseTitle}
       </text>
 
       <text
@@ -283,7 +318,7 @@ export function Certificate({
         fontSize="17"
         opacity="0.62"
       >
-        Si attesta che
+        {s.attestsThat}
       </text>
 
       {/* Il nome: l'elemento più grande della pergamena */}
@@ -308,7 +343,7 @@ export function Certificate({
         fontSize="17"
         opacity="0.62"
       >
-        ha partecipato al corso, meritandosi il titolo di
+        {s.earnedTitle}
       </text>
 
       {/* Separatore con rombo */}
@@ -328,7 +363,7 @@ export function Certificate({
         fontSize="38"
         fontWeight="bold"
       >
-        {data.meritTitle}
+        {meritTitle}
       </text>
 
       <text
@@ -340,7 +375,7 @@ export function Certificate({
         fontSize="12"
         letterSpacing="2.6"
       >
-        {data.meritSubtitle.toUpperCase()}
+        {meritSubtitle.toUpperCase()}
       </text>
 
       {/* Solo la data: niente numero. Il titolo di merito già dice come è
@@ -355,7 +390,7 @@ export function Certificate({
         fontFamily={SANS}
         fontSize="14"
       >
-        {data.date}
+        {date}
       </text>
 
       {/* Il piede si è alzato per fare posto alla riga di verifica: la
@@ -381,12 +416,13 @@ export function Certificate({
         fontSize="10"
         opacity="0.5"
       >
-        Corso amatoriale · non costituisce qualifica professionale
+        {s.disclaimer}
       </text>
 
       {/* La riga che rende l'attestato controllabile. Chi lo riceve non deve
           fidarsi del PNG — che chiunque saprebbe ritoccare — ma di quello
-          che il server risponde a questo indirizzo. */}
+          che il server risponde a questo indirizzo. L'indirizzo stesso non
+          si traduce: è quello che si digita, uguale in ogni lingua. */}
       {data.verificationCode && data.verificationHost && (
         <text
           x={cx}
@@ -397,7 +433,7 @@ export function Certificate({
           fontSize="10"
           opacity="0.55"
         >
-          {`Verifica: ${data.verificationHost}/verifica/${data.verificationCode}`}
+          {`${s.verify}: ${data.verificationHost}/verifica/${data.verificationCode}`}
         </text>
       )}
     </svg>

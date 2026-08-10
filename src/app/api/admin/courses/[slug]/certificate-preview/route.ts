@@ -13,11 +13,13 @@ export async function GET(
 
   const course = await prisma.course.findUnique({
     where: { slug: (await params).slug },
-    select: { titleIt: true },
+    select: { titleIt: true, titleEn: true },
   });
   if (!course) {
     return NextResponse.json({ error: "corso inesistente" }, { status: 404 });
   }
 
-  return NextResponse.json({ data: sampleCertificate(course.titleIt) });
+  return NextResponse.json({
+    data: sampleCertificate(course.titleIt, course.titleEn),
+  });
 }

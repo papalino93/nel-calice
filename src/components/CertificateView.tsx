@@ -46,10 +46,12 @@ export function CertificateView({
     setBusy(false);
   }
 
+  const courseTitle = lang === "en" ? data.courseTitleEn : data.courseTitleIt;
+  const meritTitle = lang === "en" ? data.meritTitleEn : data.meritTitleIt;
   const shareText =
     lang === "en"
-      ? `I took part in "${data.courseTitle}" and earned the title of ${data.meritTitle}! 🍷`
-      : `Ho partecipato al corso "${data.courseTitle}" e mi sono meritato il titolo di ${data.meritTitle}! 🍷`;
+      ? `I took part in "${courseTitle}" and earned the title of ${meritTitle}! 🍷`
+      : `Ho partecipato al corso "${courseTitle}" e mi sono meritato il titolo di ${meritTitle}! 🍷`;
 
   return (
     <div>
@@ -57,7 +59,7 @@ export function CertificateView({
         ref={wrapper}
         className="certificate-sheet overflow-hidden rounded-[16px] border border-gold/35 shadow-xl shadow-black/30"
       >
-        <Certificate data={data} />
+        <Certificate data={data} lang={lang} />
       </div>
 
       <div className="no-print mt-6 flex flex-wrap items-center justify-center gap-3">
