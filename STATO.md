@@ -44,7 +44,8 @@ portante:
   non segue lo sblocco di una lezione, e mescolarlo alle dispense avrebbe
   confuso due cose che non si assomigliano.
 - **Iscrizione** (`Enrollment`, `LessonUnlock`, `QuizAttempt`,
-  `AttemptAnswer`): la storia del singolo corsista dentro una singola edizione.
+  `AttemptAnswer`, `MaterialView`): la storia del singolo corsista dentro una
+  singola edizione.
 
 Lo stesso catalogo regge già due corsi di forma diversa. I vincoli che
 impediscono di mescolarli sono imposti dal database, non dal codice — vedi le
@@ -161,9 +162,9 @@ L'eccezione è una sola, ed è quella che conta: **se il lavoro porta una
 migrazione, prima si migra il database di produzione e solo dopo si unisce.**
 Nell'ordine inverso il codice nuovo arriva davanti a una colonna che non
 esiste ancora, e ogni pagina che la tocca risponde 500 per tutto il tempo che
-passa fra il deploy e la migrazione. Il ramo `certificate-branding-ready` è
-fermo esattamente per questo, e la migrazione della spiegazione è stata
-lanciata in quest'ordine apposta.
+passa fra il deploy e la migrazione. Le migrazioni di spiegazione, firma
+dell'attestato/loghi e registro delle letture sono state tutte lanciate in
+quest'ordine apposta.
 
 Prima di unire, la verifica che costa dieci secondi:
 
@@ -220,6 +221,30 @@ avendo sbagliato*, che è la metà facile da perdere per strada — più il caso
 in cui la spiegazione non c'è e la revisione deve restare com'era prima.
 Resta da cliccarla in produzione, ma non è più codice mai eseguito.
 
+**Firma dell'attestato personalizzabile, luogo del corso e loghi di
+partner.** `Course.location`, `Course.certificateIssuer` (removibile: se il
+relatore lo svuota, quella riga sparisce dalla pergamena) e fino a quattro
+`CourseLogo` che prendono il posto della firma testuale quando ci sono —
+migrato in produzione e unito a `main`. Non ancora provato dal vivo: il
+caricamento di un logo vero (vedi Cosa resta).
+
+**Resa su telefono e tablet: quasi tutto quello che c'era da correggere è
+corretto.** L'attestato non si rimpicciolisce più sotto i 720px (scorre in
+orizzontale invece di rendere le scritte minori illeggibili, e le due righe
+più piccole della pergamena sono passate da 10px a 12px); nella tabella
+andamento classe la colonna del nome resta fissa allo scorrimento e una
+legenda spiega le intestazioni numeriche, altrimenti senza senso al tocco; il
+testo informativo a `text-cream/40`–`/45`, sotto il rapporto di contrasto
+4,5:1 richiesto da WCAG AA, è ora a `/60` in tutto il sito. Il pulsante
+donazione non copre più il pulsante del quiz, l'editor domande non sfonda più
+sotto i 640px, i bersagli da toccare sono tutti almeno 40px. Resta solo
+qualche riga senza `flex-wrap` (vedi Difetti trovati).
+
+**C'è un registro di chi ha aperto quale dispensa e quando** (`MaterialView`,
+migrato in produzione): prima c'era solo `Material.viewCount`, un contatore
+che non diceva né chi né quando e che nessuna schermata mostrava. Si legge
+nella sezione "Letture dispense" della pagina andamento classe.
+
 Fanno eccezione tre cose, scritte e verdi a test/lint/build ma **mai eseguite
 con un database vero**:
 
@@ -250,33 +275,6 @@ posteriori. Il prezzo: **un singolo attestato non si può revocare**, perché no
 c'è una riga da spegnere. Vedi `src/lib/verification.ts`; la parte che decide
 è isolata in `codeMatches` ed è coperta da otto test che non richiedono un
 database né una chiave nell'ambiente.
-
-## Pronto ma non ancora in produzione
-
-Sul ramo **`certificate-branding-ready`** (non `claude/dove-eravamo-rimasti-si1q8h`:
-quel branch è stato riportato in pari con `main` dopo il revert, quindi in
-cima non ha più questo lavoro — bisognava lasciarlo raggiungibile per nome,
-non solo dentro la cronologia) c'è un corso di lavoro completo — luogo del
-corso, firma testuale dell'attestato removibile, fino a quattro loghi di
-partner che la sostituiscono — scritto, verificato nel disegno (screenshot
-renderizzati a mano) e verificato a livello di schema contro un vero Postgres
-(migrazione applicata, nessuna deriva rispetto a `schema.prisma`).
-
-**Non è su `main`**: è stato unito e poi *tolto* con un revert non
-distruttivo, perché portava un nuovo campo `Course.location`, un nuovo campo
-`Course.certificateIssuer` e una nuova tabella `CourseLogo` che il database di
-produzione non ha ancora — unirlo senza prima migrare avrebbe rotto ogni
-pagina di corso in produzione. Il codice del ramo è integro e pronto; manca
-solo l'ordine giusto:
-
-1. `npx prisma migrate deploy` puntato al database di produzione (le due
-   migrazioni si chiamano `20260808060000_course_location` e
-   `20260808070000_certificate_branding`, e sono già scritte sul ramo);
-2. **solo dopo**, portare `certificate-branding-ready` su `main` — un merge
-   diretto basta, è stato staccato da lì.
-
-Non ancora provato dal vivo nemmeno lì: il giro di caricamento di un logo
-vero, perché da questo ambiente non si raggiunge lo store Vercel Blob.
 
 ## Le dispense: cosa protegge davvero, e cosa no
 
@@ -310,10 +308,13 @@ browser per essere disegnati, quindi resta aggirabile da chi sa usare gli
 strumenti per sviluppatori. Richiede un visualizzatore PDF interno (pdf.js) e
 una tabella per le annotazioni: è un lavoro di giorni, non di ore.
 
-Manca ancora, e conterebbe: un **registro delle letture** (chi ha aperto cosa
-e quando). Oggi c'è solo `Material.viewCount`, un contatore che nessuna
-schermata mostra e che non dice né chi né quando — inutile come traccia. Con
-un registro, una dispensa che gira si risale a chi l'ha aperta.
+**Risolto: c'è un registro delle letture.** L'entità `MaterialView` (una riga
+per apertura, non un contatore) registra chi ha aperto quale dispensa e
+quando, con cascata sia sulla dispensa che sull'iscrizione. Si scrive in
+parallelo a `Material.viewCount` (che resta, ma è ormai solo un residuo — vedi
+Pulizia) nella stessa route che serve il file, e si legge nella nuova sezione
+"Letture dispense" della pagina andamento classe del relatore, più recenti in
+cima. Una dispensa che gira ora si risale a chi l'ha aperta.
 
 ## Cosa resta
 
@@ -321,29 +322,11 @@ un registro, una dispensa che gira si risale a chi l'ha aperta.
    che compaia in catalogo, e che un codice già usato nella stessa edizione dia
    errore senza lasciare in giro una lezione a metà.
 
-2. **Resa su telefono e tablet: molto è stato corretto, resta il pezzo più
-   grosso.** Fatti: il pulsante donazione non copre più il pulsante del quiz
-   (si toccava quello sbagliato durante una prova a tempo), l'uscita non è più
-   tagliata fuori dal riquadro sul telefono, l'editor domande non sfonda più
-   sotto i 640px, timer e pulsante del quiz restano fissi in vista su schermi
-   bassi, i bersagli da toccare (commutatore di lingua, pillole, comandi
-   distruttivi) sono tutti almeno 40px, la dashboard passa a due colonne solo
-   da `lg:`, e i titoli troncati vanno a capo su due righe invece di tagliarsi
-   a metà parola. Restano:
-
-   - **attestato su telefono**: l'SVG scala in proporzione, quindi a 360px le
-     scritte minori vengono renderizzate a 3-6px, illeggibili. Alzare i corpi
-     minimi nel disegno e far scorrere la pergamena su telefono invece di
-     rimpicciolirla;
-   - **tabella andamento classe**: scorre correttamente, ma la colonna del nome
-     scorre via con le altre (renderla `sticky left-0`) e le intestazioni sono
-     solo numeri con un `title` che sul touch non esiste — serve una legenda;
-   - **contrasto**: il testo informativo a `text-cream/40`–`/45` sta sotto il
-     rapporto 4,5:1, e alcune scritte sono a 9-11px. Per un pubblico adulto,
-     in sala poco illuminata, conta.
-
-4. **Un registro delle letture delle dispense** (vedi sezione sopra): oggi non
-   si sa chi ha aperto cosa.
+2. **Il giro di caricamento di un logo vero per l'attestato non è ancora stato
+   provato dal vivo**: il codice (fino a quattro loghi di partner al posto
+   della firma testuale) è in produzione e verificato a livello di schema, ma
+   da questo ambiente non si raggiunge lo store Vercel Blob per un caricamento
+   reale.
 
 ## Difetti trovati e non ancora corretti
 
@@ -484,13 +467,11 @@ Restano:
   route dei loghi (sotto) e l'azzeramento tentativo sono già al riparo da
   questo difetto: verificano lo slug ad ogni chiamata.
 
-### Resa responsive, ciò che resta
+### Resa responsive — risolto quasi tutto
 
-Attestato illeggibile su telefono (scritte a 3-6px, e la dicitura finale a 8px
-perfino su computer); tabella dell'andamento classe che scorre bene ma perde
-la colonna del nome e ha intestazioni numeriche con un `title` che sul touch
-non esiste; testo informativo sotto il rapporto di contrasto 4,5:1; qualche
-riga senza `flex-wrap`.
+Vedi "Cosa è fatto": attestato, tabella andamento classe e contrasto sono
+risolti. Resta solo qualche riga senza `flex-wrap` — minore, non ancora
+localizzata riga per riga.
 
 ### Pulizia
 
@@ -498,17 +479,21 @@ riga senza `flex-wrap`.
 l'anteprima dei link condivisi (il progetto invita a condividere l'attestato su
 WhatsApp, e il link esce senza immagine). Restano funzioni esportate mai
 chiamate, campi serializzati e mai letti, e `User.avatarUrl` scritto a ogni
-accesso e mai usato.
+accesso e mai usato. `Material.viewCount` è ridondante rispetto a
+`MaterialView` (vedi sopra), ma toglierlo tocca anche l'interfaccia che lo
+mostra: non fatto in questo giro.
+
+Il collegamento allo store Blob ha creato anche `BLOB_WEBHOOK_PUBLIC_KEY`, che
+prima non c'era. La firma dei caricamenti è scritta a mano proprio perché
+quella chiave mancava (`api/admin/materials/upload/route.ts`): ora si
+potrebbe usare `handleUploadPresigned` dell'SDK e togliere codice. Non
+urgente.
 
 ### Test
 
-`npm test` fallisce su una macchina appena clonata: 6 test su 43 chiedono
-`UNLOCK_CODE_KEY`, che non ha né configurazione né file di setup. E le due
-suite coprono solo le funzioni pure: nessun test tocca l'avvio, la consegna,
-l'abbandono, lo sblocco o l'iscrizione — cioè esattamente i punti dove sono
-stati trovati i difetti di sopra.
-2. **Occasione aperta dal collegamento.** Il collegamento ha creato anche
-   `BLOB_WEBHOOK_PUBLIC_KEY`, che prima non c'era. La firma dei caricamenti è
-   scritta a mano proprio perché quella chiave mancava
-   (`api/admin/materials/upload/route.ts`): ora si potrebbe usare
-   `handleUploadPresigned` dell'SDK e togliere codice. Non urgente.
+`npm test` fallisce su una macchina appena clonata: 6 test su 58 chiedono
+`UNLOCK_CODE_KEY`, che non ha né configurazione né file di setup. E le
+suite coprono solo le funzioni pure: nessun test unitario tocca l'avvio, la
+consegna, l'abbandono, lo sblocco o l'iscrizione — cioè esattamente i punti
+dove sono stati trovati i difetti di sopra (`npm run test:db`, che li tocca,
+serve solo un Postgres vero — vedi sopra).
