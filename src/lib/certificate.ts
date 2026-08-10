@@ -1,6 +1,7 @@
 import type { CertificateData } from "@/components/Certificate";
 import { courseOverview } from "./course";
 import type { EnrollmentRef } from "./enrollment";
+import { prisma } from "./prisma";
 import { siteHost } from "./site";
 import {
   TOTAL_COURSE_POINTS,
@@ -74,7 +75,18 @@ export async function certificateFor(
   const title = meritTitle(
     percentage(overview.totalScore, TOTAL_COURSE_POINTS),
   );
-  const now = new Date();
+
+  // La data che conta è quella dell'ultima consegna, non `new Date()`: un
+  // corsista che riguarda l'attestato mesi dopo deve vedere sempre la
+  // stessa data, e deve essere la stessa che legge chi lo verifica su
+  // /verifica/<codice> (src/lib/verification.ts calcola questa data allo
+  // stesso modo — le due pagine devono restare d'accordo).
+  const last = await prisma.quizAttempt.findFirst({
+    where: { enrollmentId: enrollment.id, submittedAt: { not: null } },
+    orderBy: { submittedAt: "desc" },
+    select: { submittedAt: true },
+  });
+  const completedOn = last?.submittedAt ?? new Date();
 
   return {
     earned: true,
@@ -86,8 +98,8 @@ export async function certificateFor(
       meritTitleEn: MERIT_EN[title].title,
       meritSubtitleIt: meritSubtitle(title),
       meritSubtitleEn: MERIT_EN[title].subtitle,
-      dateIt: formatDate(now, "it-IT"),
-      dateEn: formatDate(now, "en-US"),
+      dateIt: formatDate(completedOn, "it-IT"),
+      dateEn: formatDate(completedOn, "en-US"),
       issuer: "L'Angolo del Vino",
       // Ricavato dall'iscrizione, non salvato: vedi src/lib/verification.ts.
       // Vale anche per gli attestati già scaricati prima che esistesse.
