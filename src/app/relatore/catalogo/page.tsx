@@ -64,7 +64,7 @@ export default function CataloguePage() {
                   <span className="block font-serif text-lg text-cream">
                     {lesson.titleIt}
                   </span>
-                  <span className="mt-0.5 block text-xs text-cream/45">
+                  <span className="mt-0.5 block text-xs text-cream/60">
                     {lesson.questionCount} domande · {lesson.materialCount}{" "}
                     dispense ·{" "}
                     {lesson.usedInCourses === 0
@@ -79,7 +79,7 @@ export default function CataloguePage() {
         </ul>
 
         {loaded && lessons.length === 0 && (
-          <p className="card p-5 text-sm text-cream/45">
+          <p className="card p-5 text-sm text-cream/60">
             Il catalogo è vuoto. Scrivi la prima lezione qui sotto.
           </p>
         )}

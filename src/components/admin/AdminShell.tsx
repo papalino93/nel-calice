@@ -66,7 +66,7 @@ export function AdminSection({
         {title}
       </h2>
       {hint && (
-        <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-cream/45">
+        <p className="mt-1.5 max-w-2xl text-xs leading-relaxed text-cream/60">
           {hint}
         </p>
       )}

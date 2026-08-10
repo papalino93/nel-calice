@@ -321,7 +321,7 @@ export default function CoursePage({
           {overview.hasOtherCourses && (
             <Link
               href="/"
-              className="text-cream/45 underline underline-offset-4 hover:text-cream/70"
+              className="text-cream/60 underline underline-offset-4 hover:text-cream/70"
             >
               {t.backToCourses}
             </Link>
@@ -372,7 +372,7 @@ function LessonTile({
             {title}
           </p>
           {subtitle && (
-            <p className="mt-0.5 text-xs text-cream/45">{subtitle}</p>
+            <p className="mt-0.5 text-xs text-cream/60">{subtitle}</p>
           )}
         </div>
       </div>
@@ -420,7 +420,7 @@ function StatusPill({ lesson }: { lesson: LessonCard }) {
 
   if (lesson.status === "vuoto") {
     return (
-      <span className="pill bg-cream/8 text-cream/45">{t.comingSoon}</span>
+      <span className="pill bg-cream/8 text-cream/60">{t.comingSoon}</span>
     );
   }
 

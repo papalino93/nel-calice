@@ -57,7 +57,11 @@ export function CertificateView({
     <div>
       <div
         ref={wrapper}
-        className="certificate-sheet overflow-hidden rounded-[16px] border border-gold/35 shadow-xl shadow-black/30"
+        // Scorre in orizzontale invece di rimpicciolire oltre la soglia di
+        // leggibilità (§ resa responsive): sotto i 720px il certificato
+        // sporge dal contenitore apposta, ed è così che si legge sul
+        // telefono senza scritte a 3-6px.
+        className="certificate-sheet overflow-x-auto rounded-[16px] border border-gold/35 shadow-xl shadow-black/30"
       >
         <Certificate data={data} lang={lang} />
       </div>

@@ -104,7 +104,7 @@ export default function AdminHomePage() {
         <LanguageToggle />
       </header>
 
-      <p className="text-xs text-cream/40">
+      <p className="text-xs text-cream/60">
         {data.user.email} ·{" "}
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
@@ -127,7 +127,7 @@ export default function AdminHomePage() {
                   <p className="font-serif text-xl text-cream">
                     {pick(lang, course.titleIt, course.titleEn)}
                   </p>
-                  <p className="mt-0.5 truncate text-xs text-cream/45">
+                  <p className="mt-0.5 truncate text-xs text-cream/60">
                     /corso/{course.slug}
                   </p>
                   <p className="mt-2 text-xs text-cream/50">
@@ -172,7 +172,7 @@ export default function AdminHomePage() {
         </ul>
 
         {data.courses.length === 0 && (
-          <p className="card p-5 text-sm text-cream/45">
+          <p className="card p-5 text-sm text-cream/60">
             {lang === "en"
               ? "No courses yet."
               : "Nessun corso, per ora."}
@@ -188,7 +188,7 @@ export default function AdminHomePage() {
       <div className="mt-4">
         <Link
           href="/?vista=corsista"
-          className="press inline-flex items-center gap-1.5 text-xs text-cream/45 underline underline-offset-4 hover:text-cream/70"
+          className="press inline-flex items-center gap-1.5 text-xs text-cream/60 underline underline-offset-4 hover:text-cream/70"
         >
           <EyeIcon className="h-3.5 w-3.5" />
           {lang === "en"
@@ -210,7 +210,7 @@ export default function AdminHomePage() {
               {data.catalogueSize}{" "}
               {lang === "en" ? "lessons available" : "lezioni disponibili"}
             </span>
-            <span className="block text-xs text-cream/45">
+            <span className="block text-xs text-cream/60">
               {lang === "en"
                 ? "Written once, reusable in any course"
                 : "Scritte una volta, riusabili in qualsiasi corso"}
@@ -298,7 +298,7 @@ function NewCourse({ onCreated }: { onCreated: () => void }) {
           {lang === "en" ? "Create" : "Crea"}
         </button>
       </div>
-      <p className="mt-3 text-xs text-cream/45">
+      <p className="mt-3 text-xs text-cream/60">
         {lang === "en"
           ? "It starts empty, in preparation: add lessons and an English title from its own page."
           : "Nasce vuoto e in preparazione: le lezioni e il titolo inglese si aggiungono dalla sua pagina."}

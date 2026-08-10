@@ -86,7 +86,7 @@ export function MaterialsSection({ lessonId }: { lessonId: number }) {
                   {m.titleIt}
                 </a>
                 {m.notes && (
-                  <span className="block truncate text-xs text-cream/45">
+                  <span className="block truncate text-xs text-cream/60">
                     {m.notes}
                   </span>
                 )}
@@ -106,7 +106,7 @@ export function MaterialsSection({ lessonId }: { lessonId: number }) {
       )}
 
       {materials.length === 0 && (
-        <p className="card mb-4 p-5 text-sm text-cream/45">
+        <p className="card mb-4 p-5 text-sm text-cream/60">
           Nessuna dispensa per questa lezione.
         </p>
       )}
