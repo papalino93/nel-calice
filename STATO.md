@@ -241,6 +241,25 @@ dal vivo: il caricamento di un'immagine vera e il salvataggio di un testo
 dall'interfaccia (vedi Cosa resta) — da questo ambiente non si raggiunge lo
 store Vercel Blob né un browser per cliccare il pannello.
 
+**LARGE restava piccolo per un motivo diverso da quello corretto la prima
+volta.** Il committente ha continuato a vederne alcuni piccoli anche dopo
+l'aggiustamento di taglia. Causa reale: un riquadro largo quasi 3 volte la
+sua altezza (170×60) — un'immagine ci si adatta mantenendo le proporzioni,
+quindi un logo quadrato o verticale resta vincolato dall'altezza a 60px
+comunque, qualunque taglia si scelga; solo un logo panoramico quanto il
+riquadro ne usava davvero la larghezza. Verificato rendendo la pergamena
+fuori dal browser (React a markup statico + Playwright) con un logo
+quadrato, uno verticale e uno panoramico, prima e dopo. Corretto dando alla
+fila dei loghi altezza vera in più (`CERTIFICATE_HEIGHT` da 700 a 760, tutta
+dedicata a questo) e un rapporto larghezza/altezza del riquadro più vicino a
+quello di un logo tipico (170×60 → 190×100, da quasi 3:1 a 2:1): LARGE passa
+da 60 a 100px di altezza reale. Anche l'anteprima nel pannello relatore
+aveva un difetto collegato — restava sempre alta 2.5rem indipendentemente
+dalla taglia scelta, quindi cambiare S/M/L lì non si vedeva finché non si
+guardava l'attestato vero — ora scala con la taglia. Non ancora cliccato
+dal vivo con un file caricato per davvero (stesso limite di sopra: nessun
+browser né store Blob raggiungibili da qui).
+
 **Resa su telefono e tablet: quasi tutto quello che c'era da correggere è
 corretto.** L'attestato non si rimpicciolisce più sotto i 720px (scorre in
 orizzontale invece di rendere le scritte minori illeggibili, e le due righe
