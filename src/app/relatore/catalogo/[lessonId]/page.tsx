@@ -343,7 +343,7 @@ function LessonFields({
   }
 
   return (
-    <AdminSection title="Titoli">
+    <AdminSection title="Titoli" defaultOpen={false}>
       <div className="card p-5">
         <TranslateRow
           onTranslate={translate}
