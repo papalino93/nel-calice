@@ -225,8 +225,21 @@ Resta da cliccarla in produzione, ma non è più codice mai eseguito.
 partner.** `Course.location`, `Course.certificateIssuer` (removibile: se il
 relatore lo svuota, quella riga sparisce dalla pergamena) e fino a quattro
 `CourseLogo` che prendono il posto della firma testuale quando ci sono —
-migrato in produzione e unito a `main`. Non ancora provato dal vivo: il
-caricamento di un logo vero (vedi Cosa resta).
+migrato in produzione e unito a `main`.
+
+**Ogni riquadro ha una taglia, e può essere un testo invece di un'immagine.**
+Il logo aveva una sola misura fissa, piccola per un'immagine pensata per
+farsi notare (segnalato dal committente). `CourseLogo.url` è ora opzionale,
+con `text` e `size` (S/M/L) accanto — un vincolo CHECK impedisce che un
+riquadro sia entrambi o nessuno dei due, stesso schema di
+`Material_exactly_one_owner`. La pagina del corso riunisce luogo, firma,
+loghi e anteprima in un'unica sezione «Attestato» (prima sparsi, con
+«Impostazioni del corso» in mezzo a loghi e anteprima), e l'anteprima ha un
+pulsante «Aggiorna» esplicito — prima non si aggiornava da sola dopo un
+cambio di logo. Migrato in produzione e unito a `main`. Non ancora provato
+dal vivo: il caricamento di un'immagine vera e il salvataggio di un testo
+dall'interfaccia (vedi Cosa resta) — da questo ambiente non si raggiunge lo
+store Vercel Blob né un browser per cliccare il pannello.
 
 **Resa su telefono e tablet: quasi tutto quello che c'era da correggere è
 corretto.** L'attestato non si rimpicciolisce più sotto i 720px (scorre in
@@ -322,11 +335,13 @@ cima. Una dispensa che gira ora si risale a chi l'ha aperta.
    che compaia in catalogo, e che un codice già usato nella stessa edizione dia
    errore senza lasciare in giro una lezione a metà.
 
-2. **Il giro di caricamento di un logo vero per l'attestato non è ancora stato
-   provato dal vivo**: il codice (fino a quattro loghi di partner al posto
-   della firma testuale) è in produzione e verificato a livello di schema, ma
-   da questo ambiente non si raggiunge lo store Vercel Blob per un caricamento
-   reale.
+2. **Il pannello «Attestato» non è ancora stato cliccato dal vivo**: caricare
+   un'immagine vera, aggiungere un testo al posto di un logo, cambiare la
+   taglia di un riquadro e vedere l'anteprima aggiornarsi col pulsante
+   «Aggiorna». Il codice è in produzione e verificato a livello di schema
+   (vincolo CHECK e cascata compresi, contro un Postgres sandbox), ma da
+   questo ambiente non si raggiunge lo store Vercel Blob né un browser per
+   provare l'interfaccia.
 
 ## Difetti trovati e non ancora corretti
 
