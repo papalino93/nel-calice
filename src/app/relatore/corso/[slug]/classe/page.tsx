@@ -28,7 +28,20 @@ type ClassOverview = {
     correct: number;
     correctRate: number;
   }[];
+  materialViews: {
+    id: string;
+    viewedAt: string;
+    studentName: string;
+    materialTitleIt: string;
+  }[];
 };
+
+function formatViewedAt(iso: string): string {
+  return new Date(iso).toLocaleString("it-IT", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
 
 type Cell =
   | { inProgress: true; score: null; maxScore: null }
@@ -199,6 +212,33 @@ export default function ClassPage({
               </li>
             ))}
           </ul>
+        )}
+      </AdminSection>
+
+      <AdminSection
+        title="Letture dispense"
+        hint="Ogni apertura di una dispensa da parte di un iscritto, più recenti in cima. Una stessa dispensa riaperta più volte compare una riga per volta: non è un riassunto, ma il registro di chi ha visto cosa e quando."
+      >
+        {data.materialViews.length === 0 ? (
+          <p className="card p-5 text-sm text-cream/60">
+            Nessuna dispensa aperta, per ora.
+          </p>
+        ) : (
+          <div className="card max-h-96 overflow-y-auto p-0">
+            <table className="w-full text-sm">
+              <tbody>
+                {data.materialViews.map((v) => (
+                  <tr key={v.id} className="border-b border-cream/5 last:border-0">
+                    <td className="p-3 text-cream/85">{v.studentName}</td>
+                    <td className="p-3 text-cream/60">{v.materialTitleIt}</td>
+                    <td className="p-3 text-right whitespace-nowrap text-xs text-cream/60">
+                      {formatViewedAt(v.viewedAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </AdminSection>
     </AdminShell>

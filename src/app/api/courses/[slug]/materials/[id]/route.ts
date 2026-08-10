@@ -68,9 +68,14 @@ export async function GET(
     return NextResponse.json({ error: "file inesistente" }, { status: 404 });
   }
 
-  // Contatore visualizzazioni: non deve far fallire la lettura se va storto.
+  // Contatore visualizzazioni e registro delle letture: né l'uno né l'altro
+  // deve far fallire la lettura se va storto — la dispensa resta più
+  // importante di chi la sta guardando.
   void prisma.material
     .update({ where: { id }, data: { viewCount: { increment: 1 } } })
+    .catch(() => {});
+  void prisma.materialView
+    .create({ data: { materialId: id, enrollmentId: ctx.enrollment.id } })
     .catch(() => {});
 
   const contentType = file.blob.contentType ?? "application/octet-stream";

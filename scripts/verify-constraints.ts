@@ -287,6 +287,31 @@ async function main() {
     ),
   );
 
+  console.log("\n— Il registro delle letture —");
+  // Iscrizione e materiale tutti suoi: la cancellazione qui sotto non deve
+  // toccare enrA, su cui contano i tentativi verificati altrove nel file.
+  const enrViews = await prisma.enrollment.create({
+    data: { userId: other.id, courseId: courseA.id },
+  });
+  const view1 = await prisma.materialView.create({
+    data: { materialId: m1.id, enrollmentId: enrViews.id },
+  });
+  const view2 = await prisma.materialView.create({
+    data: { materialId: m1.id, enrollmentId: enrViews.id },
+  });
+  check(
+    "la stessa dispensa riaperta dalla stessa persona lascia due righe, non una",
+    view1.id !== view2.id,
+  );
+
+  await prisma.enrollment.delete({ where: { id: enrViews.id } });
+  check(
+    "cancellare l'iscrizione porta via il suo registro",
+    (await prisma.materialView.count({
+      where: { id: { in: [view1.id, view2.id] } },
+    })) === 0,
+  );
+
   console.log("\n— Progressi indipendenti fra corsi —");
   const attemptB = await prisma.quizAttempt.create({
     data: {

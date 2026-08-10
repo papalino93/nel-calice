@@ -600,6 +600,19 @@ export type ClassOverview = {
     correct: number;
     correctRate: number;
   }[];
+  /**
+   * Il registro delle letture (§ registro delle letture): chi ha aperto
+   * quale dispensa e quando, più recenti in cima. A differenza del
+   * punteggio, che è un riassunto, questo resta una riga per apertura —
+   * riaprire la stessa dispensa più volte lascia più righe, non una sola
+   * aggiornata.
+   */
+  materialViews: {
+    id: string;
+    viewedAt: string;
+    studentName: string;
+    materialTitleIt: string;
+  }[];
 };
 
 export async function classOverview(
@@ -724,6 +737,17 @@ export async function classOverview(
     stats.set(a.questionId, entry);
   }
 
+  const views = await prisma.materialView.findMany({
+    where: { enrollment: { courseId: course.id } },
+    orderBy: { viewedAt: "desc" },
+    select: {
+      id: true,
+      viewedAt: true,
+      enrollment: { select: { user: { select: { name: true } } } },
+      material: { select: { titleIt: true } },
+    },
+  });
+
   return {
     totalPoints: 100,
     students,
@@ -744,6 +768,12 @@ export async function classOverview(
       }))
       // Le domande andate peggio in cima: sono quelle su cui tornare.
       .sort((a, b) => a.correctRate - b.correctRate),
+    materialViews: views.map((v) => ({
+      id: v.id,
+      viewedAt: v.viewedAt.toISOString(),
+      studentName: v.enrollment.user.name,
+      materialTitleIt: v.material.titleIt,
+    })),
   };
 }
 
