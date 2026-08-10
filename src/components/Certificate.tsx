@@ -461,7 +461,7 @@ export function Certificate({
         data.issuer && (
           <text
             x={cx}
-            y="628"
+            y="616"
             textAnchor="middle"
             fill={GOLD_DEEP}
             fontFamily={SANS}
