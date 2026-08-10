@@ -288,10 +288,66 @@ nessuna libreria in più. Aperte di default solo le sezioni di lavoro
 quotidiano — «Lezioni di questo corso» e «Domande» — le altre chiuse finché
 non servono. Le altre pagine che usano `AdminSection` (andamento classe,
 catalogo) non sono state toccate: continuano ad aprirsi come prima, non
-erano nell'ambito di questo giro. Verificato rendendo il componente con la
-CSS reale del build (React a markup statico, non l'app intera: da questo
-ambiente non si raggiunge un login Google né un database per cliccare la
-pagina vera) — cliccare in un browser vero resta da fare.
+erano nell'ambito di questo giro. Verificato in due modi, senza un login
+Google da questo ambiente: rendendo il componente con la CSS reale del
+build (React a markup statico), e scaricando il bundle JavaScript che
+produzione serve davvero e cercandoci dentro l'esatto markup atteso
+(freccia, classi, `defaultOpen` per sezione) — è il codice giusto quello
+che gira, confermato, ma cliccarci sopra in un browser vero da relatore
+autenticato resta da fare (committente confermato che le sezioni si aprono
+e chiudono, provando dal vivo).
+
+**I loghi sono davvero grandi ora, in ogni forma.** Il primo fix (§ sopra)
+copriva solo il logo quadrato o verticale, vincolato dall'altezza. Un
+logotipo largo e basso — "vino.com", segnalato dal committente vedendo il
+proprio attestato — resta vincolato dalla LARGHEZZA anche con l'altezza
+corretta, se il riquadro non gliene lascia abbastanza. `LOGO_BOX` in
+`src/components/Certificate.tsx` è ora molto più largo (fino a 320px per
+LARGE, da 190), e `LogoRow` restringe l'intera fila in proporzione se la
+somma dei riquadri supera lo spazio della pergamena — mai un logo isolato
+più piccolo degli altri, mai una fila che esce dal foglio. Verificato
+rendendo la pergamena con un logotipo 4:1 (singolo, doppio, quattro insieme
+come stress test).
+
+**"Scarica la pergamena" non scaricava nulla da telefono** (segnalato
+provando da iPhone, Chrome — che su iOS è comunque il motore di Safari,
+Apple lo impone a ogni browser): l'attributo `download` su un blob non è
+affidabile su WebKit iOS. Ora si prova prima `navigator.share` con il file
+vero quando il telefono lo supporta (foglio di condivisione nativo, con
+"Salva immagine" già fra le opzioni), col download via link come ripiego
+per desktop. Lo stesso foglio risolve anche **l'invio via WhatsApp col
+file vero**: prima "Condividi su WhatsApp" apriva solo un messaggio di
+testo, senza modo di allegare la pergamena; ora la allega quando il
+telefono lo supporta, e resta il link di solo testo altrove. Non ancora
+provato dal vivo che il foglio di condivisione si apra davvero (da questo
+ambiente non c'è un telefono reale) — il committente lo confermerà stasera.
+
+**C'è una dashboard in diretta per una lezione mentre la classe risponde.**
+Richiesta del committente: seguire in tempo reale chi ha aperto il quiz, a
+che punto è, quante risposte sono giuste finora. Nuova pagina
+`/relatore/corso/[slug]/lezione/[clId]` (link "Diretta" su ogni lezione del
+corso), che fa polling ogni 4 secondi: per iscritto, stato del tentativo
+(non iniziato/in corso/consegnato/scaduto), risposte date, corrette finora,
+tempo residuo; per domanda, corrette/sbagliate/in bianco sull'intera
+classe. Il punto delicato: `AttemptAnswer.isCorrect` lo scrive il server
+solo alla consegna, quindi durante un tentativo IN_PROGRESS resta al suo
+valore di default — la funzione (`liveLessonOverview` in `src/lib/admin.ts`)
+calcola la correttezza al volo confrontando `selectedOptionId` con
+l'opzione giusta, una lettura sola, mai vista dal corsista. Verificato
+contro un Postgres vero (produzione, di sola lettura): il conteggio
+calcolato al volo per una lezione già consegnata corrisponde esattamente,
+domanda per domanda, a quanto il server aveva già scritto a suo tempo in
+`isCorrect`; una lezione senza tentativi non va in errore; uno slug
+sbagliato risponde "non trovato" invece di mostrare la lezione di un altro
+corso. Non ancora vista durante un quiz davvero in corso — non ce n'era
+uno mentre veniva scritta.
+
+**Il conto alla rovescia durante il quiz esisteva già** (segnalato come
+mancante, ma c'era: `src/app/corso/[slug]/lezione/[clId]/quiz/page.tsx`,
+barra che cambia colore sotto il 20% del tempo, consegna automatica allo
+scadere). L'unica cosa toccata: l'etichetta "Durata lezioni" nel pannello
+del corso, che diceva "lezioni" mentre il campo è sempre stato la durata
+del *quiz* — non della serata — ora "Durata del quiz di lezione".
 
 Fanno eccezione tre cose, scritte e verdi a test/lint/build ma **mai eseguite
 con un database vero**:
@@ -377,6 +433,18 @@ cima. Una dispensa che gira ora si risale a chi l'ha aperta.
    (vincolo CHECK e cascata compresi, contro un Postgres sandbox), ma da
    questo ambiente non si raggiunge lo store Vercel Blob né un browser per
    provare l'interfaccia.
+
+3. **Il foglio di condivisione nativo (scarica/WhatsApp) non è stato
+   toccato con un telefono vero**: verificato che il codice giusto sia in
+   produzione (bundle controllato), ma non che `navigator.share` si apra
+   davvero e che "Salva immagine" funzioni — serve un telefono, che da qui
+   non c'è.
+
+4. **La dashboard «Diretta» di una lezione non è ancora stata vista durante
+   un quiz vero**: la correttezza calcolata al volo è verificata contro dati
+   reali già consegnati (corrisponde esattamente a quanto il server aveva
+   scritto), ma nessuno l'ha ancora guardata mentre qualcuno rispondeva
+   davvero — non c'era un quiz in corso al momento di scriverla.
 
 ## Difetti trovati e non ancora corretti
 
