@@ -21,7 +21,10 @@ export async function GET(
       titleIt: true,
       titleEn: true,
       certificateIssuer: true,
-      logos: { select: { url: true }, orderBy: { createdAt: "asc" } },
+      logos: {
+        select: { url: true, text: true, size: true },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
   if (!course) {
@@ -32,7 +35,11 @@ export async function GET(
     course.titleIt,
     course.titleEn,
     course.certificateIssuer,
-    course.logos.map((l) => l.url),
+    course.logos.map((l) => ({
+      url: l.url,
+      text: l.text,
+      size: l.size as "SMALL" | "MEDIUM" | "LARGE",
+    })),
   );
   return NextResponse.json({ data });
 }

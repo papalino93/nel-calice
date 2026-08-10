@@ -71,13 +71,13 @@ export type CertificateData = {
   /** Firma testuale. Facoltativa: vuota, quella riga sparisce. */
   issuer: string | null;
   /**
-   * Loghi già pronti come `data:` URI (mai un indirizzo esterno: vedi
-   * src/lib/certificate.ts per il perché). Quando presenti prendono il posto
-   * della firma testuale invece di affiancarla — un'edizione realizzata con
-   * un partner non deve portare né il nome dell'organizzatore né i suoi
-   * marchi ambiguamente insieme, uno dei due.
+   * Loghi (o testi al loro posto — vedi `LogoItem`), pronti da disegnare.
+   * Quando presenti prendono il posto della firma testuale invece di
+   * affiancarla — un'edizione realizzata con un partner non deve portare né
+   * il nome dell'organizzatore né i suoi marchi ambiguamente insieme, uno dei
+   * due.
    */
-  logos: string[];
+  logos: LogoItem[];
   /**
    * Codice di verifica già formattato, e l'indirizzo dove si controlla.
    * Facoltativi: l'anteprima del relatore non ne ha uno vero, e senza di
@@ -85,6 +85,34 @@ export type CertificateData = {
    */
   verificationCode?: string;
   verificationHost?: string;
+};
+
+/** Le taglie fra cui il relatore scelge, per un logo o per un testo. */
+export type LogoSize = "SMALL" | "MEDIUM" | "LARGE";
+
+/**
+ * Un riquadro della riga firma: un'immagine già pronta come `data:` URI
+ * (mai un indirizzo esterno: vedi src/lib/certificate.ts per il perché), o
+ * un testo scritto al suo posto — non tutti hanno un file del proprio
+ * marchio pronto all'occorrenza.
+ */
+export type LogoItem =
+  | { kind: "image"; src: string; size: LogoSize }
+  | { kind: "text"; text: string; size: LogoSize };
+
+/**
+ * Ingombro del riquadro per un'immagine, e corpo/spaziatura per un testo,
+ * per ciascuna taglia. Il vincolo che le tiene tutte e tre dentro lo stesso
+ * spazio verticale (fra la data e la dicitura legale, §7.11): anche LARGE
+ * deve starci senza toccare la riga sotto.
+ */
+const LOGO_BOX: Record<
+  LogoSize,
+  { width: number; height: number; fontSize: number; letterSpacing: number }
+> = {
+  SMALL: { width: 76, height: 22, fontSize: 9, letterSpacing: 2 },
+  MEDIUM: { width: 106, height: 32, fontSize: 11.5, letterSpacing: 3 },
+  LARGE: { width: 144, height: 42, fontSize: 15, letterSpacing: 3.6 },
 };
 
 /** Sigillo dentellato, lo stesso dell'app ma ridisegnato in coordinate SVG. */
@@ -145,39 +173,72 @@ function Vine({ x, y, mirrored }: { x: number; y: number; mirrored: boolean }) {
 }
 
 /**
- * Fila di loghi centrata. Ogni immagine sta dentro una gabbia di dimensione
- * fissa e vi si adatta mantenendo le proporzioni (comportamento di default
- * di `<image>`), così un logo quadrato e uno molto largo non vengono
- * deformati né sbilanciano la riga.
+ * Larghezza approssimata di un testo maiuscolo, spaziato come la firma
+ * testuale della pergamena. Non c'è modo di misurare un `<text>` prima di
+ * disegnarlo: questa stima serve solo a centrare la fila, non a incastrare
+ * il testo — un errore di qualche pixel qui non si vede.
  */
-function LogoRow({
-  cx,
-  y,
-  logos,
-}: {
-  cx: number;
-  y: number;
-  logos: string[];
-}) {
-  const boxWidth = 88;
-  const boxHeight = 30;
-  const gap = 14;
-  const totalWidth = logos.length * boxWidth + (logos.length - 1) * gap;
+function estimateTextWidth(text: string, fontSize: number, letterSpacing: number) {
+  return text.length * (fontSize * 0.62 + letterSpacing);
+}
+
+/**
+ * Fila di riquadri centrata, ognuno un'immagine o un testo. Un'immagine sta
+ * dentro una gabbia della sua taglia e vi si adatta mantenendo le
+ * proporzioni (comportamento di default di `<image>`), così un logo
+ * quadrato e uno molto largo non vengono deformati né sbilanciano la riga.
+ * Le taglie possono differire da un riquadro all'altro: sono allineate sullo
+ * stesso centro verticale, non sullo stesso bordo.
+ */
+function LogoRow({ cx, centerY, logos }: { cx: number; centerY: number; logos: LogoItem[] }) {
+  const gap = 16;
+  const widths = logos.map((item) => {
+    const box = LOGO_BOX[item.size];
+    return item.kind === "image"
+      ? box.width
+      : estimateTextWidth(item.text, box.fontSize, box.letterSpacing);
+  });
+  const totalWidth = widths.reduce((sum, w) => sum + w, 0) + gap * (logos.length - 1);
+  // Un x di partenza per riquadro, calcolato una volta e non aggiornato
+  // durante il map: mutare una variabile mentre si disegna è ciò che il
+  // nuovo linter di React vieta (`react-hooks/immutability`).
   const startX = cx - totalWidth / 2;
+  const xs = widths.reduce<number[]>((acc, w, i) => {
+    acc.push(i === 0 ? startX : acc[i - 1] + widths[i - 1] + gap);
+    return acc;
+  }, []);
 
   return (
     <g>
-      {logos.map((href, i) => (
-        <image
-          key={i}
-          href={href}
-          x={startX + i * (boxWidth + gap)}
-          y={y}
-          width={boxWidth}
-          height={boxHeight}
-          preserveAspectRatio="xMidYMid meet"
-        />
-      ))}
+      {logos.map((item, i) => {
+        const box = LOGO_BOX[item.size];
+        const width = widths[i];
+        const x = xs[i];
+        return item.kind === "image" ? (
+          <image
+            key={i}
+            href={item.src}
+            x={x}
+            y={centerY - box.height / 2}
+            width={width}
+            height={box.height}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        ) : (
+          <text
+            key={i}
+            x={x + width / 2}
+            y={centerY + box.fontSize * 0.35}
+            textAnchor="middle"
+            fill={GOLD_DEEP}
+            fontFamily={SANS}
+            fontSize={box.fontSize}
+            letterSpacing={box.letterSpacing}
+          >
+            {item.text.toUpperCase()}
+          </text>
+        );
+      })}
     </g>
   );
 }
@@ -440,7 +501,7 @@ export function Certificate({
           la data, com'era prima che questo campo esistesse. */}
       <text
         x={cx}
-        y="574"
+        y="568"
         textAnchor="middle"
         fill={INK}
         fontFamily={SERIF}
@@ -454,14 +515,13 @@ export function Certificate({
       {/* I loghi, quando ci sono, prendono il posto della firma testuale
           invece di affiancarla: è il caso di un'edizione realizzata con un
           partner, dove non deve comparire il nome dell'organizzatore ma i
-          marchi di chi la fa insieme a lui. */}
+          marchi di chi la fa insieme a lui. Centro fisso a 600: anche la
+          taglia LARGE (42px) ci sta fra la data sopra e la dicitura legale
+          sotto senza toccare né l'una né l'altra (misurato, non supposto —
+          §7.11, lo stesso motivo per cui questa riga non è mai un calcolo
+          "a occhio"). */}
       {data.logos.length > 0 ? (
-        // Più in alto e più basso di riga rispetto alla firma testuale che
-        // sostituiscono: un'immagine leggibile come "logo" ha bisogno di più
-        // dei ~10px di una riga di maiuscolo, e senza questo margine
-        // finiva addosso alla dicitura legale in fondo (misurato, non
-        // supposto: la prima versione ci finiva sopra per un pelo).
-        <LogoRow cx={cx} y={588} logos={data.logos} />
+        <LogoRow cx={cx} centerY={600} logos={data.logos} />
       ) : (
         data.issuer && (
           <text
