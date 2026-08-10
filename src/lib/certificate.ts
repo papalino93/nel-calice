@@ -163,9 +163,8 @@ export async function sampleCertificate(
     dateEn: formatDate(now, "en-US"),
     issuer,
     logos: await resolveLogos(logoUrls),
-    // Un codice finto, ma della lunghezza giusta: l'anteprima serve a vedere
-    // l'ingombro. Cercarlo davvero risponde "non risulta", ed è corretto.
-    verificationCode: formatVerificationCode("ESEMPIO000000000"),
-    verificationHost: siteHost(),
+    // Nessun codice qui: un attestato vero ne mostra uno che risponde
+    // davvero su /verifica/<codice>. Uno finto nell'anteprima confonderebbe
+    // il relatore, che non ha modo di distinguerlo da uno rotto.
   };
 }
