@@ -10,11 +10,10 @@
  * Il fattore 3 serve alla stampa: 3000×2100 px su un foglio A4 orizzontale
  * sono circa 250 dpi.
  */
-export async function downloadSvgAsPng(
+export async function svgToPngBlob(
   svg: SVGSVGElement,
-  fileName: string,
   scale = 3,
-): Promise<void> {
+): Promise<Blob> {
   const viewBox = svg.viewBox.baseVal;
   const width = viewBox.width || svg.clientWidth;
   const height = viewBox.height || svg.clientHeight;
@@ -47,7 +46,17 @@ export async function downloadSvgAsPng(
     canvas.toBlob(resolve, "image/png"),
   );
   if (!blob) throw new Error("PNG non generato");
+  return blob;
+}
 
+/**
+ * Fa scaricare un blob col nome scelto, tramite un link temporaneo con
+ * `download`. Funziona su desktop; su Safari iOS l'attributo `download` su
+ * un `blob:` non è affidabile — è il motivo per cui `CertificateView` prova
+ * prima `navigator.share` quando disponibile, e usa questo solo come
+ * ripiego (§7.17).
+ */
+export function downloadBlob(blob: Blob, fileName: string): void {
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = fileName;

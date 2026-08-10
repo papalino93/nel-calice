@@ -5,8 +5,29 @@ import {
   Certificate,
   type CertificateData,
 } from "@/components/Certificate";
-import { downloadSvgAsPng } from "@/lib/svgToPng";
+import { downloadBlob, svgToPngBlob } from "@/lib/svgToPng";
 import { useLanguage } from "@/components/LanguageProvider";
+
+/**
+ * Safari iOS non è affidabile con `<a download>` su un blob (§7.17): a
+ * volte non salva nulla, senza nemmeno un errore visibile — è il difetto
+ * segnalato dal committente provando da telefono. Il foglio di
+ * condivisione nativo (`navigator.share`) non ha questo problema, ha
+ * "Salva immagine" già fra le opzioni, e in più mette WhatsApp a
+ * disposizione con il file vero attaccato, non solo un testo. Si prova
+ * prima con un file finto: `canShare` può esistere ma rifiutare i file su
+ * alcuni browser (soprattutto desktop), e va scoperto senza già aver
+ * ridisegnato la pergamena su canvas per niente.
+ */
+function canShareFiles(): boolean {
+  if (typeof navigator === "undefined" || !navigator.canShare) return false;
+  try {
+    const probe = new File([""], "probe.png", { type: "image/png" });
+    return navigator.canShare({ files: [probe] });
+  } catch {
+    return false;
+  }
+}
 
 /**
  * L'attestato a schermo, con i suoi due modi di portarselo via.
@@ -28,15 +49,31 @@ export function CertificateView({
 
   const fileName = `attestato-${data.name.toLowerCase().replace(/\s+/g, "-")}.png`;
 
-  async function download() {
+  async function pngFile(): Promise<File | null> {
     const svg = wrapper.current?.querySelector("svg");
-    if (!svg) return;
+    if (!svg) return null;
+    const blob = await svgToPngBlob(svg as SVGSVGElement);
+    return new File([blob], fileName, { type: "image/png" });
+  }
 
+  async function download() {
     setBusy(true);
     setError(null);
     try {
-      await downloadSvgAsPng(svg as SVGSVGElement, fileName);
-    } catch {
+      const file = await pngFile();
+      if (!file) return;
+      if (canShareFiles()) {
+        await navigator.share({ files: [file] });
+      } else {
+        downloadBlob(file, fileName);
+      }
+    } catch (err) {
+      // L'utente ha chiuso il foglio di condivisione senza scegliere nulla:
+      // non è un errore da mostrare, è esattamente come non aver cliccato.
+      if (err instanceof Error && err.name === "AbortError") {
+        setBusy(false);
+        return;
+      }
       setError(
         lang === "en"
           ? "Could not create the image. Try printing instead."
@@ -52,6 +89,36 @@ export function CertificateView({
     lang === "en"
       ? `I took part in "${courseTitle}" and earned the title of ${meritTitle}! 🍷`
       : `Ho partecipato al corso "${courseTitle}" e mi sono meritato il titolo di ${meritTitle}! 🍷`;
+
+  async function shareWhatsApp() {
+    // Dove il foglio di condivisione nativo può portare il file vero, lo fa:
+    // WhatsApp compare come uno dei destinatari possibili, pergamena
+    // allegata. Dove non può (soprattutto desktop), resta il link di prima
+    // — solo testo, perché non c'è un modo per attaccare un file a un
+    // messaggio WhatsApp da browser senza quel foglio.
+    if (!canShareFiles()) {
+      window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const file = await pngFile();
+      if (!file) return;
+      await navigator.share({ files: [file], text: shareText });
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        setBusy(false);
+        return;
+      }
+      setError(
+        lang === "en"
+          ? "Could not create the image. Try printing instead."
+          : "Non è stato possibile creare l'immagine. Prova con la stampa.",
+      );
+    }
+    setBusy(false);
+  }
 
   return (
     <div>
@@ -83,14 +150,13 @@ export function CertificateView({
         </button>
 
         {showShare && (
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="press rounded-full border border-cream/20 px-6 py-3 text-sm text-cream/70 transition-colors hover:text-cream"
+          <button
+            onClick={shareWhatsApp}
+            disabled={busy}
+            className="press rounded-full border border-cream/20 px-6 py-3 text-sm text-cream/70 transition-colors hover:text-cream disabled:opacity-50"
           >
             {lang === "en" ? "Share on WhatsApp" : "Condividi su WhatsApp"}
-          </a>
+          </button>
         )}
       </div>
 
