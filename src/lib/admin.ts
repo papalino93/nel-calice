@@ -1029,27 +1029,31 @@ export async function liveLessonOverview(
     // Un solo tentativo per iscrizione e lezione, per costruzione del
     // pannello di avvio (§7.5): non serve gestire più di una riga.
     const attempt = e.attempts[0] ?? null;
+    // Mappa vuota se il tentativo non esiste ancora: il conteggio per
+    // domanda deve comunque contare chi non ha nemmeno iniziato come "in
+    // bianco", altrimenti il totale per domanda risulterebbe sull'intera
+    // classe solo a parole — prima si fermava a chi aveva già un
+    // tentativo, escludendo silenziosamente chi non aveva ancora aperto
+    // il quiz.
+    const givenByQuestion = new Map(
+      attempt?.answers.map((a) => [a.questionId, a.selectedOptionId]) ?? [],
+    );
     let answeredCount = 0;
     let correctCount = 0;
 
-    if (attempt) {
-      const givenByQuestion = new Map(
-        attempt.answers.map((a) => [a.questionId, a.selectedOptionId]),
-      );
-      for (const q of questions) {
-        const t = tally.get(q.id)!;
-        const given = givenByQuestion.get(q.id) ?? null;
-        if (given === null) {
-          t.unanswered += 1;
-          continue;
-        }
-        answeredCount += 1;
-        if (given === correctOptionByQuestion.get(q.id)) {
-          correctCount += 1;
-          t.correct += 1;
-        } else {
-          t.incorrect += 1;
-        }
+    for (const q of questions) {
+      const t = tally.get(q.id)!;
+      const given = givenByQuestion.get(q.id) ?? null;
+      if (given === null) {
+        t.unanswered += 1;
+        continue;
+      }
+      answeredCount += 1;
+      if (given === correctOptionByQuestion.get(q.id)) {
+        correctCount += 1;
+        t.correct += 1;
+      } else {
+        t.incorrect += 1;
       }
     }
 
