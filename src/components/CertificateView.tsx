@@ -61,7 +61,10 @@ export function CertificateView({
     setError(null);
     try {
       const file = await pngFile();
-      if (!file) return;
+      if (!file) {
+        setBusy(false);
+        return;
+      }
       if (canShareFiles()) {
         await navigator.share({ files: [file] });
       } else {
@@ -104,7 +107,10 @@ export function CertificateView({
     setError(null);
     try {
       const file = await pngFile();
-      if (!file) return;
+      if (!file) {
+        setBusy(false);
+        return;
+      }
       await navigator.share({ files: [file], text: shareText });
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
