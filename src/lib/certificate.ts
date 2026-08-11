@@ -160,6 +160,7 @@ export async function certificateFor(
 export async function sampleCertificate(
   courseTitleIt: string,
   courseTitleEn: string,
+  location: string | null,
   issuer: string | null,
   logos: CourseLogoInput[],
 ): Promise<CertificateData> {
@@ -173,9 +174,9 @@ export async function sampleCertificate(
     meritTitleEn: MERIT_EN[title].title,
     meritSubtitleIt: meritSubtitle(title),
     meritSubtitleEn: MERIT_EN[title].subtitle,
-    // Nell'anteprima non c'è un corso reale da cui prendere il luogo: resta
-    // vuoto, così il relatore vede l'ingombro senza un dato inventato.
-    location: null,
+    // Luogo del corso vero, non inventato: è quello che comparirà
+    // sull'attestato reale, ed è il punto dell'anteprima mostrarlo.
+    location,
     dateIt: formatDate(now, "it-IT"),
     dateEn: formatDate(now, "en-US"),
     issuer,
