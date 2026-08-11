@@ -90,12 +90,12 @@ esegue l'app; in produzione sono già su Vercel.
 | `UNLOCK_CODE_KEY` | 32 byte in base64: cifra i codici di sblocco |
 | `BLOB_READ_WRITE_TOKEN` | store privato delle dispense |
 
-Nessuna chiave per la traduzione automatica: il pulsante «Traduci in
-inglese» chiama MyMemory (api.mymemory.translated.net), gratuito e senza
-registrazione — vincolo esplicito del committente, "mai un euro" anche a
-costo di una qualità più grezza di quella di un modello vero (§7.20). Prima
-usava Anthropic e serviva `ANTHROPIC_API_KEY`; non serve più, e non c'è più
-nel codice.
+Il pulsante «Traduci in inglese» non c'è più: provato prima con Anthropic
+(a pagamento, escluso dal vincolo "mai un euro" del committente), poi con
+MyMemory (gratuito, senza chiave), ma la qualità su contenuto vero è
+risultata inaccettabile — vedi "La promessa bilingue" più giù. Nessuna
+chiave di traduzione resta quindi da configurare, né `ANTHROPIC_API_KEY`
+né altro.
 
 Senza `UNLOCK_CODE_KEY` sei test falliscono: non è una regressione, è
 l'ambiente incompleto.
@@ -435,15 +435,12 @@ scadere). L'unica cosa toccata: l'etichetta "Durata lezioni" nel pannello
 del corso, che diceva "lezioni" mentre il campo è sempre stato la durata
 del *quiz* — non della serata — ora "Durata del quiz di lezione".
 
-Fanno eccezione tre cose, scritte e verdi a test/lint/build ma **mai eseguite
+Fanno eccezione due cose, scritte e verdi a test/lint/build ma **mai eseguite
 con un database vero**:
 
 - dalla pagina del corso il relatore può scrivere una lezione nuova sul posto,
   senza passare dal catalogo (resta comunque riusabile, e l'interfaccia lo
   dice);
-- il pulsante «Traduci in inglese» nel catalogo, provato da questo ambiente
-  contro il servizio vero (risposte corrette), ma non ancora cliccato in un
-  browser da relatore autenticato;
 - il codice di verifica dell'attestato, qui sotto — la parte che decide se un
   codice è autentico è però coperta da otto test che non richiedono database.
 
@@ -622,37 +619,31 @@ continuano a funzionare.
 
 ### La promessa bilingue, che oggi è disattesa
 
-Risolto in parte: **i campi inglesi del catalogo si riempiono da soli.** Nella
-pagina di una lezione un pulsante «Traduci in inglese» manda il testo italiano
-a `POST /api/admin/translate` e riempie i campi inglesi — domanda, opzioni e
-spiegazione insieme (tradurre un'opzione senza la sua domanda perde il senso),
-e a parte titolo e sottotitolo della lezione. Non traduce al salvataggio: quel
-che torna resta modificabile, perché un testo che va davanti ai corsisti deve
-poter passare da un occhio umano. Gratuito, senza chiave (§7.20: vedi
-`src/lib/translate.ts` per il motivo).
+**Il pulsante «Traduci in inglese» è stato provato e poi tolto.** L'idea era
+riempire da soli i campi inglesi del catalogo (domanda, opzioni, spiegazione,
+titoli di corso e lezione, titolo di una dispensa) mandando l'italiano a un
+servizio di traduzione. Con Anthropic funzionava bene ma costava (pochi
+centesimi al mese, comunque in contrasto col vincolo esplicito "mai un
+euro"); passato a MyMemory (gratuito, senza chiave — §7.20) per rispettare
+quel vincolo, ma la qualità sul contenuto vero del catalogo è risultata
+troppo grezza per essere utile — segnalato dal committente dopo averlo
+provato. Tolto ovunque: i campi inglesi restano scrivibili solo a mano,
+come prima che questo pulsante esistesse. `TranslateRow`, `useTranslator` e
+`/api/admin/translate` sono stati rimossi, non c'era altro uso rimasto.
 
-Risolto anche: **l'attestato cambia davvero lingua.** Titolo del corso,
-titolo di merito, sottotitolo e data ora arrivano in coppia IT/En
+Risolto e rimasto: **l'attestato cambia davvero lingua.** Titolo del corso,
+titolo di merito, sottotitolo e data arrivano in coppia IT/En
 (`certificateFor`/`sampleCertificate`), e il componente `Certificate`
 sceglie anche le parole fisse della cornice in base alla lingua corrente.
 Il codice di verifica resta senza lingua per scelta: è un indirizzo, non un
 testo. La pagina pubblica `/verifica/<codice>`, invece, resta
 deliberatamente in italiano fisso (decisione di chi l'ha scritta, invariata).
 
-Risolto anche: **il titolo inglese di una dispensa è ora scrivibile**, con
-lo stesso pulsante di traduzione automatica del catalogo.
-
-Risolto anche: **il pulsante c'è ora anche per titolo e sottotitolo del
-corso**, non solo per la lezione del catalogo — segnalato dal committente
-modificando il sottotitolo italiano di un corso e trovando l'inglese
-invariato, comprensibilmente scambiato per un difetto. `useTranslator` e
-`TranslateRow` erano già duplicati due volte nello stesso file
-(`catalogo/[lessonId]/page.tsx`); a un terzo punto d'uso in un file diverso
-sono stati condivisi per davvero (`src/lib/useTranslator.ts`, `TranslateRow`
-in `AdminShell.tsx`).
-
 Resta disatteso:
 
+- **i campi inglesi del catalogo vanno scritti a mano**, di nuovo — senza un
+  servizio di traduzione gratuito di qualità accettabile, e senza budget per
+  uno a pagamento, non c'è scorciatoia onesta.
 - **tutta l'area relatore** è in italiano fisso, fuori da `src/lib/i18n.ts` —
   scelta deliberata per ora: la usa solo il relatore, che è di madrelingua
   italiana, quindi il valore pratico di tradurla è basso.
