@@ -244,9 +244,12 @@ Aggiunto: metadati completi in `src/app/layout.tsx` (titolo con template,
 descrizione, URL canonico), un'immagine di anteprima social generata via
 `next/og` (`src/app/opengraph-image.tsx` — stessi colori e lo stesso
 grappolo del sigillo dell'attestato, ridisegnato senza il filtro di texture
-che quel renderer non sa disegnare), `robots.ts` (esclude `/relatore` e
-`/api` dalla scansione — l'area relatore richiede login, indicizzarla non
-avrebbe senso) e `sitemap.ts` (una sola voce, "/" — ogni altra pagina
+che quel renderer non sa disegnare), `robots.ts` (esclude `/relatore`,
+`/api` e `/verifica` dalla scansione — l'area relatore richiede login,
+`/verifica/<codice>` porta il nome vero di una persona e ha già un
+`noindex` proprio sulla pagina, escluderla anche qui evita pure la
+scansione, non solo l'indicizzazione — trovato durante un check completo
+della sessione) e `sitemap.ts` (una sola voce, "/" — ogni altra pagina
 richiede un accesso, quindi per un motore di ricerca sarebbe comunque solo
 una schermata d'ingresso).
 
@@ -423,6 +426,14 @@ telefono lo supporta, e resta il link di solo testo altrove. Non ancora
 provato dal vivo che il foglio di condivisione si apra davvero (da questo
 ambiente non c'è un telefono reale) — il committente lo confermerà stasera.
 
+**Trovato durante un check completo della sessione (non segnalato,
+scoperto rileggendo il codice): se l'SVG dell'attestato non viene trovato
+nel DOM, i pulsanti "Scarica"/"Condividi" restavano disabilitati per
+sempre**, fino al refresh della pagina — `setBusy(false)` mancava sul
+ramo di uscita anticipata in `CertificateView.tsx`. Caso raro (l'SVG è
+sempre montato insieme al pulsante), corretto comunque perché a costo
+zero.
+
 **C'è una dashboard in diretta per una lezione mentre la classe risponde.**
 Richiesta del committente: seguire in tempo reale chi ha aperto il quiz, a
 che punto è, quante risposte sono giuste finora. Nuova pagina
@@ -442,6 +453,16 @@ domanda per domanda, a quanto il server aveva già scritto a suo tempo in
 sbagliato risponde "non trovato" invece di mostrare la lezione di un altro
 corso. Non ancora vista durante un quiz davvero in corso — non ce n'era
 uno mentre veniva scritta.
+
+**Trovato e corretto durante un check completo della sessione: il
+conteggio per domanda non era davvero "sull'intera classe" come diceva
+questo stesso paragrafo.** Contava solo gli iscritti che avevano già un
+tentativo — chi non aveva ancora aperto il quiz non compariva in nessuna
+domanda, quindi la somma per domanda risultava inferiore al numero di
+iscritti. Corretto contando "in bianco" anche chi non ha ancora un
+tentativo; riverificato contro produzione che la somma per domanda torni
+a corrispondere esattamente al numero di iscritti, e che il conteggio
+sulle risposte già consegnate continui a corrispondere a `isCorrect`.
 
 **Il conto alla rovescia durante il quiz esisteva già** (segnalato come
 mancante, ma c'era: `src/app/corso/[slug]/lezione/[clId]/quiz/page.tsx`,
