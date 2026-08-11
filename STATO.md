@@ -395,6 +395,21 @@ più piccolo degli altri, mai una fila che esce dal foglio. Verificato
 rendendo la pergamena con un logotipo 4:1 (singolo, doppio, quattro insieme
 come stress test).
 
+**Fino a 3 loghi e un testo insieme: già possibile, non serviva altro.**
+Segnalato dal committente come mancante, ma il limite di 4 riquadri
+(`MAX_COURSE_LOGOS`) non distingue immagine da testo: 3 immagini più un
+testo sono già 4 riquadri validi. Verificato rendendo la pergamena con
+esattamente questa combinazione — nessuna modifica necessaria.
+
+**Il luogo non compariva nell'anteprima dell'attestato, con o senza
+loghi.** `sampleCertificate` lo azzerava a mano ("nell'anteprima non c'è
+un corso reale da cui prenderlo") mentre la route che la chiama legge già
+un corso vero per titolo, firma e loghi — il luogo era l'unico rimasto
+fuori dalla lettura, probabilmente dimenticato quando l'anteprima ha
+smesso di essere del tutto finta. L'attestato vero non aveva questo
+problema. Corretto passando il luogo vero fino in fondo; verificato
+rendendo la pergamena con luogo e loghi insieme.
+
 **"Scarica la pergamena" non scaricava nulla da telefono** (segnalato
 provando da iPhone, Chrome — che su iOS è comunque il motore di Safari,
 Apple lo impone a ogni browser): l'attributo `download` su un blob non è
