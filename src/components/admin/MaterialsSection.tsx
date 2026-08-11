@@ -132,21 +132,8 @@ function UploadForm({
   const [type, setType] = useState<string>("PDF");
   const [videoUrl, setVideoUrl] = useState("");
   const [busy, setBusy] = useState(false);
-  const [translating, setTranslating] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  async function translate() {
-    setTranslating(true);
-    setMsg(null);
-    const result = await post<{ translations: string[] }>(
-      "/api/admin/translate",
-      { texts: [titleIt] },
-    );
-    setTranslating(false);
-    if (result.ok) setTitleEn(result.data.translations[0]);
-    else setMsg(errorMessage(result, t));
-  }
 
   const isVideo = type === "VIDEO";
 
@@ -242,21 +229,6 @@ function UploadForm({
             className={inputClass}
           />
         </Field>
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <button
-          type="button"
-          onClick={translate}
-          disabled={translating || !titleIt.trim()}
-          className="press inline-flex min-h-10 items-center rounded-full border border-cream/20 px-4 text-xs text-cream/70 transition-colors hover:text-cream disabled:opacity-40"
-        >
-          {translating ? "Traduco…" : "Traduci in inglese"}
-        </button>
-        <span className="text-xs leading-relaxed text-cream/55">
-          Riempie il titolo inglese partendo dall&apos;italiano. Resta
-          modificabile prima di caricare.
-        </span>
       </div>
 
       <p className="mt-4 mb-2 text-xs text-cream/55">Tipo</p>

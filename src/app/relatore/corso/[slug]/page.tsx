@@ -15,12 +15,10 @@ import {
   AdminSection,
   AdminShell,
   Field,
-  TranslateRow,
   buttonClass,
   ghostButtonClass,
   inputClass,
 } from "@/components/admin/AdminShell";
-import { useTranslator } from "@/lib/useTranslator";
 import { ArrowRightIcon, EyeIcon, LockIcon, RefreshIcon } from "@/components/icons";
 import type { CertificateData } from "@/components/Certificate";
 import { CertificateView } from "@/components/CertificateView";
@@ -175,17 +173,6 @@ function CourseTitles({
   const [subtitleEn, setSubtitleEn] = useState(detail.subtitleEn ?? "");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const translator = useTranslator();
-
-  async function translate() {
-    const out = await translator.translate([titleIt, subtitleIt]);
-    if (!out) return;
-    // Un campo italiano vuoto torna vuoto: in quel caso si lascia stare
-    // l'inglese che c'è, invece di cancellarlo.
-    if (out[0]) setTitleEn(out[0]);
-    if (out[1]) setSubtitleEn(out[1]);
-    setMsg(null);
-  }
 
   async function save() {
     setBusy(true);
@@ -215,12 +202,6 @@ function CourseTitles({
       defaultOpen={false}
     >
       <div className="card p-5">
-        <TranslateRow
-          onTranslate={translate}
-          busy={translator.busy}
-          error={translator.error}
-          disabled={!titleIt.trim() && !subtitleIt.trim()}
-        />
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Titolo (italiano)">
             <input
