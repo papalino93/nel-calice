@@ -7,12 +7,10 @@ import {
   AdminSection,
   AdminShell,
   Field,
-  TranslateRow,
   buttonClass,
   ghostButtonClass,
   inputClass,
 } from "@/components/admin/AdminShell";
-import { useTranslator } from "@/lib/useTranslator";
 import { CheckIcon, CrossIcon } from "@/components/icons";
 import { MaterialsSection } from "@/components/admin/MaterialsSection";
 
@@ -253,17 +251,6 @@ function LessonFields({
   const [subtitleIt, setSubtitleIt] = useState(lesson.subtitleIt ?? "");
   const [subtitleEn, setSubtitleEn] = useState(lesson.subtitleEn ?? "");
   const [msg, setMsg] = useState<string | null>(null);
-  const translator = useTranslator();
-
-  async function translate() {
-    const out = await translator.translate([titleIt, subtitleIt]);
-    if (!out) return;
-    // Un campo italiano vuoto torna vuoto: in quel caso si lascia stare
-    // l'inglese che c'è, invece di cancellarlo.
-    if (out[0]) setTitleEn(out[0]);
-    if (out[1]) setSubtitleEn(out[1]);
-    setMsg(null);
-  }
 
   async function save() {
     setMsg(null);
@@ -285,12 +272,6 @@ function LessonFields({
   return (
     <AdminSection title="Titoli" defaultOpen={false}>
       <div className="card p-5">
-        <TranslateRow
-          onTranslate={translate}
-          busy={translator.busy}
-          error={translator.error}
-          disabled={!titleIt.trim() && !subtitleIt.trim()}
-        />
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Titolo (italiano)">
             <input
@@ -497,8 +478,6 @@ function DraftFields({
   /// Domanda congelata perché già risposta: si legge, non si scrive.
   disabled?: boolean;
 }) {
-  const translator = useTranslator();
-
   function setOption(i: number, patch: Partial<Draft["options"][number]>) {
     setDraft({
       ...draft,
@@ -506,45 +485,8 @@ function DraftFields({
     });
   }
 
-  /**
-   * Domanda, opzioni e spiegazione partono insieme, in una richiesta sola:
-   * tradurre le opzioni senza la domanda a cui rispondono farebbe perdere il
-   * senso ("Il primo" — il primo cosa?).
-   */
-  async function translateAll() {
-    const out = await translator.translate([
-      draft.textIt,
-      ...draft.options.map((o) => o.textIt),
-      draft.explanationIt,
-    ]);
-    if (!out) return;
-    // Dove l'italiano era vuoto torna vuoto, e lì si tiene l'inglese che
-    // c'era già invece di azzerarlo.
-    setDraft({
-      ...draft,
-      textEn: out[0] || draft.textEn,
-      options: draft.options.map((o, i) => ({
-        ...o,
-        textEn: out[i + 1] || o.textEn,
-      })),
-      explanationEn: out[draft.options.length + 1] || draft.explanationEn,
-    });
-  }
-
-  const nothingToTranslate =
-    !draft.textIt.trim() &&
-    !draft.explanationIt.trim() &&
-    draft.options.every((o) => !o.textIt.trim());
-
   return (
     <>
-      <TranslateRow
-        onTranslate={translateAll}
-        busy={translator.busy}
-        error={translator.error}
-        disabled={disabled || nothingToTranslate}
-      />
-
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Domanda (italiano)">
           <textarea
