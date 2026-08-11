@@ -20,6 +20,7 @@ export async function GET(
     select: {
       titleIt: true,
       titleEn: true,
+      location: true,
       certificateIssuer: true,
       logos: {
         select: { url: true, text: true, size: true },
@@ -34,6 +35,7 @@ export async function GET(
   const data = await sampleCertificate(
     course.titleIt,
     course.titleEn,
+    course.location,
     course.certificateIssuer,
     course.logos.map((l) => ({
       url: l.url,
