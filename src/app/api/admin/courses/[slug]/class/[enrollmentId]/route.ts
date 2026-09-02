@@ -2,6 +2,7 @@ import { PaymentStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { isDenied, requireAdmin } from "@/lib/guard";
 import { prisma } from "@/lib/prisma";
+import { removeEnrollment } from "@/lib/admin";
 
 /**
  * Aggiorna solo la scheda interna di un iscritto: pagamento e nota. Il
@@ -71,4 +72,26 @@ export async function PATCH(
     paidAt: updated.paidAt?.toISOString() ?? null,
     adminNotes: updated.adminNotes,
   });
+}
+
+/**
+ * Toglie un iscritto dal corso — per un'iscrizione fatta per sbaglio, non
+ * per un abbandono qualunque (vedi `removeEnrollment`). Cancella con lui
+ * tentativi, sblocchi e letture dispense.
+ */
+export async function DELETE(
+  _request: Request,
+  {
+    params,
+  }: { params: Promise<{ slug: string; enrollmentId: string }> },
+) {
+  const admin = await requireAdmin();
+  if (isDenied(admin)) return admin.response;
+
+  const { slug, enrollmentId } = await params;
+  const removed = await removeEnrollment(slug, enrollmentId);
+  if (!removed) {
+    return NextResponse.json({ error: "Iscritto non trovato." }, { status: 404 });
+  }
+  return NextResponse.json({ removed: true });
 }

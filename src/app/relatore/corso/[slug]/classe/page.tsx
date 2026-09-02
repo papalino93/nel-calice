@@ -320,7 +320,7 @@ function EnrollmentCard({
 }) {
   const { t } = useLanguage();
   const [note, setNote] = useState(student.adminNotes ?? "");
-  const [busy, setBusy] = useState<"payment" | "note" | null>(null);
+  const [busy, setBusy] = useState<"payment" | "note" | "remove" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   async function save(body: Record<string, unknown>, kind: "payment" | "note") {
@@ -333,6 +333,30 @@ function EnrollmentCard({
     setBusy(null);
     if (result.ok) {
       setMessage(kind === "payment" ? "Pagamento aggiornato." : "Nota salvata.");
+      onSaved();
+    } else {
+      setMessage(errorMessage(result, t));
+    }
+  }
+
+  async function remove() {
+    // Chi ha già fatto almeno una lezione merita un avviso più esplicito:
+    // togliendolo si perdono anche i suoi tentativi, non solo la riga
+    // d'iscrizione.
+    const question =
+      student.doneCount > 0
+        ? `Togliere ${student.name} dal corso? Ha già consegnato ${student.doneCount} ${student.doneCount === 1 ? "lezione" : "lezioni"}: verranno cancellati anche i suoi tentativi, gli sblocchi e le letture delle dispense. Non si può annullare.`
+        : `Togliere ${student.name} dal corso? Non ha ancora fatto nessuna lezione. Non si può annullare.`;
+    if (!window.confirm(question)) return;
+
+    setBusy("remove");
+    setMessage(null);
+    const result = await api(
+      `/api/admin/courses/${slug}/class/${student.enrollmentId}`,
+      { method: "DELETE" },
+    );
+    setBusy(null);
+    if (result.ok) {
       onSaved();
     } else {
       setMessage(errorMessage(result, t));
@@ -365,6 +389,13 @@ function EnrollmentCard({
           <p className="mt-2 text-xs text-cream/45">
             Iscritto il {formatDate(student.enrolledAt)}
           </p>
+          <button
+            onClick={() => void remove()}
+            disabled={busy !== null}
+            className="press mt-2 inline-flex min-h-8 items-center text-xs text-red-300/70 underline underline-offset-4 hover:text-red-300 disabled:opacity-40"
+          >
+            {busy === "remove" ? "Rimozione…" : "Togli dal corso"}
+          </button>
         </div>
 
         <div className="min-w-44 rounded-xl border border-cream/10 bg-charcoal/25 p-3">

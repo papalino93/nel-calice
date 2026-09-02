@@ -856,6 +856,28 @@ export async function resetAttempt(
 }
 
 /**
+ * Toglie un iscritto dal corso — per un'iscrizione fatta per sbaglio (email
+ * scambiata, doppia riga, un test del relatore stesso), non per un normale
+ * abbandono: cancella insieme tentativi, sblocchi e letture dispense
+ * dell'iscrizione (`onDelete: Cascade` sul modello `Enrollment`), quindi non
+ * lascia a metà un iscritto che ha davvero seguito una serata. Se la persona
+ * si ricrede può sempre reiscriversi con lo stesso codice.
+ *
+ * `course: { slug }` nel filtro, come altrove in questo file: un
+ * `enrollmentId` scambiato per errore non deve toccare un'iscrizione di
+ * un altro corso.
+ */
+export async function removeEnrollment(
+  slug: string,
+  enrollmentId: string,
+): Promise<boolean> {
+  const { count } = await prisma.enrollment.deleteMany({
+    where: { id: enrollmentId, course: { slug } },
+  });
+  return count > 0;
+}
+
+/**
  * Sblocca una serata per un singolo iscritto che l'ha persa — senza aprirla
  * per tutta la classe (quello è `setGlobalUnlock`, un'azione diversa).
  * `UnlockMethod.ADMIN` distingue nel registro questo sblocco da uno con
