@@ -34,8 +34,30 @@ function subscribe(onChange: () => void) {
   };
 }
 
+/**
+ * `localStorage` non è sempre raggiungibile: Safari con i cookie bloccati,
+ * una webview con i dati del sito disattivati, o la modalità privata di
+ * qualche browser fanno **lanciare** l'accesso, non restituire `null`.
+ *
+ * Questa lettura avviene durante il render, e questo provider avvolge tutta
+ * l'applicazione: un'eccezione qui non spegneva la scelta della lingua, la
+ * pagina diventava bianca — ogni pagina. Meglio l'italiano che niente.
+ */
+/**
+ * Scelta valida solo per questa scheda, usata quando `localStorage` non si
+ * può scrivere: senza di essa il commutatore IT/EN restava premibile e
+ * inerte, perché la lettura tornava a cercare un valore che non era stato
+ * possibile salvare.
+ */
+let sessionLanguage: Language | null = null;
+
 function readLanguage(): Language {
-  return window.localStorage.getItem(STORAGE_KEY) === "en" ? "en" : "it";
+  if (sessionLanguage !== null) return sessionLanguage;
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === "en" ? "en" : "it";
+  } catch {
+    return "it";
+  }
 }
 
 /** Sul server la lingua è sempre l'italiano, che è quella principale (§2.6). */
@@ -55,7 +77,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [lang]);
 
   const setLang = useCallback((next: Language) => {
-    window.localStorage.setItem(STORAGE_KEY, next);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Non si può ricordare fra una visita e l'altra, ma almeno la lingua
+      // cambia adesso: è meglio di un pulsante che non fa niente.
+      sessionLanguage = next;
+    }
     listeners.forEach((notify) => notify());
   }, []);
 

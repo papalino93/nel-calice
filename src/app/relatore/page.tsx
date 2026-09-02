@@ -44,6 +44,7 @@ export default function AdminHomePage() {
   const [reloads, setReloads] = useState(0);
   const reload = useCallback(() => setReloads((n) => n + 1), []);
   const [copied, setCopied] = useState<string | null>(null);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -95,9 +96,14 @@ export default function AdminHomePage() {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(code);
+      setCopyFailed(false);
       window.setTimeout(() => setCopied(null), 1800);
     } catch {
+      // Non si può copiare: almeno lo si dice, così il relatore sa di
+      // doverlo leggere a schermo invece di aspettarsi di averlo negli
+      // appunti.
       setCopied(null);
+      setCopyFailed(true);
     }
   };
 
@@ -122,7 +128,7 @@ export default function AdminHomePage() {
         {data.user.email} ·{" "}
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="underline underline-offset-2 hover:text-cream/70"
+          className="press inline-flex min-h-10 items-center underline underline-offset-2 hover:text-cream/70"
         >
           {t.signOut}
         </button>
@@ -138,9 +144,15 @@ export default function AdminHomePage() {
           </h2>
           <div className="rounded-card border border-gold/40 bg-bordeaux/35 p-5 shadow-[0_14px_36px_rgba(0,0,0,0.2)]">
             <p className="text-xs font-medium uppercase tracking-[0.16em] text-gold-light/90">
+              {/* Tre stati, non due: un corso archiviato non è «da
+                  preparare», e presentarlo così invitava a lavorarci
+                  sopra mentre l'etichetta nell'elenco sotto diceva
+                  «Archiviato». */}
               {currentCourse.status === "ACTIVE"
                 ? lang === "en" ? "Course in progress" : "Corso attivo"
-                : lang === "en" ? "Course to prepare" : "Corso da preparare"}
+                : currentCourse.status === "ARCHIVED"
+                  ? lang === "en" ? "Archived course" : "Corso archiviato"
+                  : lang === "en" ? "Course to prepare" : "Corso da preparare"}
             </p>
             <h2 className="mt-1 font-serif text-2xl text-cream">
               {pick(lang, currentCourse.titleIt, currentCourse.titleEn)}
@@ -167,6 +179,13 @@ export default function AdminHomePage() {
               <span className="text-xs text-cream/70">
                 {lang === "en" ? "Enrollment code:" : "Codice iscrizione:"}
               </span>
+              {!currentCourse.enrollmentOpen && (
+                <span className="rounded-full border border-red-400/35 bg-red-400/10 px-2.5 py-1 text-[11px] font-medium text-red-200">
+                  {lang === "en"
+                    ? "Enrollment closed — nobody can use it"
+                    : "Iscrizioni chiuse — con questo non entra nessuno"}
+                </span>
+              )}
               <code className="rounded-lg bg-charcoal/45 px-2.5 py-1.5 font-serif text-sm tracking-[0.14em] text-gold-light">
                 {currentCourse.enrollmentCode}
               </code>
@@ -178,6 +197,13 @@ export default function AdminHomePage() {
                   ? lang === "en" ? "Copied" : "Copiato"
                   : lang === "en" ? "Copy" : "Copia"}
               </button>
+              {copyFailed && (
+                <span className="text-[11px] text-red-200">
+                  {lang === "en"
+                    ? "Copy unavailable here — read it from the screen."
+                    : "Qui non si può copiare: leggilo da schermo."}
+                </span>
+              )}
             </div>
           </div>
         </section>

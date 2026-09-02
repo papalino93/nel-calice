@@ -193,28 +193,24 @@ export default function ManageCoursePage({
 
       <SessionControlCard detail={detail} />
 
-      <div id="impostazioni">
-        <CourseSettings detail={detail} onSaved={reload} />
-      </div>
+      {/* Gli `id` stanno ora sulle sezioni stesse (vedi AdminSection): su
+          questi contenitori l'ancora portava al punto giusto della pagina
+          ma lasciava la sezione richiusa. */}
+      <CourseSettings detail={detail} onSaved={reload} />
 
-      <div id="attestato">
-        <CertificateSection slug={slug} detail={detail} onSaved={reload} />
-      </div>
+      <CertificateSection slug={slug} detail={detail} onSaved={reload} />
 
-      <div id="lezioni">
-        <LessonsSection
-          slug={slug}
-          detail={detail}
-          available={available}
-          onChanged={reload}
-        />
-      </div>
+      <LessonsSection
+        slug={slug}
+        detail={detail}
+        available={available}
+        onChanged={reload}
+      />
 
-      <div id="materiali">
-        <MaterialsSection
-          owner={{ kind: "course", slug: detail.slug, courseId: detail.id }}
-        />
-      </div>
+      <MaterialsSection
+        sectionId="materiali"
+        owner={{ kind: "course", slug: detail.slug, courseId: detail.id }}
+      />
     </AdminShell>
   );
 }
@@ -324,7 +320,7 @@ function CourseTitles({
             />
           </Field>
         </div>
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button onClick={save} disabled={busy} className={buttonClass}>
             Salva
           </button>
@@ -353,6 +349,7 @@ function CertificateSection({
 }) {
   return (
     <AdminSection
+      id="attestato"
       title="Attestato"
       hint="Luogo, firma, loghi (o testo al loro posto) e l'anteprima che li mostra insieme — nell'ordine in cui si usano: si cambia qui sopra, si controlla qui sotto."
       defaultOpen={false}
@@ -430,7 +427,7 @@ function CertificateFields({
           partner, il nome resta qui ma l&apos;attestato mostra i riquadri,
           non lo scrive.
         </p>
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button onClick={save} disabled={busy} className={buttonClass}>
             Salva
           </button>
@@ -534,9 +531,24 @@ function LogosSection({
   }
 
   async function remove(id: string) {
+    if (
+      !window.confirm(
+        "Eliminare questo riquadro dall'attestato? Se è un'immagine, il file caricato viene rimosso e va ricaricato da capo.",
+      )
+    ) {
+      return;
+    }
     setBusy(true);
-    await api(`/api/admin/courses/${slug}/logos/${id}`, { method: "DELETE" });
+    const result = await api(`/api/admin/courses/${slug}/logos/${id}`, {
+      method: "DELETE",
+    });
     setBusy(false);
+    // L'esito non era controllato: se il server rifiutava, il riquadro
+    // tornava al suo posto col ricaricamento e sembrava un pulsante rotto.
+    if (!result.ok) {
+      setMsg("Non è stato possibile eliminare il riquadro.");
+      return;
+    }
     onChanged();
   }
 
@@ -777,6 +789,7 @@ function CourseSettings({
 
   return (
     <AdminSection
+      id="impostazioni"
       title="Impostazioni del corso"
       hint="Per iscriversi, il corsista entra prima con Google e poi inserisce questo codice nella sua area personale. Attiva le iscrizioni solo quando il codice è pronto da comunicare. Le durate valgono per ogni tentativo di questo corso."
       defaultOpen={false}
@@ -836,7 +849,7 @@ function CourseSettings({
           </label>
         </div>
 
-        <div className="mt-5 flex items-center gap-3">
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           <button onClick={save} disabled={busy} className={buttonClass}>
             Salva
           </button>
@@ -893,6 +906,7 @@ function LessonsSection({
 
   return (
     <AdminSection
+      id="lezioni"
       title="Composizione del corso"
       hint="Il corso è una selezione manuale di lezioni riusabili. Puoi creare una nuova lezione — che entra anche nel catalogo — oppure scegliere una lezione esistente. Rimuoverla da questo corso non la cancella dal catalogo né dagli altri corsi."
     >

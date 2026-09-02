@@ -61,9 +61,12 @@ export default function Home() {
       if (cancelled) return;
 
       if (!result.ok) {
-        // Su 401 `api` ha già chiuso la sessione: la schermata di accesso
-        // arriva da sé al render successivo.
-        if (result.status !== 401) setLoadError(true);
+        // Su 401 `api` chiede la chiusura della sessione, e normalmente la
+        // schermata di accesso arriva da sé al render successivo. Ma quella
+        // chiusura è a sua volta una richiesta di rete: se non riesce, lo
+        // stato resta "authenticated" e senza dati, cioè fermo per sempre su
+        // «Un momento…». La via d'uscita si mostra in ogni caso.
+        setLoadError(true);
         return;
       }
 
@@ -123,6 +126,10 @@ export default function Home() {
   }
 
   const currentCourse = data.courses[0];
+  // Il corso in evidenza NON si ripete nell'elenco sotto: con una sola
+  // iscrizione — il caso di quasi tutti — la stessa riga compariva due
+  // volte, in una card grande e poi in una piccola, con accanto «1 corso».
+  const otherCourses = data.courses.slice(1);
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-8 pb-28 sm:px-8">
@@ -133,7 +140,7 @@ export default function Home() {
           </span>
           <div className="min-w-0">
             <p className="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-gold/75">
-              {lang === "en" ? "Your personal area" : "La tua area personale"}
+              {t.personalArea}
             </p>
             <p className="truncate font-serif text-xl leading-tight text-cream">
               {data.user.name}
@@ -155,12 +162,10 @@ export default function Home() {
           <div className="mt-8 flex w-full flex-col items-center text-center">
             <Seal size={64} />
             <h1 className="mt-5 font-serif text-3xl text-cream">
-              {lang === "en" ? "Your wine journey starts here" : "Il tuo percorso comincia qui"}
+              {t.journeyStarts}
             </h1>
             <p className="mt-2 mb-5 max-w-sm text-sm leading-relaxed text-cream/65">
-              {lang === "en"
-                ? "Your quizzes, results and course materials will always be saved in this personal area."
-                : "Quiz, risultati e materiali del corso resteranno sempre salvati in questa area personale."}
+              {t.journeyStartsHint}
             </p>
             <EnrollForm onEnrolled={() => setReloads((n) => n + 1)} />
           </div>
@@ -169,59 +174,83 @@ export default function Home() {
             {currentCourse && (
               <section className="rounded-card border border-gold/40 bg-bordeaux/35 p-5 shadow-[0_14px_36px_rgba(0,0,0,0.2)]">
                 <p className="text-xs font-medium uppercase tracking-[0.16em] text-gold-light/90">
-                  {lang === "en" ? "Continue from here" : "Riprendi da qui"}
+                  {t.continueHere}
                 </p>
                 <h1 className="mt-1 font-serif text-2xl text-cream">
                   {pick(lang, currentCourse.titleIt, currentCourse.titleEn)}
                 </h1>
                 <p className="mt-1 text-sm text-cream/70">
-                  {pick(lang, currentCourse.subtitleIt, currentCourse.subtitleEn) || (lang === "en" ? "Your course is ready whenever you are." : "Il tuo corso è pronto quando lo sei tu.")}
+                  {pick(
+                    lang,
+                    currentCourse.subtitleIt,
+                    currentCourse.subtitleEn,
+                  ) || t.courseReady}
                 </p>
                 <Link
                   href={`/corso/${currentCourse.slug}`}
                   className="press lift mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-charcoal transition-transform"
                 >
-                  {lang === "en" ? "Open my course" : "Apri il mio corso"}
+                  {t.openMyCourse}
                   <ArrowRightIcon className="h-4 w-4" />
                 </Link>
               </section>
             )}
 
-            <div className="mt-8 flex items-end justify-between gap-4">
-            <h1 className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
-              {t.myCourses}
-            </h1>
-              <span className="mb-4 text-xs text-cream/50">
-                {data.courses.length} {data.courses.length === 1 ? (lang === "en" ? "course" : "corso") : (lang === "en" ? "courses" : "corsi")}
-              </span>
-            </div>
-            <ul className="flex flex-col gap-3">
-              {data.courses.map((course) => (
-                <li key={course.slug}>
-                  <Link
-                    href={`/corso/${course.slug}`}
-                    className="card lift press flex items-center justify-between gap-4 p-5 transition-transform"
-                  >
-                    <span className="min-w-0">
-                      <span className="block font-serif text-xl text-cream">
-                        {pick(lang, course.titleIt, course.titleEn)}
-                      </span>
-                      <span className="block truncate text-xs text-cream/55">
-                        {pick(lang, course.subtitleIt, course.subtitleEn)}
-                      </span>
-                    </span>
-                    <ArrowRightIcon className="h-5 w-5 shrink-0 text-gold" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            {otherCourses.length > 0 && (
+              <>
+                {/* Non è un `h1`: la pagina ne ha già uno, il titolo del
+                    corso in evidenza. Questa è un'etichetta di sezione. */}
+                <div className="mt-8 mb-4 flex items-end justify-between gap-4">
+                  <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
+                    {t.otherCourses}
+                  </h2>
+                  <span className="text-xs text-cream/60">
+                    {t.coursesCount(data.courses.length)}
+                  </span>
+                </div>
+                <ul className="flex flex-col gap-3">
+                  {otherCourses.map((course) => {
+                    const subtitle = pick(
+                      lang,
+                      course.subtitleIt,
+                      course.subtitleEn,
+                    );
+                    return (
+                      <li key={course.slug}>
+                        <Link
+                          href={`/corso/${course.slug}`}
+                          className="card lift press flex items-center justify-between gap-4 p-5 transition-transform"
+                        >
+                          <span className="min-w-0">
+                            <span className="block font-serif text-xl text-cream">
+                              {pick(lang, course.titleIt, course.titleEn)}
+                            </span>
+                            {/* Senza sottotitolo non si stampa una riga
+                                vuota, che lasciava uno spazio inspiegato. */}
+                            {subtitle && (
+                              <span className="block truncate text-xs text-cream/60">
+                                {subtitle}
+                              </span>
+                            )}
+                          </span>
+                          <ArrowRightIcon className="h-5 w-5 shrink-0 text-gold" />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
 
             <details className="mt-8 rounded-card border border-cream/10 p-4">
               <summary className="cursor-pointer text-center text-sm text-cream/45 hover:text-cream/70">
                 + {t.enrollTitle}
               </summary>
               <div className="mt-4 flex justify-center">
-                <EnrollForm onEnrolled={() => setReloads((n) => n + 1)} />
+                <EnrollForm
+                  autoFocus={false}
+                  onEnrolled={() => setReloads((n) => n + 1)}
+                />
               </div>
             </details>
           </div>

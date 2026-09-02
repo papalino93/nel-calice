@@ -15,7 +15,13 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/relatore", "/api", "/verifica"],
+      // `/corso/<slug>` è un muro di login: a chi non è iscritto mostra la
+      // schermata d'accesso, quindi non ha contenuto da indicizzare — e
+      // scansionarlo produrrebbe tante copie della stessa pagina d'ingresso
+      // quante sono le edizioni. Chi cerca deve trovare "/" o
+      // "/prossimi-corsi", che sono le due pagine scritte per essere lette
+      // da fuori.
+      disallow: ["/relatore", "/api", "/verifica", "/corso"],
     },
     sitemap: `${host}/sitemap.xml`,
   };

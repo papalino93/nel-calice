@@ -33,9 +33,20 @@ export async function POST(
       already_done: "Hai già svolto questa lezione.",
     }[outcome.reason];
 
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: outcome.reason, message }, { status });
   }
 
   const view = await attemptView(outcome.attemptId, ctx.enrollment);
+
+  // `attemptView` risponde `null` se il tentativo non è più in corso: può
+  // succedere riprendendone uno a un soffio dalla scadenza, che un'altra
+  // richiesta chiude nel frattempo. Prima si serializzava quel `null`
+  // (`{...null}` è `{}`) con un 200: il client riceveva un corpo senza
+  // domande né tempo, e si schiantava disegnando la prima domanda. È un
+  // conflitto, e va detto come tale — il quiz è chiuso, c'è un risultato.
+  if (!view) {
+    return NextResponse.json({ error: "already_done" }, { status: 409 });
+  }
+
   return NextResponse.json({ ...view, resumed: outcome.resumed });
 }

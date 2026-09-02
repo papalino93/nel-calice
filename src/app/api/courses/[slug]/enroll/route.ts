@@ -22,7 +22,12 @@ export async function POST(
   const outcome = await enrollWithCode(user.id, (await params).slug, code);
 
   if (outcome.ok) {
-    return NextResponse.json({ enrolled: true });
+    // Vedi /api/enroll: distinguere «iscritto ora» da «eri già iscritto»
+    // è l'unico modo perché il modulo possa dare un riscontro vero.
+    return NextResponse.json({
+      enrolled: true,
+      alreadyEnrolled: outcome.alreadyEnrolled,
+    });
   }
 
   const status = {

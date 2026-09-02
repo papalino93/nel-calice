@@ -15,20 +15,26 @@ import { useLanguage } from "@/components/LanguageProvider";
 export function EnrollForm({
   courseSlug,
   onEnrolled,
+  autoFocus = true,
 }: {
   /** Se presente, l'iscrizione è ristretta a questo corso. */
   courseSlug?: string;
   onEnrolled: () => void;
+  /** Da spegnere quando il modulo nasce dentro una sezione richiusa: il
+      fuoco automatico lì apriva la tastiera del telefono su un campo che
+      non si stava nemmeno guardando. */
+  autoFocus?: boolean;
 }) {
   const { t } = useLanguage();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,15 +42,25 @@ export function EnrollForm({
 
     setBusy(true);
     setError(null);
+    setDone(null);
 
     const url = courseSlug
       ? `/api/courses/${courseSlug}/enroll`
       : "/api/enroll";
-    const result = await post<{ enrolled: boolean }>(url, { code });
+    const result = await post<{ enrolled: boolean; alreadyEnrolled?: boolean }>(
+      url,
+      { code },
+    );
 
     setBusy(false);
 
     if (result.ok) {
+      // Il campo va svuotato e l'esito detto: prima restava il codice
+      // scritto e il pulsante tornava attivo senza che nulla cambiasse a
+      // schermo finché non arrivava il ricaricamento — su rete lenta si
+      // toccava «Iscriviti» una seconda volta, mandando due richieste.
+      setCode("");
+      setDone(result.data.alreadyEnrolled ? t.alreadyEnrolled : t.enrolled);
       onEnrolled();
       return;
     }
@@ -62,6 +78,7 @@ export function EnrollForm({
         onChange={(e) => {
           setCode(e.target.value);
           if (error) setError(null);
+          if (done) setDone(null);
         }}
         placeholder={t.enrollPlaceholder}
         autoComplete="off"
@@ -76,12 +93,18 @@ export function EnrollForm({
         </p>
       )}
 
+      {done && (
+        <p className="mt-3 text-center text-sm text-emerald-300" role="status">
+          {done}
+        </p>
+      )}
+
       <button
         type="submit"
         disabled={!code.trim() || busy}
-        className="press mt-5 w-full rounded-full bg-gold px-4 py-3 font-medium text-charcoal transition-opacity disabled:opacity-40"
+        className="press mt-5 min-h-11 w-full rounded-full bg-gold px-4 py-3 font-medium text-charcoal transition-opacity disabled:opacity-40"
       >
-        {t.enroll}
+        {busy ? t.checkingSession : t.enroll}
       </button>
     </form>
   );

@@ -338,7 +338,7 @@ function LessonFields({
             />
           </Field>
         </div>
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button onClick={save} className={buttonClass}>
             Salva
           </button>
@@ -489,7 +489,7 @@ function NewQuestion({
         Nuova domanda
       </p>
       <DraftFields draft={draft} setDraft={setDraft} />
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           onClick={create}
           disabled={!draft.textIt.trim()}

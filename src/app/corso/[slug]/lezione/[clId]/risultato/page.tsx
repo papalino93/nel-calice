@@ -28,6 +28,9 @@ type ReviewQuestion = {
 };
 
 type Review = {
+  /** Presente solo quando il tentativo è ancora aperto: in quel caso non
+      c'è nessuna correzione da mostrare, e i campi qui sotto non arrivano. */
+  status?: string;
   score: number;
   maxScore: number;
   timedOut: boolean;
@@ -55,8 +58,16 @@ export default function ResultPage({
       );
       if (cancelled) return;
 
-      if (!lesson.ok || !lesson.data.lesson.attemptId) {
-        setError(lesson.ok ? t.genericError : t.networkError);
+      // L'esito va letto dal risultato della richiesta, non dal suo
+      // contrario: prima una risposta arrivata (403, 404, 500) veniva
+      // annunciata come «connessione assente», e una riuscita senza
+      // tentativo come errore generico.
+      if (!lesson.ok) {
+        setError(lesson.offline ? t.networkError : t.genericError);
+        return;
+      }
+      if (!lesson.data.lesson.attemptId) {
+        setError(t.genericError);
         return;
       }
 
@@ -91,7 +102,33 @@ export default function ResultPage({
   if (!review) {
     return (
       <main className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-cream/50">{t.checkingSession}</p>
+        <p className="text-sm text-cream/60">{t.checkingSession}</p>
+      </main>
+    );
+  }
+
+  // Un tentativo ancora aperto non ha nulla da rivedere: il server risponde
+  // 200 con il solo stato, senza punteggio né correzioni. Renderlo come una
+  // revisione stampava «undefined/undefined», un messaggio da punteggio
+  // minimo calcolato su NaN, e ogni domanda segnata sbagliata senza
+  // risposta giusta. Qui si riconosce e si offre l'unica cosa sensata:
+  // tornare al quiz.
+  if (review.status === "in_corso") {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-sm text-cream/70">{t.quizStillOpen}</p>
+        <Link
+          href={`/corso/${slug}/lezione/${clId}/quiz`}
+          className="press lift inline-flex min-h-11 items-center rounded-full bg-gold px-6 py-3 text-sm font-medium text-charcoal"
+        >
+          {t.resumeQuiz}
+        </Link>
+        <Link
+          href={`/corso/${slug}`}
+          className="press inline-flex min-h-10 items-center text-sm text-cream/70 underline underline-offset-4"
+        >
+          {t.backToLessons}
+        </Link>
       </main>
     );
   }

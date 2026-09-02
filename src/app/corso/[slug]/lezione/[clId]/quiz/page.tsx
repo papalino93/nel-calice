@@ -41,6 +41,9 @@ export default function QuizPage({
   const [remaining, setRemaining] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [savingAnswer, setSavingAnswer] = useState(false);
+  // Un guasto durante il quiz non deve buttare fuori dalla prova: si mostra
+  // in fondo, sopra il pulsante, e il quiz resta dov'è.
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Evita doppie consegne se il timer scade mentre l'utente preme "Consegna".
   const submittedRef = useRef(false);
@@ -62,9 +65,25 @@ export default function QuizPage({
 
     // Il client non manda punteggi: chiede solo di chiudere. Il server
     // corregge da sé, con le risposte già salvate (§7.4).
-    await post(`/api/courses/${slug}/attempts/${attempt.attemptId}/submit`);
+    const result = await post(
+      `/api/courses/${slug}/attempts/${attempt.attemptId}/submit`,
+    );
+
+    // Se la consegna non arriva, il tentativo è ancora aperto sul server:
+    // mandare comunque alla pagina del risultato faceva credere di aver
+    // consegnato, e `submittedRef` impediva per sempre di riprovare. Qui si
+    // riapre il pulsante e si dice cosa è successo. Il 409 è l'eccezione:
+    // vuol dire che il tentativo era già chiuso (timer scattato altrove),
+    // quindi il risultato c'è davvero e si può andare a vederlo.
+    if (!result.ok && result.status !== 409) {
+      submittedRef.current = false;
+      setSubmitting(false);
+      setNotice(result.offline ? t.networkError : t.submitFailed);
+      return;
+    }
+
     router.replace(`/corso/${slug}/lezione/${clId}/risultato`);
-  }, [attempt, slug, clId, router]);
+  }, [attempt, slug, clId, router, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,11 +95,23 @@ export default function QuizPage({
       if (cancelled) return;
 
       if (!result.ok) {
-        if (result.status === 409) {
+        // 409 vale per due cose diverse: «l'hai già fatta» (e allora il
+        // risultato esiste, si va a vederlo) e «questa lezione non ha
+        // ancora domande» — che mandato al risultato diventava un vicolo
+        // cieco, perché di tentativo non ce n'è nessuno. Si distinguono
+        // sul codice mandato dal server, non sullo stato HTTP.
+        if (result.status === 409 && result.error !== "empty") {
           router.replace(`/corso/${slug}/lezione/${clId}/risultato`);
           return;
         }
-        setError(errorMessage(result, t));
+        // Il server manda un codice, non una frase: così la stessa causa si
+        // legge nella lingua scelta invece che sempre in italiano.
+        const byReason: Record<string, string> = {
+          empty: t.lessonEmptyTitle,
+          locked: t.lessonLocked,
+          not_found: t.lessonNotFound,
+        };
+        setError(byReason[result.error] ?? errorMessage(result, t));
         return;
       }
 
@@ -154,6 +185,7 @@ export default function QuizPage({
 
   async function choose(optionId: number) {
     setSelected(optionId);
+    setNotice(null);
     // Salvataggio immediato: allo scadere del tempo il server ha già in mano
     // le risposte date entro il termine.
     setSavingAnswer(true);
@@ -162,7 +194,14 @@ export default function QuizPage({
       { questionId: question.id, selectedOptionId: optionId },
     ).finally(() => setSavingAnswer(false));
     pendingSaveRef.current = request;
-    await request;
+    const result = await request;
+
+    // Un salvataggio fallito passava inosservato: l'opzione si accendeva
+    // d'oro e alla consegna quella risposta risultava «lasciata in bianco».
+    // Va detto subito, mentre si può ancora ritoccare.
+    if (!result.ok) {
+      setNotice(result.offline ? t.networkError : t.answerNotSaved);
+    }
   }
 
   async function next() {
@@ -193,7 +232,14 @@ export default function QuizPage({
     // conferma — "non verrà registrato nulla" — diventa falsa: al prossimo
     // tocco quel tentativo si chiude da sé come scaduto, con le risposte già
     // date. Meglio dirlo qui che lasciarlo scoprire dopo.
+    // Con la rete assente, però, non è «troppo tardi»: non è successo
+    // niente, e il quiz è ancora lì. Mandare via dicendo che il tentativo
+    // conterà come concluso sarebbe falso al contrario.
     if (!result.ok) {
+      if (result.offline) {
+        setNotice(t.exitFailed);
+        return;
+      }
       window.alert(t.exitTooLate);
     }
 
@@ -286,6 +332,17 @@ export default function QuizPage({
           e si sceglieva la risposta senza vedere come proseguire. Il fondo
           generoso tiene il pulsante donazione fuori dai piedi. */}
       <div className="sticky bottom-0 z-20 -mx-5 mt-auto bg-charcoal/95 px-5 pt-4 pb-20 backdrop-blur sm:-mx-8 sm:px-8">
+        {/* Sta qui, appiccicato al pulsante, perché è qui che si guarda nel
+            momento in cui qualcosa non è andato: una risposta non salvata o
+            una consegna non arrivata. */}
+        {notice && (
+          <p
+            role="alert"
+            className="mb-3 rounded-[10px] border border-red-400/35 bg-red-400/10 px-4 py-2.5 text-sm leading-snug text-red-200"
+          >
+            {notice}
+          </p>
+        )}
         <button
           onClick={() => void next()}
           disabled={selected === null || submitting || savingAnswer}

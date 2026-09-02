@@ -246,8 +246,23 @@ export async function createLessonInCourse(
  * numero 4, e la 5 resta la 5. È la stessa garanzia chiesta al §3.7b, qui
  * applicata al corso invece che al catalogo.
  */
-export async function removeLessonFromCourse(courseLessonId: string) {
-  return prisma.courseLesson.delete({ where: { id: courseLessonId } });
+/**
+ * Va vincolata al corso da cui si sta togliendo, non al solo id: la riga
+ * porta in cascata i tentativi e gli sblocchi degli iscritti di *quella*
+ * serata (schema.prisma, `onDelete: Cascade`), quindi un id di un altro
+ * corso — scambiato per sbaglio, o mandato a mano — cancellerebbe il lavoro
+ * di una classe che non si stava nemmeno guardando. `deleteMany` risponde
+ * con quante righe ha toccato: zero significa «non è di questo corso», e
+ * chi chiama lo traduce in "non trovato" invece di un 500 da Prisma.
+ */
+export async function removeLessonFromCourse(
+  courseSlug: string,
+  courseLessonId: string,
+) {
+  const { count } = await prisma.courseLesson.deleteMany({
+    where: { id: courseLessonId, course: { slug: courseSlug } },
+  });
+  return count > 0;
 }
 
 export type CourseLessonPatch = {
@@ -258,11 +273,15 @@ export type CourseLessonPatch = {
 };
 
 export async function updateCourseLesson(
+  courseSlug: string,
   courseLessonId: string,
   patch: CourseLessonPatch,
 ) {
-  const current = await prisma.courseLesson.findUnique({
-    where: { id: courseLessonId },
+  // Vincolata al corso del percorso, come la cancellazione qui sopra: un id
+  // di un'altra edizione non deve poter essere modificato passando dallo
+  // slug sbagliato.
+  const current = await prisma.courseLesson.findFirst({
+    where: { id: courseLessonId, course: { slug: courseSlug } },
     select: { courseId: true },
   });
   if (!current) return null;
@@ -357,7 +376,23 @@ export async function createCourse(input: {
   });
 }
 
+/**
+ * Una durata in minuti valida, o `null` se non lo è.
+ *
+ * Il campo svuotato nel modulo arriva come `0` e una cifra sbagliata come
+ * `NaN`: nessuno dei due è una durata, e nessuno dei due va scritto.
+ */
+function minutes(value: number | undefined): number | null {
+  if (value === undefined) return null;
+  if (!Number.isFinite(value)) return null;
+  const rounded = Math.round(value);
+  return rounded >= 1 ? rounded : null;
+}
+
 export async function updateCourse(slug: string, patch: CoursePatch) {
+  const lessonMinutes = minutes(patch.lessonTimerMinutes);
+  const examMinutes = minutes(patch.examTimerMinutes);
+
   return prisma.course.update({
     where: { slug },
     data: {
@@ -383,12 +418,13 @@ export async function updateCourse(slug: string, patch: CoursePatch) {
             enrollmentCodeLookup: codeLookup(patch.enrollmentCode),
           }
         : {}),
-      ...(patch.lessonTimerMinutes !== undefined
-        ? { lessonTimerMinutes: Math.max(1, patch.lessonTimerMinutes) }
-        : {}),
-      ...(patch.examTimerMinutes !== undefined
-        ? { examTimerMinutes: Math.max(1, patch.examTimerMinutes) }
-        : {}),
+      // Una durata svuotata nel modulo arriva qui come 0 (`Number("")`), e
+      // `Math.max(1, 0)` la trasformava in **un minuto** annunciando
+      // «Salvato»: il quiz successivo durava sessanta secondi. Un valore che
+      // non è un numero di minuti valido viene ignorato, lasciando quello
+      // che c'era — il pannello lo rilegge e mostra il vero.
+      ...(lessonMinutes !== null ? { lessonTimerMinutes: lessonMinutes } : {}),
+      ...(examMinutes !== null ? { examTimerMinutes: examMinutes } : {}),
     },
   });
 }
@@ -565,6 +601,18 @@ export async function createLesson(input: {
   return prisma.lesson.create({ data: input });
 }
 
+/**
+ * I campi arrivano dal corpo di una richiesta, quindi vanno scelti a mano
+ * uno per uno.
+ *
+ * Il tipo qui sotto descrive l'intenzione, ma a runtime non filtra niente:
+ * passare l'oggetto ricevuto direttamente a `data` significava accettare
+ * anche le operazioni sulle relazioni che Prisma conosce — `{"questions":
+ * {"deleteMany":{}}}` cancellava tutte le domande della lezione, e con esse
+ * (in cascata) le risposte già date, rispondendo «salvato». Solo questi
+ * cinque campi scalari possono passare; un valore del tipo sbagliato viene
+ * ignorato invece di far fallire la query.
+ */
 export async function updateLesson(
   lessonId: number,
   input: {
@@ -575,7 +623,33 @@ export async function updateLesson(
     notes?: string | null;
   },
 ) {
-  return prisma.lesson.update({ where: { id: lessonId }, data: input });
+  const raw = input as Record<string, unknown>;
+  const data: {
+    titleIt?: string;
+    titleEn?: string;
+    subtitleIt?: string | null;
+    subtitleEn?: string | null;
+    notes?: string | null;
+  } = {};
+
+  const text = (key: "titleIt" | "titleEn") => {
+    if (typeof raw[key] === "string") data[key] = raw[key] as string;
+  };
+  const nullableText = (key: "subtitleIt" | "subtitleEn" | "notes") => {
+    const value = raw[key];
+    if (typeof value === "string") data[key] = value;
+    else if (value === null) data[key] = null;
+  };
+
+  text("titleIt");
+  text("titleEn");
+  nullableText("subtitleIt");
+  nullableText("subtitleEn");
+  nullableText("notes");
+
+  if (Object.keys(data).length === 0) return null;
+
+  return prisma.lesson.update({ where: { id: lessonId }, data });
 }
 
 // ---------------------------------------------------------------------------

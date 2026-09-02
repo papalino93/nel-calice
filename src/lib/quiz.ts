@@ -397,9 +397,34 @@ export async function finalizeAttempt(
 
   // Una sola transazione: o il tentativo si chiude con tutte le sue risposte
   // corrette e il punteggio scritto, o non cambia nulla.
-  await prisma.$transaction([
-    ...result.answers.map((a) =>
-      prisma.attemptAnswer.upsert({
+  //
+  // La chiusura è un passaggio che può avvenire **una volta sola**, e la
+  // condizione va messa nella scrittura, non solo nella lettura di sopra:
+  // fra quella lettura e qui passano quattro query, e nel frattempo la
+  // stessa funzione può partire da un'altra richiesta — `courseOverview` la
+  // chiama con `timedOut: true` a ogni apertura del corso, di una lezione o
+  // di una dispensa. Senza questa condizione l'ultimo che scriveva vinceva:
+  // chi aveva consegnato in tempo poteva ritrovarsi registrato «scaduto»
+  // (o il contrario), con la correzione fatta due volte.
+  const claimed = await prisma.$transaction(async (tx) => {
+    const outcome = await tx.quizAttempt.updateMany({
+      where: { id: attemptId, status: AttemptStatus.IN_PROGRESS },
+      data: {
+        status: timedOut ? AttemptStatus.EXPIRED : AttemptStatus.SUBMITTED,
+        submittedAt: new Date(),
+        score: result.score,
+        maxScore: result.maxScore,
+        timedOut,
+      },
+    });
+
+    // Qualcun altro l'ha già chiuso: il suo esito resta, e qui non si
+    // scrive niente — nemmeno le risposte, che sarebbero quelle di una
+    // correzione ormai buttata.
+    if (outcome.count === 0) return false;
+
+    for (const a of result.answers) {
+      await tx.attemptAnswer.upsert({
         where: { attemptId_questionId: { attemptId, questionId: a.questionId } },
         create: {
           attemptId,
@@ -409,22 +434,26 @@ export async function finalizeAttempt(
           pointsAwarded: a.pointsAwarded,
         },
         update: {
+          // Anche l'opzione scelta, non solo il verdetto: senza di essa una
+          // risposta arrivata dopo la lettura di sopra restava scritta
+          // accanto a un `isCorrect` calcolato senza vederla, e la revisione
+          // mostrava la risposta giusta selezionata e segnata sbagliata.
+          selectedOptionId: a.selectedOptionId,
           isCorrect: a.isCorrect,
           pointsAwarded: a.pointsAwarded,
         },
-      }),
-    ),
-    prisma.quizAttempt.update({
+      });
+    }
+
+    return true;
+  });
+
+  if (!claimed) {
+    return prisma.quizAttempt.findUnique({
       where: { id: attemptId },
-      data: {
-        status: timedOut ? AttemptStatus.EXPIRED : AttemptStatus.SUBMITTED,
-        submittedAt: new Date(),
-        score: result.score,
-        maxScore: result.maxScore,
-        timedOut,
-      },
-    }),
-  ]);
+      include: { answers: true },
+    });
+  }
 
   return prisma.quizAttempt.findUnique({
     where: { id: attemptId },

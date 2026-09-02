@@ -39,6 +39,19 @@ export function normalizeCode(code: string): string {
   return code.trim().toUpperCase();
 }
 
+/**
+ * Un codice fatto di soli spazi non è un codice.
+ *
+ * Va fermato prima di scriverlo, non dopo: `normalizeCode(" ")` è la stringa
+ * vuota, e un codice vuoto salvato nel database rende vero il confronto con
+ * un `" "` mandato da chiunque — la serata si sbloccava, o l'iscrizione
+ * passava, senza sapere nulla. Le rotte che accettano un codice dal relatore
+ * chiamano questa prima di cifrare.
+ */
+export function isBlankCode(code: unknown): boolean {
+  return typeof code !== "string" || normalizeCode(code) === "";
+}
+
 export function encryptCode(code: string): string {
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key(), iv);

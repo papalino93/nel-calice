@@ -30,6 +30,23 @@ function canShareFiles(): boolean {
 }
 
 /**
+ * Il foglio di condivisione va preferito solo dove serve davvero, cioè sul
+ * telefono. Su Chrome desktop `canShare` con i file risponde sì, quindi un
+ * pulsante che dice «Scarica la pergamena» apriva il pannello di
+ * condivisione del sistema — la stessa cosa del pulsante WhatsApp accanto,
+ * e nessun modo di ottenere il file su disco. Il puntatore grosso distingue
+ * il telefono meglio di qualunque elenco di browser.
+ */
+function prefersShareSheet(): boolean {
+  if (!canShareFiles()) return false;
+  try {
+    return window.matchMedia("(pointer: coarse)").matches;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * L'attestato a schermo, con i suoi due modi di portarselo via.
  *
  * Sia il PNG che la stampa partono dallo stesso nodo SVG qui sotto: non
@@ -62,10 +79,17 @@ export function CertificateView({
     try {
       const file = await pngFile();
       if (!file) {
+        // Senza questo il click non produceva nulla e nessun messaggio:
+        // impossibile capire se stesse lavorando o fosse rotto.
+        setError(
+          lang === "en"
+            ? "Could not create the image. Try printing instead."
+            : "Non è stato possibile creare l'immagine. Prova con la stampa.",
+        );
         setBusy(false);
         return;
       }
-      if (canShareFiles()) {
+      if (prefersShareSheet()) {
         await navigator.share({ files: [file] });
       } else {
         downloadBlob(file, fileName);
@@ -108,6 +132,11 @@ export function CertificateView({
     try {
       const file = await pngFile();
       if (!file) {
+        setError(
+          lang === "en"
+            ? "Could not create the image. Try printing instead."
+            : "Non è stato possibile creare l'immagine. Prova con la stampa.",
+        );
         setBusy(false);
         return;
       }

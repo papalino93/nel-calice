@@ -83,13 +83,23 @@ export default function ClassPage({
   const [query, setQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "toVerify">("all");
 
+  // Una richiesta fallita lasciava `data` a null per sempre, cioè la pagina
+  // ferma su «Un momento…» senza errore né modo di riprovare: un 500 di
+  // passaggio, o la rete che salta un istante, e restava solo il
+  // ricaricamento a mano del browser.
+  const [loadFailed, setLoadFailed] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       const result = await api<ClassOverview>(
         `/api/admin/courses/${slug}/class`,
       );
-      if (!cancelled && result.ok) setData(result.data);
+      if (cancelled) return;
+      if (result.ok) {
+        setData(result.data);
+        setLoadFailed(false);
+      } else setLoadFailed(true);
     })();
     return () => {
       cancelled = true;
@@ -98,8 +108,22 @@ export default function ClassPage({
 
   if (!data) {
     return (
-      <main className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-cream/50">{t.checkingSession}</p>
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+        {loadFailed ? (
+          <>
+            <p className="text-sm text-cream/70">
+              Non è stato possibile caricare la classe.
+            </p>
+            <button
+              onClick={() => setReloads((n) => n + 1)}
+              className="press lift inline-flex min-h-11 items-center rounded-full bg-gold px-6 py-3 text-sm font-medium text-charcoal"
+            >
+              Riprova
+            </button>
+          </>
+        ) : (
+          <p className="text-sm text-cream/60">{t.checkingSession}</p>
+        )}
       </main>
     );
   }
@@ -465,12 +489,18 @@ function EnrollmentCard({
           >
             {student.email}
           </a>
-          <p className="mt-2 text-xs text-cream/45">
+          <p className="mt-2 text-xs text-cream/60">
             Iscritto il {formatDate(student.enrolledAt)}
           </p>
+          {/* Non disabilitato dal salvataggio della nota: `onBlur` scatta
+              già al premere del mouse, quindi il pulsante risultava
+              disabilitato prima che il click (al rilascio) arrivasse — il
+              primo tocco dopo aver scritto una nota andava perso, e
+              bisognava ripeterlo. Il salvataggio della nota ha una sua coda
+              (pendingNoteRef) che regge la sovrapposizione. */}
           <button
             onClick={() => void remove()}
-            disabled={busy !== null}
+            disabled={busy !== null && busy !== "note"}
             className="press mt-2 inline-flex min-h-8 items-center text-xs text-red-300/70 underline underline-offset-4 hover:text-red-300 disabled:opacity-40"
           >
             {busy === "remove" ? "Rimozione…" : "Togli dal corso"}
@@ -478,14 +508,14 @@ function EnrollmentCard({
         </div>
 
         <div className="min-w-44 rounded-xl border border-cream/10 bg-charcoal/25 p-3">
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-cream/50">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-cream/60">
             Pagamento
           </p>
           <p className={`mt-1 text-sm font-medium ${paid ? "text-emerald-200" : "text-gold"}`}>
             {paid ? "Pagato" : "Da verificare"}
           </p>
           {paid && student.paidAt && (
-            <p className="mt-0.5 text-xs text-cream/45">
+            <p className="mt-0.5 text-xs text-cream/60">
               Confermato il {formatDate(student.paidAt)}
             </p>
           )}
@@ -496,8 +526,8 @@ function EnrollmentCard({
                 "payment",
               )
             }
-            disabled={busy !== null}
-            className={`press mt-3 w-full rounded-full px-3 py-2 text-xs font-medium transition-opacity disabled:opacity-40 ${
+            disabled={busy !== null && busy !== "note"}
+            className={`press mt-3 min-h-10 w-full rounded-full px-3 py-2 text-xs font-medium transition-opacity disabled:opacity-40 ${
               paid
                 ? "border border-cream/20 text-cream/70 hover:text-cream"
                 : "bg-gold text-charcoal"
@@ -513,7 +543,7 @@ function EnrollmentCard({
       </div>
 
       <label className="mt-4 block">
-        <span className="mb-1.5 block text-xs font-medium uppercase tracking-[0.14em] text-cream/50">
+        <span className="mb-1.5 block text-xs font-medium uppercase tracking-[0.14em] text-cream/60">
           Nota interna
         </span>
         <textarea
@@ -622,18 +652,24 @@ function StudentCell({
   if (confirming) {
     return (
       <td className="p-2 text-center">
-        <div className="inline-flex items-center gap-1.5">
+        {/* Prima erano solo «Conferma» e «Annulla», senza dire cosa si
+            perde: l'azione cancella un tentativo già consegnato e il suo
+            punteggio, e non si torna indietro. */}
+        <p className="mb-1.5 text-[0.65rem] leading-snug text-cream/70">
+          Cancella il tentativo e il punteggio. Non si annulla.
+        </p>
+        <div className="inline-flex flex-wrap items-center justify-center gap-1.5">
           <button
             onClick={reset}
             disabled={busy}
-            className="press rounded-full bg-red-400/15 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-400/25"
+            className="press min-h-8 rounded-full bg-red-400/15 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-400/25"
           >
-            Conferma
+            {busy ? "Azzero…" : "Azzera"}
           </button>
           <button
             onClick={() => setConfirming(false)}
             disabled={busy}
-            className="press rounded-full px-2 py-1.5 text-xs text-cream/60 hover:text-cream/70"
+            className="press min-h-8 rounded-full px-2 py-1.5 text-xs text-cream/70 hover:text-cream"
           >
             Annulla
           </button>
@@ -661,7 +697,7 @@ function StudentCell({
           onClick={() => setConfirming(true)}
           title="Azzera il tentativo, perché lo rifaccia"
           aria-label="Azzera il tentativo"
-          className="press grid min-h-8 min-w-8 place-items-center rounded-full text-sm text-cream/25 transition-colors hover:text-red-300"
+          className="press grid min-h-8 min-w-8 place-items-center rounded-full text-sm text-cream/60 transition-colors hover:text-red-300"
         >
           ↺
         </button>

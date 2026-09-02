@@ -41,11 +41,20 @@ export async function GET(
     select: { lessonId: true },
   });
 
+  // Il controllo non è pignoleria: Prisma **scarta** un campo `undefined`,
+  // quindi con `courseLesson` nullo la clausola diventava `OR: [{}, …]` — e
+  // `{}` corrisponde a *ogni* dispensa di ogni corso, servita al corsista.
+  // Oggi non ci si arriva (il `clId` è già stato validato sopra), ma basta
+  // che il relatore tolga quella serata dal corso fra le due letture.
+  if (!courseLesson) {
+    return NextResponse.json({ error: "lezione inesistente" }, { status: 404 });
+  }
+
   // Dispense della lezione (dal catalogo) più quelle generali del corso.
   const materials = await prisma.material.findMany({
     where: {
       OR: [
-        { lessonId: courseLesson?.lessonId },
+        { lessonId: courseLesson.lessonId },
         { courseId: ctx.enrollment.courseId },
       ],
     },

@@ -55,6 +55,28 @@ const SERIF =
   "Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Times New Roman', serif";
 const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
+/**
+ * La misura del nome, ridotta quanto serve perché resti dentro la cornice.
+ *
+ * La cornice tratteggiata interna va da x=40 a x=960, cioè 920px utili; il
+ * corsivo Georgia occupa in media ~0.47em per carattere, quindi a 56px un
+ * nome tocca la cornice verso i 34 caratteri e a ~38 lo taglia il bordo
+ * dell'SVG. Invece di lasciarlo uscire si scala la misura, tenendo il nome
+ * comunque l'elemento più grande della pergamena.
+ */
+const NAME_MAX_WIDTH = 880;
+const NAME_MAX_SIZE = 56;
+const NAME_MIN_SIZE = 28;
+
+export function nameFontSize(name: string): number {
+  const length = Math.max(1, name.trim().length);
+  // ~0.47em per carattere, la media del corsivo Georgia.
+  const fitted = NAME_MAX_WIDTH / (length * 0.47);
+  return Math.round(
+    Math.max(NAME_MIN_SIZE, Math.min(NAME_MAX_SIZE, fitted)),
+  );
+}
+
 const GOLD = "#D4AF37";
 const GOLD_DEEP = "#A9822A";
 const GOLD_LIGHT = "#E9CE7E";
@@ -476,14 +498,20 @@ export function Certificate({
         {s.attestsThat}
       </text>
 
-      {/* Il nome: l'elemento più grande della pergamena */}
+      {/* Il nome: l'elemento più grande della pergamena.
+
+          La misura si riduce se il nome è lungo. A 56px il corsivo sfonda la
+          cornice dorata intorno ai 34 caratteri e viene tagliato dal bordo
+          dell'SVG verso i 38 — e i nomi arrivano dal profilo Google, dove
+          nessuno li accorcia. `textLength` non va bene qui: schiaccerebbe le
+          lettere invece di rimpicciolirle. */}
       <text
         x={cx}
         y="372"
         textAnchor="middle"
         fill={BORDEAUX}
         fontFamily={SERIF}
-        fontSize="56"
+        fontSize={nameFontSize(data.name)}
         fontStyle="italic"
       >
         {data.name}

@@ -23,7 +23,14 @@ export async function POST(request: Request) {
   const outcome = await enrollWithCodeOnly(user.id, code);
 
   if (outcome.ok) {
-    return NextResponse.json({ enrolled: true, slug: outcome.courseSlug });
+    // `alreadyEnrolled` va detto al client: un reinvio dello stesso
+    // codice riusciva in silenzio, indistinguibile da una prima
+    // iscrizione, quindi il modulo non poteva dirlo a chi l'ha fatto.
+    return NextResponse.json({
+      enrolled: true,
+      alreadyEnrolled: outcome.alreadyEnrolled,
+      slug: outcome.courseSlug,
+    });
   }
 
   const status = {

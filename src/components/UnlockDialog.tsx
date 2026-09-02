@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage, post } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 import { LockIcon } from "@/components/icons";
@@ -33,12 +33,22 @@ export function UnlockDialog({
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Chiudere mentre la richiesta è in volo perdeva lo sblocco: il server
+  // rispondeva sì, ma il componente era già smontato, quindi `onUnlocked` —
+  // e con esso il ricaricamento della lezione — non partiva mai. Il
+  // corsista restava davanti al lucchetto convinto che il codice fosse
+  // sbagliato. Finché si aspetta, la modale non si chiude.
+  const close = useCallback(() => {
+    if (busy) return;
+    onClose();
+  }, [busy, onClose]);
+
   useEffect(() => {
     inputRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [close]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,7 +75,7 @@ export function UnlockDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onClose}
+      onClick={close}
     >
       <div
         className="card rise-in w-full max-w-sm p-6"
@@ -115,17 +125,18 @@ export function UnlockDialog({
           <div className="mt-5 flex gap-2">
             <button
               type="button"
-              onClick={onClose}
-              className="press flex-1 rounded-full border border-cream/15 px-4 py-2.5 text-sm text-cream/70 transition-colors hover:text-cream"
+              onClick={close}
+              disabled={busy}
+              className="press min-h-11 flex-1 rounded-full border border-cream/15 px-4 py-2.5 text-sm text-cream/70 transition-colors hover:text-cream disabled:opacity-40"
             >
               {t.cancel}
             </button>
             <button
               type="submit"
               disabled={!code.trim() || busy}
-              className="press flex-1 rounded-full bg-gold px-4 py-2.5 text-sm font-medium text-charcoal transition-opacity disabled:opacity-40"
+              className="press min-h-11 flex-1 rounded-full bg-gold px-4 py-2.5 text-sm font-medium text-charcoal transition-opacity disabled:opacity-40"
             >
-              {t.confirm}
+              {busy ? t.checkingSession : t.confirm}
             </button>
           </div>
         </form>

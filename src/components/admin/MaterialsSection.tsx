@@ -46,8 +46,13 @@ export type MaterialsOwner =
 export function MaterialsSection({
   owner,
   onChanged,
+  sectionId,
 }: {
   owner: MaterialsOwner;
+  /** Ancora dei collegamenti rapidi della pagina del corso: sta sulla
+      sezione stessa, perché un `<details>` chiuso non si apre da solo
+      quando lo si raggiunge da un link. */
+  sectionId?: string;
   /** Chi mostra un conteggio dispense altrove (es. l'elenco a sinistra del
       master-detail del catalogo) va avvisato quando cambia, altrimenti resta
       fermo al valore di quando questo pannello si è aperto. */
@@ -84,6 +89,7 @@ export function MaterialsSection({
 
   return (
     <AdminSection
+      id={sectionId}
       title={owner.kind === "lesson" ? "Dispense" : "Dispense generali del corso"}
       hint={
         owner.kind === "lesson"
@@ -310,7 +316,7 @@ function UploadForm({
         </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           onClick={submit}
           disabled={busy || !titleIt.trim()}

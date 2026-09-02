@@ -45,6 +45,11 @@ export function CatalogueMasterDetail({
 }) {
   const [lessons, setLessons] = useState<Row[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // "Caricato" e "riuscito" non sono la stessa cosa: prima una richiesta
+  // fallita marcava comunque `loaded`, e il pannello annunciava «Il catalogo
+  // è vuoto. Scrivi la prima lezione qui sotto.» a un relatore che ne aveva
+  // sei — invitandolo a riscriverne una già esistente.
+  const [failed, setFailed] = useState(false);
   const [reloads, setReloads] = useState(0);
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
@@ -53,7 +58,12 @@ export function CatalogueMasterDetail({
     void (async () => {
       const result = await api<{ lessons: Row[] }>("/api/admin/catalogue");
       if (cancelled) return;
-      if (result.ok) setLessons(result.data.lessons);
+      if (result.ok) {
+        setLessons(result.data.lessons);
+        setFailed(false);
+      } else {
+        setFailed(true);
+      }
       setLoaded(true);
     })();
     return () => {
@@ -126,7 +136,19 @@ export function CatalogueMasterDetail({
               ))}
             </ul>
 
-            {loaded && lessons.length === 0 && (
+            {loaded && failed && (
+              <div className="card p-5 text-sm text-cream/70">
+                <p>Non è stato possibile leggere il catalogo.</p>
+                <button
+                  onClick={reload}
+                  className="press mt-3 inline-flex min-h-10 items-center rounded-full border border-gold/40 px-4 py-2 text-sm text-gold"
+                >
+                  Riprova
+                </button>
+              </div>
+            )}
+
+            {loaded && !failed && lessons.length === 0 && (
               <p className="card p-5 text-sm text-cream/60">
                 Il catalogo è vuoto. Scrivi la prima lezione qui sotto.
               </p>
@@ -167,8 +189,13 @@ function NewLesson({ onCreated }: { onCreated: () => void }) {
   const [subtitleIt, setSubtitleIt] = useState("");
   const [subtitleEn, setSubtitleEn] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  // Senza questo, due click (o una risposta lenta) creavano due lezioni
+  // identiche nel catalogo: il pulsante era gated solo sul titolo scritto.
+  const [busy, setBusy] = useState(false);
 
   async function create() {
+    if (busy) return;
+    setBusy(true);
     setMsg(null);
     const result = await post<{ id: number }>("/api/admin/catalogue", {
       titleIt,
@@ -176,6 +203,8 @@ function NewLesson({ onCreated }: { onCreated: () => void }) {
       subtitleIt: subtitleIt || null,
       subtitleEn: subtitleEn || null,
     });
+    setBusy(false);
+
     if (result.ok) {
       setTitleIt("");
       setTitleEn("");
@@ -222,13 +251,13 @@ function NewLesson({ onCreated }: { onCreated: () => void }) {
           </Field>
         </div>
 
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             onClick={create}
-            disabled={!titleIt.trim()}
+            disabled={busy || !titleIt.trim()}
             className={buttonClass}
           >
-            Crea lezione
+            {busy ? "Creazione…" : "Crea lezione"}
           </button>
           {msg && <span className="text-sm text-red-300">{msg}</span>}
         </div>

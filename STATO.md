@@ -249,9 +249,16 @@ che quel renderer non sa disegnare), `robots.ts` (esclude `/relatore`,
 `/verifica/<codice>` porta il nome vero di una persona e ha già un
 `noindex` proprio sulla pagina, escluderla anche qui evita pure la
 scansione, non solo l'indicizzazione — trovato durante un check completo
-della sessione) e `sitemap.ts` (una sola voce, "/" — ogni altra pagina
-richiede un accesso, quindi per un motore di ricerca sarebbe comunque solo
-una schermata d'ingresso).
+della sessione) e `sitemap.ts` (due voci, "/" e "/prossimi-corsi" — ogni
+altra pagina richiede un accesso, quindi per un motore di ricerca sarebbe
+comunque solo una schermata d'ingresso).
+
+Da un giro successivo, su tutto il sito: `robots.ts` esclude ora anche
+`/corso` (è un muro di login: a chi non è iscritto mostra la schermata
+d'accesso, e scansionarlo produrrebbe tante copie della stessa pagina
+d'ingresso quante sono le edizioni), e il `canonical` **non sta più nel
+layout**. Stava lì, e i metadati del layout si ereditano: ogni pagina del
+sito dichiarava la home come proprio indirizzo canonico.
 
 Verificato tutto avviando l'app per davvero (non solo a occhio sul codice):
 letti i meta tag e l'immagine che il browser riceverebbe, entrambi corretti.
@@ -585,10 +592,180 @@ cima. Una dispensa che gira ora si risale a chi l'ha aperta.
    al corso (l'edizione), non alla lezione di catalogo, che resta condivisa
    fra edizioni diverse con calendari diversi.
 
+## Revisione completa del sito (sette aree in parallelo)
+
+Giro di UX e caccia ai bug su **tutto** il sito, non su una parte: ingresso
+e iscrizione, percorso del corsista, pagine pubbliche, rotte del corsista,
+attestato, area relatore, rotte admin. Corretti in quel giro:
+
+**Perdite di dati e falsi successi (i più gravi)**
+
+- **La consegna del quiz poteva fingere di essere riuscita.** L'esito della
+  chiamata non era controllato: se non arrivava al server (rete che cade in
+  sala), il corsista veniva portato comunque sulla pagina del risultato — e
+  `submittedRef` impediva per sempre di riprovare. Ora il quiz resta aperto
+  e lo dice.
+- **La pagina del risultato rendeva un tentativo ancora aperto come una
+  revisione rotta:** «undefined/undefined», messaggio da punteggio minimo
+  calcolato su NaN, ogni domanda segnata sbagliata senza risposta giusta. Il
+  server risponde 200 con il solo stato `in_corso`, che nessuno guardava.
+  Ora si riconosce e si offre di riprendere il quiz.
+- **Una risposta non salvata passava inosservata:** l'opzione si accendeva
+  d'oro e alla consegna contava come «lasciata in bianco». Ora si dice
+  subito, mentre si può ancora ritoccare.
+- **La chiusura di un tentativo non era un passaggio unico.** La condizione
+  stava nella lettura, non nella scrittura, e fra le due passano quattro
+  query: `courseOverview` la chiama a ogni apertura di corso, lezione o
+  dispensa, quindi chi consegnava in tempo poteva ritrovarsi registrato
+  «scaduto» (o il contrario), con la correzione fatta due volte. Ora la
+  condizione è nella `updateMany`, e chi arriva secondo non scrive nulla.
+  Nello stesso punto, l'`upsert` riscrive anche `selectedOptionId`: senza,
+  la revisione poteva mostrare la risposta giusta selezionata **e** segnata
+  sbagliata.
+- **Sbloccare una serata chiudendo la modale perdeva lo sblocco riuscito:**
+  il server diceva sì, ma il componente era già smontato e il ricaricamento
+  non partiva. Finché si aspetta, la modale non si chiude.
+
+**Cancellazioni oltre il dovuto**
+
+- **`DELETE` di una serata non era vincolata al corso del percorso.** Lo
+  slug non veniva usato: un id di un'altra edizione portava via in cascata
+  **tutti i tentativi e gli sblocchi** di quella classe, rispondendo
+  «rimosso». Ora la riga si tocca solo se è di quel corso; la `PATCH` della
+  stessa rotta è stata vincolata allo stesso modo.
+- **La `PATCH` del catalogo passava il JSON grezzo dentro Prisma.**
+  `{"questions":{"deleteMany":{}}}` cancellava tutte le domande di una
+  lezione — e con esse, in cascata, le risposte già date — rispondendo
+  «salvato». Ora passano solo cinque campi scalari, scelti a mano.
+
+**Cose che si potevano indovinare o rompere**
+
+- **Un codice di soli spazi diventava il codice vuoto**, e un codice vuoto
+  salvato rendeva vero il confronto con qualunque stringa di spazi: la
+  serata si sbloccava, o l'iscrizione passava, senza sapere niente. Nuova
+  `isBlankCode()` in `codes.ts`, con cinque test che **non** richiedono
+  `UNLOCK_CODE_KEY` (quindi passano su una macchina appena clonata).
+- **Svuotare una durata la portava a un minuto** annunciando «Salvato»:
+  `Number("")` è 0, e `Math.max(1, 0)` è 1. Ora un valore non valido viene
+  ignorato invece di essere scritto.
+- **`/verifica/<codice>` si schiantava su qualunque codice con `%`:** il
+  segmento arriva già decodificato da Next, e decodificarlo di nuovo lancia
+  `URIError` — il visitatore vedeva la pagina d'errore di Next invece del
+  messaggio scritto apposta lì sotto.
+- **Una clausola `OR` con un campo `undefined`** diventava `OR: [{}, …]`,
+  e `{}` corrisponde a *ogni* dispensa di ogni corso. Non raggiungibile
+  oggi, ma bastava che il relatore togliesse quella serata dal corso fra
+  due letture.
+- **`localStorage` non protetto durante il render** poteva rendere bianca
+  **ogni** pagina (Safari coi cookie bloccati, webview con i dati del sito
+  disattivati): il `LanguageProvider` avvolge tutta l'applicazione.
+
+**Vicoli ciechi e schermate bloccate**
+
+- Home ferma per sempre su «Un momento…» dopo un 401 se la chiusura di
+  sessione (che è a sua volta una richiesta di rete) non riusciva.
+- Pagina della classe, impostazioni relatore, editor di lezione e Diretta:
+  una richiesta fallita lasciava tutte e quattro su «Un momento…» /
+  «Caricamento…», senza errore né modo di riprovare. Ora dicono cosa è
+  successo e offrono «Riprova».
+- Il catalogo annunciava «è vuoto, scrivi la prima lezione» quando la
+  richiesta era semplicemente fallita, invitando a duplicarne una esistente.
+- Il 409 «questa lezione non ha ancora domande» era trattato come «già
+  fatta» e mandava a un risultato che non esiste.
+- `POST .../attempt` poteva rispondere **200 con un corpo vuoto**
+  (`{...null}` è `{}`) e il quiz si schiantava disegnando la prima domanda.
+  Ora è un 409.
+- Il pulsante di accesso Google non aveva stato di attesa né errore:
+  offline non faceva assolutamente nulla, per sempre.
+- «Scarica la pergamena» non salvava niente su Firefox (link non attaccato
+  al documento, e indirizzo del blob revocato nello stesso giro del click),
+  e su Chrome desktop apriva il pannello di condivisione invece di scaricare.
+
+**UX e leggibilità**
+
+- La home mostrava **lo stesso corso due volte** (card grande + elenco) con
+  accanto «1 corso», e aveva **due `<h1>`**.
+- I collegamenti rapidi della pagina del corso portavano a **sezioni
+  richiuse**: l'`id` stava su un contenitore fuori dal `<details>`, che non
+  si apre da sé quando lo si raggiunge con un'ancora. Ora `AdminSection`
+  accetta un `id` e l'ancora apre davvero la sezione.
+- Cancellare un logo non chiedeva conferma (ogni altra azione distruttiva
+  sì), e l'esito non era controllato.
+- Il primo click dopo aver scritto una nota nella pagina classe **veniva
+  ingoiato**: `onBlur` scatta al premere del mouse e disabilitava i pulsanti
+  prima che il click arrivasse al rilascio.
+- La conferma di azzeramento di un tentativo non diceva cosa si perde.
+- Doppio invio che creava due lezioni identiche in catalogo.
+- Un corso **archiviato** era presentato come «Corso da preparare», e
+  `enrollmentOpen` era letto dall'API e mai mostrato: il relatore dettava il
+  codice in aula e ogni iscrizione veniva rifiutata senza spiegazione.
+- Nome lungo sull'attestato: a 56px il corsivo sfonda la cornice verso i 34
+  caratteri e viene tagliato verso i 38 — e i nomi arrivano dal profilo
+  Google, dove nessuno li accorcia. Ora la misura si riduce quanto serve.
+- Contrasto sotto il minimo WCAG AA in più punti (il piè di pagina col
+  numero di versione era a `cream/25`, circa 2:1) e bersagli sotto i 40px
+  sulla pagina che si raggiunge col QR — dove i tre numeri di telefono sono
+  le uniche vie d'iscrizione reali. Verificato in un browser vero, a 390px
+  e 1440px: nessun bersaglio piccolo rimasto su home e `/prossimi-corsi`.
+- `/prossimi-corsi`: l'occhiello «CORSI IN PARTENZA» compariva **due
+  volte**, «6 serate a tema, con esame finale» contraddiceva il programma
+  (che elenca 5 serate a tema + esame, cioè 6 in tutto), e la citazione in
+  fondo ripeteva quasi parola per parola l'apertura della descrizione.
+- Iscrizione: nessun riscontro dopo il codice giusto (campo ancora pieno,
+  pulsante riattivo) e reinvio indistinguibile da una prima iscrizione;
+  le rotte dicono ora `alreadyEnrolled`.
+
 ## Difetti trovati e non ancora corretti
 
-Da tre revisioni approfondite. Ordinati per quanto costano davvero. Chi ne
-corregge uno, tolga la voce.
+Da tre revisioni approfondite, più il giro completo qui sopra. Ordinati per
+quanto costano davvero. Chi ne corregge uno, tolga la voce.
+
+### Trovati nel giro completo, non ancora corretti
+
+Sono i tre che **non** sono stati toccati perché cambiano un contratto o
+vanno provati contro un database vero, non perché siano piccoli:
+
+- **Le domande servite non vengono fotografate all'avvio del tentativo.**
+  `finalizeAttempt` e `attemptView` rileggono `question.findMany` dal vivo,
+  e `grade` divide per il numero di domande di *adesso*. Se il relatore
+  aggiunge una domanda mentre la classe risponde — che è esattamente ciò
+  per cui esiste la Diretta — chi ha risposto giusto a tutte e otto si vede
+  8/9, e in revisione compare una nona domanda che non gli è mai stata
+  mostrata, segnata sbagliata. Serve salvare l'elenco servito all'avvio:
+  è una decisione di modello, e va verificata con `npm run test:db`.
+- **Il codice dell'attestato può contenere I, L, O, U.** `verification.ts`
+  dichiara l'alfabeto Crockford ("niente I, L, O, U") ma solo la *firma* lo
+  usa: il localizzatore è `enrollmentId.slice(0,8)`, e gli id sono cuid in
+  base36. Chi legge `L` come `1` su una pergamena stampata si sente dire
+  «Nessun attestato con questo codice» per un attestato vero. Cambiare la
+  generazione romperebbe la verifica di **ogni attestato già scaricato**
+  (il codice è dentro il PNG): la strada buona è tollerare i confondibili
+  in lettura, non cambiare ciò che si stampa.
+- **La `PUT` di una domanda non controlla che appartenga al `lessonId` del
+  percorso**, e il controllo «ha già risposte» sta fuori dalla scrittura:
+  fra il controllo e la transazione un corsista può rispondere, e le
+  opzioni ricreate portano `selectedOptionId` a NULL
+  (`ON DELETE SET NULL`) — risposta graded in bianco, zero punti, nessun
+  errore a nessuno dei due. Succede proprio durante una modifica a quiz
+  aperto.
+
+Minori dello stesso giro, non corretti: la promozione della prova finale
+retrocede la precedente **prima** della scrittura che può fallire (fuori
+transazione: un errore lascia il corso senza esame, e i punti si
+ridistribuiscono su tutte le lezioni); `MAX_COURSE_LOGOS` è contato prima
+della scrittura, quindi due richieste insieme fanno cinque riquadri; il
+registro delle letture è scritto con `void ... .catch(() => {})` senza
+`waitUntil`, e su serverless l'invocazione può chiudersi prima; la Diretta
+non salta un giro se il precedente è ancora in volo; `POST
+/api/admin/materials` accetta `url` verbatim, quindi si può creare una
+dispensa il cui file risponde sempre 404.
+
+**Non risolto e da decidere, non un bug:** su `/prossimi-corsi` il pulsante
+principale «Iscriviti a questo corso» porta a `/corso/<slug>`, che a chi
+non è iscritto chiede prima Google e poi **il codice detto in aula** — un
+codice che chi arriva dalla locandina non può avere. Le vie d'iscrizione
+vere sono i tre numeri di telefono più in basso. Non toccato apposta:
+cambiare il pulsante principale di quella pagina è una scelta di prodotto.
 
 ### Punteggi e attestato — risolti
 
@@ -627,13 +804,16 @@ Resta aperto:
 
 ### Quiz
 
-- **Un tentativo scaduto resta "Riprendi".** Nessuno chiude i tentativi
-  scaduti finché qualcuno non li tocca: la dashboard invita a riprendere, e
-  premendo si viene sbalzati su un risultato consegnato che non si è mai
-  consegnato, senza spiegazione.
-- **L'ultima risposta può perdersi.** Il salvataggio della risposta non viene
-  atteso prima di abilitare la consegna: toccando l'opzione e subito
-  «Consegna», su rete lenta, la risposta giusta viene contata sbagliata.
+- **Risolto: un tentativo scaduto non resta più "Riprendi".**
+  `courseOverview` chiude i tentativi `IN_PROGRESS` già scaduti prima
+  ancora di costruire le card, con lo stesso conteggio della consegna vera:
+  aprire il corso è di per sé "toccarlo". Da questo giro quella chiusura è
+  anche un passaggio unico (vedi la revisione completa qui sopra).
+- **Risolto: l'ultima risposta non si perde più.** `next()` — e quindi
+  «Consegna» sull'ultima domanda — aspetta `pendingSaveRef` prima di
+  proseguire, e il pulsante resta disabilitato mentre `savingAnswer` è
+  vero. Da questo giro, se quel salvataggio *fallisce*, lo si dice invece
+  di lasciarlo scoprire alla consegna.
 - **Risolto: «Esci» non mentiva più quando il tempo era già scaduto.** Il
   pulsante prometteva "non verrà registrato nulla" e poi ignorava se
   l'abbandono fosse davvero riuscito; se il tempo era già scaduto nell'istante
@@ -749,9 +929,15 @@ urgente.
 
 ### Test
 
-`npm test` fallisce su una macchina appena clonata: 6 test su 58 chiedono
-`UNLOCK_CODE_KEY`, che non ha né configurazione né file di setup. E le
-suite coprono solo le funzioni pure: nessun test unitario tocca l'avvio, la
-consegna, l'abbandono, lo sblocco o l'iscrizione — cioè esattamente i punti
-dove sono stati trovati i difetti di sopra (`npm run test:db`, che li tocca,
-serve solo un Postgres vero — vedi sopra).
+`npm test` fallisce su una macchina appena clonata: 6 test su 64 chiedono
+`UNLOCK_CODE_KEY`, che non ha né configurazione né file di setup — gli
+altri 58 passano. E le suite coprono solo le funzioni pure: nessun test
+unitario tocca l'avvio, la consegna, l'abbandono, lo sblocco o
+l'iscrizione — cioè esattamente i punti dove sono stati trovati i difetti
+di sopra (`npm run test:db`, che li tocca, serve solo un Postgres vero —
+vedi sopra).
+
+`src/lib/codes.test.ts` è il primo passo nella direzione giusta: cinque
+test su `normalizeCode` e `isBlankCode` che **non** richiedono la chiave,
+perché normalizzare non ha bisogno di cifrare. Le prossime funzioni pure
+estratte da quei punti dovrebbero seguire lo stesso schema.

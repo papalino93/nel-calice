@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
 import { ChevronDownIcon, Seal } from "@/components/icons";
 
@@ -75,22 +75,46 @@ export function AdminShell({
  * alla chiusura). `defaultOpen` decide solo il primo caricamento della
  * pagina: da lì in poi è il relatore a scegliere cosa vedere, sezione per
  * sezione, invece di scorrere sempre tutto quanto insieme.
+ *
+ * `id` serve ai collegamenti rapidi in cima alla pagina del corso. Non basta
+ * metterlo su un contenitore: un `<details>` chiuso non si apre da sé
+ * quando lo si raggiunge con un'ancora, quindi «1. Iscrizioni» portava a una
+ * sezione richiusa, senza niente da compilare sotto il titolo. Qui l'ancora
+ * apre davvero la sezione a cui punta.
  */
 export function AdminSection({
+  id,
   title,
   hint,
   defaultOpen = true,
   children,
 }: {
+  id?: string;
   title: string;
   hint?: string;
   defaultOpen?: boolean;
   children: ReactNode;
 }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    const openIfTargeted = () => {
+      if (window.location.hash !== `#${id}`) return;
+      const node = ref.current;
+      if (!node) return;
+      node.open = true;
+      node.scrollIntoView({ block: "start", behavior: "smooth" });
+    };
+    openIfTargeted();
+    window.addEventListener("hashchange", openIfTargeted);
+    return () => window.removeEventListener("hashchange", openIfTargeted);
+  }, [id]);
+
   return (
-    <details className="group mt-9" open={defaultOpen}>
+    <details ref={ref} id={id} className="group mt-9 scroll-mt-4" open={defaultOpen}>
       <summary className="list-none [&::-webkit-details-marker]:hidden">
-        <div className="press -mx-1 flex cursor-pointer items-start gap-2 rounded-lg px-1 py-1">
+        <div className="press -mx-1 flex min-h-10 cursor-pointer items-start gap-2 rounded-lg px-1 py-2">
           <ChevronDownIcon className="mt-0.5 h-4 w-4 flex-none text-gold/60 transition-transform group-open:rotate-180" />
           <div className="min-w-0">
             <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-gold/80">

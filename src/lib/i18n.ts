@@ -45,7 +45,25 @@ const it = {
   exitConfirm: "Vuoi davvero abbandonare il quiz? Non verrà registrato nulla.",
   exitTooLate:
     "Il tempo è già scaduto: questo tentativo conterà come concluso, con le risposte date finora.",
+  exitFailed:
+    "Non è stato possibile abbandonare il quiz. Controlla la rete e riprova.",
   timeUp: "Tempo scaduto",
+  // La consegna può non arrivare al server (rete che cade in sala): il quiz
+  // resta aperto e si può riprovare, invece di far credere di aver consegnato.
+  submitFailed:
+    "La consegna non è arrivata al server. Il quiz è ancora aperto: riprova.",
+  retry: "Riprova",
+  answerNotSaved: "Questa risposta non è stata salvata. Toccala di nuovo.",
+  lessonEmptyTitle: "Questa lezione non ha ancora domande.",
+  lessonLocked: "Questa serata è ancora bloccata.",
+  lessonNotFound: "Questa lezione non esiste.",
+  quizStillOpen: "Questo quiz è ancora in corso.",
+  resumeQuiz: "Riprendi il quiz",
+  questionsCount: (n: number) => `${n} ${n === 1 ? "domanda" : "domande"}`,
+  quizResumeHint:
+    "Il tempo e le risposte già date restano salvati: se chiudi la pagina, riprendi da dove eri.",
+  quizStartHint:
+    "Quando sei pronto/a, avvia il quiz: il tempo parte da questo momento.",
   // Risultato
   yourScore: "Il tuo punteggio",
   reviewQuestions: "Rivedi le domande",
@@ -60,6 +78,17 @@ const it = {
   noMaterials: "Nessuna dispensa per questa lezione, per ora.",
   // Corsi e iscrizione
   myCourses: "I tuoi corsi",
+  otherCourses: "Gli altri tuoi corsi",
+  coursesCount: (n: number) => `${n} ${n === 1 ? "corso" : "corsi"}`,
+  personalArea: "La tua area personale",
+  journeyStarts: "Il tuo percorso comincia qui",
+  journeyStartsHint:
+    "Quiz, risultati e materiali del corso resteranno sempre salvati in questa area personale.",
+  continueHere: "Riprendi da qui",
+  courseReady: "Il tuo corso è pronto quando lo sei tu.",
+  openMyCourse: "Apri il mio corso",
+  enrolled: "Iscrizione confermata.",
+  alreadyEnrolled: "Sei già iscritto a questo corso.",
   noCoursesYet: "Non sei ancora iscritto a nessun corso.",
   enrollTitle: "Codice del corso",
   enrollHint: "Il relatore lo comunica a voce alla prima serata.",
@@ -107,7 +136,22 @@ const en: Strings = {
   exitConfirm: "Really leave the quiz? Nothing will be recorded.",
   exitTooLate:
     "Time had already run out: this attempt will count as concluded, with whatever you'd answered so far.",
+  exitFailed: "Could not leave the quiz. Check your connection and try again.",
   timeUp: "Time's up",
+  submitFailed:
+    "Your submission never reached the server. The quiz is still open: try again.",
+  retry: "Try again",
+  answerNotSaved: "This answer was not saved. Tap it again.",
+  lessonEmptyTitle: "This lesson has no questions yet.",
+  lessonLocked: "This evening is still locked.",
+  lessonNotFound: "This lesson does not exist.",
+  quizStillOpen: "This quiz is still open.",
+  resumeQuiz: "Resume the quiz",
+  questionsCount: (n: number) => `${n} ${n === 1 ? "question" : "questions"}`,
+  quizResumeHint:
+    "The time left and the answers you've given stay saved: if you close the page, you pick up where you were.",
+  quizStartHint:
+    "When you're ready, start the quiz: the clock starts from this moment.",
   yourScore: "Your score",
   reviewQuestions: "Review the questions",
   onlyErrors: "Mistakes only",
@@ -119,6 +163,17 @@ const en: Strings = {
   materials: "Course Material",
   noMaterials: "No handouts for this lesson yet.",
   myCourses: "Your courses",
+  otherCourses: "Your other courses",
+  coursesCount: (n: number) => `${n} ${n === 1 ? "course" : "courses"}`,
+  personalArea: "Your personal area",
+  journeyStarts: "Your wine journey starts here",
+  journeyStartsHint:
+    "Your quizzes, results and course materials will always be saved in this personal area.",
+  continueHere: "Continue from here",
+  courseReady: "Your course is ready whenever you are.",
+  openMyCourse: "Open my course",
+  enrolled: "You're enrolled.",
+  alreadyEnrolled: "You are already enrolled in this course.",
   noCoursesYet: "You are not enrolled in any course yet.",
   enrollTitle: "Course code",
   enrollHint: "The host says it out loud on the first evening.",

@@ -95,10 +95,23 @@ export default function LiveLessonPage({
     };
   }, [slug, clId]);
 
+  // L'errore era calcolato ma mostrato solo dentro il ramo già caricato:
+  // se la PRIMA lettura fallisce (lezione tolta dal corso → 404, o un 500),
+  // `data` resta null e la pagina diceva «Caricamento…» all'infinito,
+  // continuando a ritentare in silenzio ogni quattro secondi.
   if (!data) {
     return (
-      <main className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-cream/50">Caricamento…</p>
+      <main className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+        {error ? (
+          <>
+            <p className="text-sm text-cream/70">{error}</p>
+            <p className="text-xs text-cream/60">
+              Riprova da sé ogni {POLL_MS / 1000} secondi.
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-cream/60">Caricamento…</p>
+        )}
       </main>
     );
   }

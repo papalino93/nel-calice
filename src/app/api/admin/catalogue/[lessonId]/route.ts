@@ -36,6 +36,24 @@ export async function PATCH(
     return NextResponse.json({ error: "dati non validi" }, { status: 400 });
   }
 
-  await updateLesson(Number((await params).lessonId), body);
+  // Guardia sull'id come nella GET qui sopra: `Number("x")` è NaN, e finiva
+  // dentro Prisma come id, che rispondeva con un errore non gestito (500).
+  const lessonId = Number((await params).lessonId);
+  if (!Number.isInteger(lessonId)) {
+    return NextResponse.json({ error: "lezione non valida" }, { status: 400 });
+  }
+
+  try {
+    const saved = await updateLesson(lessonId, body);
+    if (!saved) {
+      return NextResponse.json(
+        { error: "Nessun campo da salvare." },
+        { status: 400 },
+      );
+    }
+  } catch {
+    return NextResponse.json({ error: "lezione inesistente" }, { status: 404 });
+  }
+
   return NextResponse.json({ saved: true });
 }

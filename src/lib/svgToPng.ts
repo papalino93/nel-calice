@@ -7,8 +7,8 @@
  * lo si rasterizza. Se il disegno cambia, il PNG cambia con lui, per
  * costruzione.
  *
- * Il fattore 3 serve alla stampa: 3000×2100 px su un foglio A4 orizzontale
- * sono circa 250 dpi.
+ * Il fattore 3 serve alla stampa: a 1000×760 di pergamena fa 3000×2280 px,
+ * circa 250 dpi su un foglio A4 orizzontale.
  */
 export async function svgToPngBlob(
   svg: SVGSVGElement,
@@ -57,9 +57,18 @@ export async function svgToPngBlob(
  * ripiego (§7.17).
  */
 export function downloadBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
+  link.href = url;
   link.download = fileName;
+  // Il link va attaccato al documento: Firefox ignora il click su un nodo
+  // che non è nel DOM, e il salvataggio non partiva — silenziosamente.
+  link.style.display = "none";
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(link.href);
+  link.remove();
+  // E l'indirizzo si revoca DOPO, non nello stesso giro: revocarlo subito
+  // correva contro la lettura del blob da parte del browser, che a volte
+  // arrivava a mani vuote.
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

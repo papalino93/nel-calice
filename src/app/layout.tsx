@@ -35,7 +35,10 @@ export const metadata: Metadata = {
     template: "%s — L'Angolo del Vino",
   },
   description: DESCRIPTION,
-  alternates: { canonical: "/" },
+  // Nessun canonical qui: i metadati del layout si EREDITANO, quindi questo
+  // dichiarava la home come indirizzo canonico di ogni pagina del sito —
+  // /corso/<slug> compreso, che è scansionabile. Ogni pagina che ne ha
+  // bisogno lo dichiara per sé (vedi page.tsx e prossimi-corsi/page.tsx).
   openGraph: {
     title: "Corso di Avvicinamento al Vino",
     description: DESCRIPTION,
@@ -61,7 +64,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AuthSessionProvider>
           <LanguageProvider>
             {children}
-            <footer className="no-print px-4 pb-3 text-center text-[10px] tracking-[0.08em] text-cream/25">
+            {/* Era a `text-cream/25`, circa 2:1 di contrasto: praticamente
+                invisibile, e porta il numero di versione, che serve quando
+                si segnala un problema. */}
+            <footer className="no-print px-4 pb-3 text-center text-[10px] tracking-[0.08em] text-cream/60">
               Nel Calice · v{packageInfo.version}
             </footer>
             {/* Sempre presente, in ogni pagina (§3.9). */}

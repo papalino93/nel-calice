@@ -14,7 +14,9 @@ import { formatVerificationCode, verifyCertificate } from "@/lib/verification";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Verifica attestato — Corso di Avvicinamento al Vino",
+  // Solo "Verifica attestato": il modello del layout aggiunge già il nome
+  // del corso, e prima il titolo usciva col suffisso ripetuto due volte.
+  title: "Verifica attestato",
   // Fuori dai motori di ricerca: la pagina porta il nome di una persona, e
   // chi ha diritto di vederla ci arriva dal codice, non da una ricerca.
   robots: { index: false, follow: false },
@@ -47,16 +49,28 @@ export default async function VerifyPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const certificate = await verifyCertificate(decodeURIComponent(code));
+
+  // Niente `decodeURIComponent` qui: Next consegna il segmento già
+  // decodificato, quindi decodificarlo di nuovo su un codice che contiene
+  // un `%` (`/verifica/100%25AB` diventa `100%AB`) lanciava `URIError` e
+  // mandava il visitatore sulla pagina di errore di Next invece che sul
+  // messaggio scritto qui sotto. `normalize()` in verification.ts scarta
+  // già tutto ciò che non è alfanumerico.
+  const certificate = await verifyCertificate(code);
+
+  // Quello che il visitatore ha davvero digitato, ripulito ma NON tagliato:
+  // tagliare a sedici e poi dire «sono sedici caratteri» faceva sembrare
+  // giusto un codice di diciassette.
+  const attempted = code.replace(/[^0-9a-zA-Z]/g, "").toUpperCase();
 
   return (
     <main className="flex flex-1 flex-col items-center px-5 py-12">
       <div className="w-full max-w-md">
         <div className="mb-7 flex flex-col items-center text-center">
           <Seal size={60} />
-          <p className="mt-4 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-gold">
+          <h1 className="mt-4 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-gold">
             Verifica attestato
-          </p>
+          </h1>
         </div>
 
         {certificate ? (
@@ -101,17 +115,22 @@ export default async function VerifyPage({
             <p className="text-xs leading-relaxed text-cream/60">
               Il codice cercato è{" "}
               <span className="font-mono text-cream/80">
-                {formatVerificationCode(
-                  decodeURIComponent(code)
-                    .replace(/[^0-9a-zA-Z]/g, "")
-                    .toUpperCase()
-                    .slice(0, 16),
-                ) || "—"}
+                {formatVerificationCode(attempted.slice(0, 16)) || "—"}
               </span>
-              . Controlla di averlo copiato per intero: sono sedici caratteri,
-              stampati in fondo all&apos;attestato. Se è giusto e la pagina
-              dice ancora così, l&apos;attestato non è stato rilasciato da
-              questo corso.
+              {attempted.length !== 16 ? (
+                <>
+                  , che di caratteri ne ha {attempted.length} invece di
+                  sedici. Ricopialo per intero da sotto l&apos;attestato.
+                </>
+              ) : (
+                <>
+                  . Sono sedici caratteri, stampati in fondo
+                  all&apos;attestato: controlla di non aver confuso uno zero
+                  con una O, o un uno con una I. Se è giusto e la pagina dice
+                  ancora così, l&apos;attestato non è stato rilasciato da
+                  questo corso.
+                </>
+              )}
             </p>
           </section>
         )}

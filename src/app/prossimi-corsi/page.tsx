@@ -6,7 +6,7 @@ import { MapPinIcon, Seal } from "@/components/icons";
 export const metadata: Metadata = {
   title: "Prossimi corsi in partenza",
   description:
-    "Nel Calice - Corso di Avvicinamento al Vino. Sei serate a tema, prova finale e degustazioni guidate. Prima edizione a 120 euro.",
+    "Nel Calice - Corso di Avvicinamento al Vino. Sei serate con degustazioni guidate, esame finale compreso. Prima edizione a 120 euro.",
   alternates: { canonical: "/prossimi-corsi" },
 };
 
@@ -49,9 +49,9 @@ const courses: UpcomingCourse[] = [
     price: "120 €",
     listPrice: "150 €",
     quote:
-      "Si assaggia, si sbaglia, si impara — e intanto si ride, si chiacchiera e si condivide quello che c'è nel calice.",
+      "Nessuno qui deve dimostrare niente: si viene per curiosità, si resta per il piacere di stare a tavola con un buon calice in mano.",
     facts: [
-      { n: "6", label: "serate a tema, con esame finale" },
+      { n: "6", label: "serate in tutto, esame finale compreso" },
       { n: "3-4", label: "vini in degustazione ogni serata" },
       { n: "20", label: "posti in tutto, non uno di più" },
       { n: "0", label: "esperienza richiesta per iniziare" },
@@ -118,7 +118,7 @@ export default function UpcomingCoursesPage() {
         </Link>
         <Link
           href="/"
-          className="press text-sm text-cream/60 underline underline-offset-4 hover:text-cream"
+          className="press inline-flex min-h-11 items-center text-sm text-cream/70 underline underline-offset-4 hover:text-cream"
         >
           Accedi
         </Link>
@@ -171,9 +171,6 @@ export default function UpcomingCoursesPage() {
       </section>
 
       <div id="corsi" className="mt-12 scroll-mt-6">
-        <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.2em] text-gold/75">
-          Corsi in partenza
-        </p>
         {courses.map((course, i) => (
           <section
             key={course.slug}
@@ -181,7 +178,7 @@ export default function UpcomingCoursesPage() {
           >
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-cream/55">
+                <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-cream/60">
                   {course.kicker}
                 </p>
                 <h2 className="mt-1 font-serif text-[27px] leading-tight text-cream sm:text-[31px]">
@@ -195,14 +192,14 @@ export default function UpcomingCoursesPage() {
                 </p>
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-cream/50">
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-cream/60">
                   Prezzo di lancio
                 </p>
                 <div className="mt-1 flex items-baseline justify-end gap-2.5">
                   <span className="font-serif text-4xl text-cream [word-spacing:-0.18em]">
                     {course.price}
                   </span>
-                  <span className="text-[15px] text-cream/45 line-through">
+                  <span className="text-[15px] text-cream/60 line-through">
                     {course.listPrice}
                   </span>
                 </div>
@@ -220,7 +217,7 @@ export default function UpcomingCoursesPage() {
               ))}
             </div>
 
-            <h3 className="mt-[26px] mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-cream/50">
+            <h3 className="mt-[26px] mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-cream/60">
               Il programma
             </h3>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -272,7 +269,7 @@ export default function UpcomingCoursesPage() {
               <a
                 key={contact.href}
                 href={contact.href}
-                className="press inline-flex items-baseline gap-1.5 text-sm font-medium text-charcoal"
+                className="press inline-flex min-h-11 items-center gap-1.5 py-1 text-sm font-medium text-charcoal"
               >
                 <span>{contact.name}</span>
                 <span className="font-serif text-[17px] text-bordeaux">

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isDenied, requireAdmin } from "@/lib/guard";
 import { courseDetail, updateCourse } from "@/lib/admin";
+import { isBlankCode } from "@/lib/codes";
 
 /** Dettaglio di un corso per il relatore, codici in chiaro compresi. */
 export async function GET(
@@ -28,6 +29,15 @@ export async function PATCH(
   const body = await request.json().catch(() => null);
   if (!body) {
     return NextResponse.json({ error: "dati non validi" }, { status: 400 });
+  }
+
+  // Come per il codice della serata: vuoto o di soli spazi va rifiutato
+  // qui, perché salvato lascerebbe passare qualunque stringa di spazi.
+  if (body.enrollmentCode !== undefined && isBlankCode(body.enrollmentCode)) {
+    return NextResponse.json(
+      { error: "Il codice d'iscrizione non può essere vuoto." },
+      { status: 400 },
+    );
   }
 
   try {

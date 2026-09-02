@@ -41,18 +41,30 @@ export default function SettingsPage() {
     else setMessage(errorMessage(result, t));
   }, [t]);
 
+  // Un caricamento fallito lasciava la pagina su «Un momento…» per sempre,
+  // con l'errore scritto in fondo — sotto l'elenco accessi, i codici e la
+  // guida in quattro passi, quindi fuori dallo schermo — e senza modo di
+  // riprovare che non fosse ricaricare il browser.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       const result = await api<Settings>("/api/admin/settings");
       if (cancelled) return;
-      if (result.ok) setData(result.data);
-      else setMessage(errorMessage(result, t));
+      if (result.ok) {
+        setData(result.data);
+        setLoadFailed(false);
+      } else {
+        setLoadFailed(true);
+        setMessage(errorMessage(result, t));
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [t, attempts]);
 
   async function saveMember() {
     // Se questa e-mail è già un proprietario e la si sta per rendere
@@ -119,8 +131,22 @@ export default function SettingsPage() {
       </section>
 
       <AdminSection title={copy.access} hint={copy.accessHint}>
-        {!data ? (
-          <p className="text-sm text-cream/55">{copy.loading}</p>
+        {!data && loadFailed ? (
+          <div className="text-sm text-cream/70">
+            <p>
+              {lang === "en"
+                ? "Could not load the settings."
+                : "Non è stato possibile caricare le impostazioni."}
+            </p>
+            <button
+              onClick={() => setAttempts((n) => n + 1)}
+              className="press mt-3 inline-flex min-h-10 items-center rounded-full border border-gold/40 px-4 py-2 text-sm text-gold"
+            >
+              {t.retry}
+            </button>
+          </div>
+        ) : !data ? (
+          <p className="text-sm text-cream/60">{copy.loading}</p>
         ) : (
           <>
             <ul className="overflow-hidden rounded-card border border-cream/10">
