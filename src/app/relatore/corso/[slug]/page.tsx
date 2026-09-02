@@ -512,9 +512,23 @@ function LogosSection({
                       }
                       className={`${LOGO_PREVIEW_HEIGHT[logo.size]} w-auto max-w-[9rem] object-contain`}
                     />
-                  ) : (
+                  ) : logo.text !== null ? (
                     <span className="max-w-[9rem] text-sm text-gold">
-                      {logo.text ?? "Logo non disponibile: ricaricalo"}
+                      {logo.text}
+                    </span>
+                  ) : (
+                    <span className="flex max-w-[9rem] flex-col items-start gap-1 text-sm text-gold">
+                      Logo non disponibile
+                      <button
+                        onClick={() =>
+                          setUnavailableLogoIds((ids) =>
+                            ids.filter((id) => id !== logo.id),
+                          )
+                        }
+                        className="press text-xs text-gold/70 underline underline-offset-4 hover:text-gold"
+                      >
+                        Riprova
+                      </button>
                     </span>
                   )}
                   <button
