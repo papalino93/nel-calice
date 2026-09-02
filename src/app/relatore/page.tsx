@@ -183,6 +183,38 @@ export default function AdminHomePage() {
         </section>
       )}
 
+      <section className="mt-7 rounded-card border border-cream/10 bg-charcoal-soft/50 p-4">
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-gold/70">
+          {lang === "en" ? "How a student enrolls" : "Come si iscrive un corsista"}
+        </p>
+        <ol className="mt-2.5 flex flex-col gap-1.5 text-sm text-cream/70">
+          <li>
+            1.{" "}
+            {lang === "en"
+              ? "Signs in with Google."
+              : "Entra con Google."}
+          </li>
+          <li>
+            2.{" "}
+            {lang === "en"
+              ? "Enters the enrollment code you gave them."
+              : "Inserisce il codice d'iscrizione che gli hai dato."}
+          </li>
+          <li>
+            3.{" "}
+            {lang === "en"
+              ? "Is in: quizzes and handouts unlock evening by evening."
+              : "È dentro: quiz e materiali si sbloccano serata dopo serata."}
+          </li>
+        </ol>
+        <Link
+          href="/relatore/impostazioni"
+          className="press mt-3 inline-flex min-h-9 items-center text-xs text-gold/80 underline underline-offset-4 hover:text-gold"
+        >
+          {lang === "en" ? "See the full guide" : "Vedi la guida completa"}
+        </Link>
+      </section>
+
       <section className="mt-9">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
           {lang === "en" ? "Courses" : "Corsi"}
