@@ -200,6 +200,15 @@ export function BookIcon(props: IconProps) {
   );
 }
 
+export function MapPinIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.4" />
+    </Icon>
+  );
+}
+
 /**
  * Sigillo circolare dentellato con icona al centro — il contenitore
  * identitario del corso: compare nella schermata di accesso, nel risultato e
