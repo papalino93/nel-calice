@@ -576,6 +576,15 @@ cima. Una dispensa che gira ora si risale a chi l'ha aperta.
    scritto), ma nessuno l'ha ancora guardata mentre qualcuno rispondeva
    davvero — non c'era un quiz in corso al momento di scriverla.
 
+5. **Date e orari delle serate, richiesti dal committente ma non ancora
+   progettati**: oggi né `Course` né `CourseLesson` portano una data.
+   Servirà una data di inizio e fine per il corso e, per ogni serata, una
+   data e un orario — da mostrare sia sul sito pubblico (`/prossimi-corsi`)
+   sia nel pannello relatore. Richiede una migrazione (nuovi campi) e una
+   decisione su cosa succede a un corso multi-edizione: la data appartiene
+   al corso (l'edizione), non alla lezione di catalogo, che resta condivisa
+   fra edizioni diverse con calendari diversi.
+
 ## Difetti trovati e non ancora corretti
 
 Da tre revisioni approfondite. Ordinati per quanto costano davvero. Chi ne
