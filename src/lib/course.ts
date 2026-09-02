@@ -8,6 +8,7 @@ import {
   percentage,
   rescaleToCurrentBudget,
 } from "./scoring";
+import { finalizeAttempt } from "./quiz";
 import type { EnrollmentRef } from "./enrollment";
 
 /**
@@ -117,7 +118,40 @@ export async function courseOverview(
   ]);
 
   const unlockedIds = new Set(unlocks.map((u) => u.courseLessonId));
-  const attemptByLesson = new Map(attempts.map((a) => [a.courseLessonId, a]));
+
+  // Un tentativo "in corso" ma con l'orario ormai passato non si chiude da
+  // sé: prima di questa lettura, nessuno lo aveva ancora toccato, e la
+  // dashboard continuava a proporre "Riprendi" su un quiz che, cliccato,
+  // sarebbe risultato già scaduto — sorpresa spiacevole. Aprire il corso è
+  // già di per sé "toccarlo": lo si chiude qui, con lo stesso conteggio che
+  // userebbe la consegna vera, prima ancora di costruire le card.
+  const now = new Date();
+  type AttemptSummary = {
+    id: string;
+    status: AttemptStatus;
+    score: number | null;
+    maxScore: number | null;
+  };
+  const attemptByLesson = new Map<string, AttemptSummary>();
+  for (const a of attempts) {
+    if (a.status === AttemptStatus.IN_PROGRESS && a.expiresAt < now) {
+      const finalized = await finalizeAttempt(a.id, enrollment, { timedOut: true });
+      const source = finalized ?? a;
+      attemptByLesson.set(a.courseLessonId, {
+        id: source.id,
+        status: source.status,
+        score: source.score,
+        maxScore: source.maxScore,
+      });
+    } else {
+      attemptByLesson.set(a.courseLessonId, {
+        id: a.id,
+        status: a.status,
+        score: a.score,
+        maxScore: a.maxScore,
+      });
+    }
+  }
 
   const budgets = computeBudgets(
     course.lessons.map((cl) => ({
