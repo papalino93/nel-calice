@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { api, errorMessage } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 import {
@@ -381,6 +381,11 @@ function EnrollmentCard({
   const [note, setNote] = useState(student.adminNotes ?? "");
   const [busy, setBusy] = useState<"payment" | "note" | "remove" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  // Un blur mentre un'altra richiesta è già in volo (pagamento, rimozione, o
+  // un salvataggio precedente della nota) non deve perdere in silenzio ciò
+  // che è stato scritto: la tiene in attesa, e l'effetto sotto la manda
+  // appena il campo si libera.
+  const pendingNoteRef = useRef<string | null>(null);
 
   async function save(body: Record<string, unknown>, kind: "payment" | "note") {
     setBusy(kind);
@@ -423,14 +428,29 @@ function EnrollmentCard({
   }
 
   async function saveNote() {
-    // Evita due richieste in volo insieme se il campo perde e riprende il
-    // fuoco più in fretta di quanto il server risponda: senza questo, la
-    // risposta che arriva per ultima vince a caso, non per forza quella
-    // del testo più recente.
-    if (busy === "note") return;
     if (note === (student.adminNotes ?? "")) return;
+    // Non solo un'altra nota: anche il pagamento o la rimozione condividono
+    // `busy` e lo stesso endpoint. Partire comunque qui produrrebbe due
+    // richieste in volo insieme, con la risposta che arriva per ultima che
+    // vince a caso — non per forza quella del testo più recente.
+    if (busy !== null) {
+      pendingNoteRef.current = note;
+      return;
+    }
     await save({ adminNotes: note }, "note");
   }
+
+  // Non dipende da `note` apposta: deve scattare solo alla transizione
+  // "si è appena liberato", non a ogni tasto premuto mentre è già libero.
+  useEffect(() => {
+    if (busy !== null) return;
+    const pending = pendingNoteRef.current;
+    pendingNoteRef.current = null;
+    if (pending !== null && pending !== (student.adminNotes ?? "")) {
+      void save({ adminNotes: pending }, "note");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy]);
 
   const paid = student.paymentStatus === "PAID";
 
