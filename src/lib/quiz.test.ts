@@ -129,6 +129,43 @@ describe("correzione", () => {
     expect(result.answers).toHaveLength(3);
     expect(result.score).toBe(0);
   });
+
+  it("non lascia nessuna domanda a costo zero quando i punti non bastano per una a testa", () => {
+    // Caso reale segnalato: budget di lezione troppo piccolo per il numero
+    // di domande (distributeEvenly(3, 8) → [1,1,1,0,0,0,0,0]). Con la somma
+    // per-domanda di prima, indovinare solo le ultime cinque valeva 0 — qui
+    // deve contare comunque.
+    const many: GradableQuestion[] = [
+      { questionId: 1, correctOptionId: 1, points: 1 },
+      { questionId: 2, correctOptionId: 1, points: 1 },
+      { questionId: 3, correctOptionId: 1, points: 1 },
+      { questionId: 4, correctOptionId: 1, points: 0 },
+      { questionId: 5, correctOptionId: 1, points: 0 },
+      { questionId: 6, correctOptionId: 1, points: 0 },
+      { questionId: 7, correctOptionId: 1, points: 0 },
+      { questionId: 8, correctOptionId: 1, points: 0 },
+    ];
+
+    // Indovina solo le cinque domande "da zero punti", sbaglia le altre tre.
+    const onlyZeroPointOnes = grade(
+      many,
+      new Map([
+        [4, 1],
+        [5, 1],
+        [6, 1],
+        [7, 1],
+        [8, 1],
+      ]),
+    );
+    expect(onlyZeroPointOnes.maxScore).toBe(3);
+    expect(onlyZeroPointOnes.score).toBeGreaterThan(0);
+
+    // Rispondere a più domande giuste (anche fra quelle "da zero") deve
+    // valere di più, non restare uguale.
+    const allEight = grade(many, new Map(many.map((q) => [q.questionId, 1])));
+    expect(allEight.score).toBe(3);
+    expect(allEight.score).toBeGreaterThan(onlyZeroPointOnes.score);
+  });
 });
 
 describe("codici di sblocco", () => {

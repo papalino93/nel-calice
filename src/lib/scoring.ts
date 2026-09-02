@@ -183,6 +183,12 @@ export function totalAssignablePoints(lessons: LessonForScoring[]): number {
  * Riga che il pannello relatore mostra sotto ogni lezione, es.
  * "8 domande · 8 punti (1 a domanda)". Serve a rendere sempre evidente
  * quanto vale ogni domanda (§2.4).
+ *
+ * `questionPoints` resta la ripartizione intera "sulla carta" (usata anche
+ * altrove), ma il voto vero non la somma più domanda per domanda (vedi
+ * `grade` in quiz.ts): quando ci sono più domande che punti, dire "1 o 0 a
+ * domanda" farebbe credere che alcune non contino mai, il che non è più
+ * vero. In quel caso il testo dice come funziona davvero.
  */
 export function describeLessonScoring(budget: LessonBudget): string {
   const { questionCount, budget: points, questionPoints } = budget;
@@ -196,7 +202,9 @@ export function describeLessonScoring(budget: LessonBudget): string {
   const detail =
     min === max
       ? `${min} a domanda`
-      : `${max} o ${min} a domanda`;
+      : min === 0
+        ? "proporzionali a quante ne indovini"
+        : `${max} o ${min} a domanda`;
 
   return `${questionCount} ${plural} · ${points} punti (${detail})`;
 }
