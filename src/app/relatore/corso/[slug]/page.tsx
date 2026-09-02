@@ -150,6 +150,17 @@ export default function ManageCoursePage({
         </Link>
       </div>
 
+      <nav
+        aria-label="Sezioni del corso"
+        className="mt-5 flex gap-2 overflow-x-auto border-y border-cream/10 py-3 text-sm whitespace-nowrap"
+      >
+        <a href="#impostazioni" className="press rounded-full px-3 py-1.5 text-cream/70 hover:bg-cream/8 hover:text-cream">Impostazioni</a>
+        <a href="#lezioni" className="press rounded-full px-3 py-1.5 text-cream/70 hover:bg-cream/8 hover:text-cream">Composizione</a>
+        <a href="#attestato" className="press rounded-full px-3 py-1.5 text-cream/70 hover:bg-cream/8 hover:text-cream">Attestato</a>
+        <a href="#materiali" className="press rounded-full px-3 py-1.5 text-cream/70 hover:bg-cream/8 hover:text-cream">Materiali</a>
+        <Link href={`/relatore/corso/${detail.slug}/classe`} className="press rounded-full px-3 py-1.5 text-gold/85 hover:bg-gold/10 hover:text-gold">Classe →</Link>
+      </nav>
+
       <CourseTitles detail={detail} onSaved={reload} />
 
       <section className="card mt-6 border-gold/25 bg-bordeaux/15 p-5" aria-label="Azioni del corso">
@@ -166,8 +177,8 @@ export default function ManageCoursePage({
             <span className="mt-0.5 block text-xs text-cream/50">Codice del corso e tempi</span>
           </a>
           <a href="#lezioni" className="press rounded-xl border border-cream/10 bg-charcoal/25 p-3 text-left text-sm text-cream/75 hover:border-gold/35 hover:text-cream">
-            <span className="block text-gold">2. Lezioni</span>
-            <span className="mt-0.5 block text-xs text-cream/50">Codici, quiz e dispense</span>
+            <span className="block text-gold">2. Composizione</span>
+            <span className="mt-0.5 block text-xs text-cream/50">Lezioni dal catalogo, codici e quiz</span>
           </a>
           <Link href={`/relatore/corso/${detail.slug}/classe`} className="press rounded-xl border border-cream/10 bg-charcoal/25 p-3 text-left text-sm text-cream/75 hover:border-gold/35 hover:text-cream">
             <span className="block text-gold">3. Classe</span>
@@ -180,11 +191,15 @@ export default function ManageCoursePage({
         </div>
       </section>
 
+      <SessionControlCard detail={detail} />
+
       <div id="impostazioni">
         <CourseSettings detail={detail} onSaved={reload} />
       </div>
 
-      <CertificateSection slug={slug} detail={detail} onSaved={reload} />
+      <div id="attestato">
+        <CertificateSection slug={slug} detail={detail} onSaved={reload} />
+      </div>
 
       <div id="lezioni">
         <LessonsSection
@@ -195,10 +210,44 @@ export default function ManageCoursePage({
         />
       </div>
 
-      <MaterialsSection
-        owner={{ kind: "course", slug: detail.slug, courseId: detail.id }}
-      />
+      <div id="materiali">
+        <MaterialsSection
+          owner={{ kind: "course", slug: detail.slug, courseId: detail.id }}
+        />
+      </div>
     </AdminShell>
+  );
+}
+
+function SessionControlCard({ detail }: { detail: Detail }) {
+  const nextLesson = detail.lessons.find((lesson) => !lesson.globallyUnlocked);
+  const allOpen = detail.lessons.length > 0 && !nextLesson;
+
+  return (
+    <section className="card mt-6 border-gold/30 bg-charcoal-soft/65 p-5" aria-labelledby="prossima-serata">
+      <p id="prossima-serata" className="text-xs font-medium uppercase tracking-[0.16em] text-gold/85">
+        Prossima serata
+      </p>
+      {nextLesson ? (
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="font-serif text-xl text-cream">
+              {nextLesson.isExam ? "Prova finale" : `Lezione ${nextLesson.position}`} · {nextLesson.titleIt}
+            </p>
+            <p className="mt-1 text-sm text-cream/60">
+              Codice da comunicare: <code className="font-serif tracking-[0.12em] text-gold-light">{nextLesson.unlockCode || "da definire"}</code>
+            </p>
+          </div>
+          <a href="#lezioni" className="press lift inline-flex min-h-10 items-center rounded-full bg-gold px-4 py-2 text-sm font-medium text-charcoal transition-transform">
+            Apri la regia
+          </a>
+        </div>
+      ) : allOpen ? (
+        <p className="mt-2 text-sm text-cream/70">Tutte le lezioni del corso sono aperte a tutti gli iscritti.</p>
+      ) : (
+        <p className="mt-2 text-sm text-cream/70">Aggiungi la prima lezione per preparare la serata.</p>
+      )}
+    </section>
   );
 }
 
@@ -844,8 +893,8 @@ function LessonsSection({
 
   return (
     <AdminSection
-      title="Lezioni di questo corso"
-      hint="Quali serate fa questa edizione, e con quale codice. Puoi scrivere una lezione nuova qui, oppure riprendere dal catalogo una già fatta. Togliere una lezione non la cancella dal catalogo: resta per gli altri corsi, con le sue domande e dispense. I numeri delle altre non scorrono."
+      title="Composizione del corso"
+      hint="Il corso è una selezione manuale di lezioni riusabili. Puoi creare una nuova lezione — che entra anche nel catalogo — oppure scegliere una lezione esistente. Rimuoverla da questo corso non la cancella dal catalogo né dagli altri corsi."
     >
       <ul className="flex flex-col gap-2.5">
         {detail.lessons.map((lesson) => (
@@ -867,7 +916,7 @@ function LessonsSection({
 
       <div className="card mt-4 p-5">
         <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <p className="text-sm text-cream/70">Aggiungi una serata</p>
+          <p className="text-sm text-cream/70">Aggiungi una lezione al corso</p>
           <div className="flex gap-1.5">
             <ModeButton
               active={mode === "new"}

@@ -247,7 +247,11 @@ export default function AdminHomePage() {
                         : "bg-gold/12 text-gold"
                   }`}
                 >
-                  {course.status}
+                  {course.status === "ACTIVE"
+                    ? "Corso attivo"
+                    : course.status === "DRAFT"
+                      ? "In preparazione"
+                      : "Archiviato"}
                 </span>
               </div>
 

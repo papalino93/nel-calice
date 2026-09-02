@@ -21,6 +21,9 @@ export async function GET(
   if (isDenied(ctx)) return ctx.response;
 
   const overview = await courseOverview(ctx.enrollment);
+  if (!overview) {
+    return NextResponse.json({ error: "corso inesistente" }, { status: 404 });
+  }
   const lesson = overview?.lessons.find((l) => l.courseLessonId === clId);
   if (!lesson) {
     return NextResponse.json({ error: "lezione inesistente" }, { status: 404 });
@@ -63,6 +66,9 @@ export async function GET(
   // controllo di iscrizione e sblocco.
   return NextResponse.json({
     lesson,
+    quizMinutes: lesson.isExam
+      ? overview.course.examTimerMinutes
+      : overview.course.lessonTimerMinutes,
     materials: withServingUrls(materials, `/api/courses/${slug}/materials`),
   });
 }

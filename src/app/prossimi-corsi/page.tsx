@@ -17,7 +17,9 @@ type UpcomingCourse = {
       saprebbe più a quale dei due si riferisce il codice che l'iscritto
       ha in mano prima ancora di digitarlo. */
   slug: string;
+  title: string;
   kicker: string;
+  enrollmentLabel: string;
   subtitle: string;
   price: string;
   listPrice: string;
@@ -27,8 +29,9 @@ type UpcomingCourse = {
 };
 
 /**
- * Un solo corso oggi, ma la sezione resta un `.map()`: quando ne parte un
- * secondo basta aggiungere una voce qui, non ridisegnare la pagina.
+ * Ogni voce descrive un'edizione pubblica. Quando parte un secondo corso si
+ * aggiunge qui una nuova scheda: hero, CTA, programma e iscrizione restano
+ * identici, ma ogni percorso mantiene il proprio slug e i propri dettagli.
  *
  * `lessons` e i loro conteggi ripetono a mano quanto già vero nel catalogo
  * (§STATO.md): senza un campo "teaser" sul modello Lesson non c'è ancora un
@@ -38,7 +41,9 @@ type UpcomingCourse = {
 const courses: UpcomingCourse[] = [
   {
     slug: "avvicinamento-2026",
+    title: "Corso di Avvicinamento al Vino",
     kicker: "Prima edizione",
+    enrollmentLabel: "Iscrizioni aperte · posti limitati",
     subtitle: "Un percorso pratico per assaggiare, capire e scegliere meglio.",
     price: "120 €",
     listPrice: "150 €",
@@ -123,19 +128,16 @@ export default function UpcomingCoursesPage() {
           <p className="text-[11.5px] font-medium uppercase tracking-[0.24em] text-gold">
             Corsi in partenza
           </p>
-          <h1 className="mt-2.5 whitespace-nowrap font-serif text-[26px] leading-[1.05] font-normal text-cream sm:text-[33px]">
-            Corso di Avvicinamento al Vino
+          <h1 className="mt-2.5 font-serif text-[30px] leading-[1.05] font-normal text-cream sm:text-[38px]">
+            I prossimi corsi nel calice
           </h1>
           <p className="mt-3 font-serif text-lg italic leading-[1.3] text-gold-light sm:text-[21px]">
-            Capire il vino, senza il tecnicismo del sommelier.
+            Percorsi per assaggiare, capire e scegliere meglio.
           </p>
           <p className="mt-3.5 text-pretty text-[16.5px] leading-[1.6] font-light text-cream/82">
-            Un corso per chiunque ami il mondo del vino, o vorrebbe anche solo
-            conoscerlo meglio — senza esperienza alcuna: senza paura di
-            sbagliare, impariamo quello che ci serve — cosa ci comunica, cosa
-            ci fa sentire — senza inutili tecnicismi. Un clima conviviale, tra
-            degustazioni, chiacchiere, sorrisi e qualche nozione. Alla fine
-            del percorso entri in enoteca sapendo cosa chiedere.
+            Ogni edizione ha il suo programma, i suoi vini e il suo ritmo.
+            Scegli quella che fa per te: niente esperienza richiesta, solo
+            curiosità, calici e voglia di scoprire.
           </p>
           <a
             href="https://maps.google.com/?q=Enoteca+L%27Angolo+del+Vino%2C+Via+dei+Rossi+53C%2C+Scandicci"
@@ -149,10 +151,10 @@ export default function UpcomingCoursesPage() {
             </span>
           </a>
           <Link
-            href={`/corso/${courses[0].slug}`}
+            href="#corsi"
             className="press lift mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-medium text-charcoal transition-transform"
           >
-            Vedi il corso e iscriviti <span aria-hidden>→</span>
+            Scopri i corsi <span aria-hidden>↓</span>
           </Link>
         </div>
         <div className="relative h-[230px] overflow-hidden rounded-[10px]">
@@ -167,7 +169,10 @@ export default function UpcomingCoursesPage() {
         </div>
       </section>
 
-      <div className="mt-2">
+      <div id="corsi" className="mt-12 scroll-mt-6">
+        <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.2em] text-gold/75">
+          Corsi in partenza
+        </p>
         {courses.map((course, i) => (
           <section
             key={course.slug}
@@ -178,8 +183,14 @@ export default function UpcomingCoursesPage() {
                 <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-cream/55">
                   {course.kicker}
                 </p>
+                <h2 className="mt-1 font-serif text-[27px] leading-tight text-cream sm:text-[31px]">
+                  {course.title}
+                </h2>
                 <p className="mt-1.5 max-w-[520px] text-[15px] leading-[1.55] text-cream/70">
                   {course.subtitle}
+                </p>
+                <p className="mt-3 inline-flex rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-300">
+                  {course.enrollmentLabel}
                 </p>
               </div>
               <div className="shrink-0 text-right">
@@ -208,9 +219,9 @@ export default function UpcomingCoursesPage() {
               ))}
             </div>
 
-            <h2 className="mt-[26px] mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-cream/50">
-              Le sei serate
-            </h2>
+            <h3 className="mt-[26px] mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-cream/50">
+              Il programma
+            </h3>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {course.lessons.map((l) => (
                 <div
@@ -225,9 +236,9 @@ export default function UpcomingCoursesPage() {
                       {l.count} domande
                     </span>
                   </div>
-                  <h3 className="mt-[3px] font-serif text-[17.5px] text-cream">
+                  <h4 className="mt-[3px] font-serif text-[17.5px] text-cream">
                     {l.title}
-                  </h3>
+                  </h4>
                   <p className="mt-[3px] text-[12.5px] leading-[1.42] text-cream/60">
                     {l.text}
                   </p>

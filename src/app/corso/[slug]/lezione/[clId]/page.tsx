@@ -17,7 +17,11 @@ type Material = {
   notes: string | null;
 };
 
-type LessonDetail = { lesson: LessonCard; materials: Material[] };
+type LessonDetail = {
+  lesson: LessonCard;
+  materials: Material[];
+  quizMinutes: number;
+};
 
 export default function LessonPage({
   params,
@@ -69,7 +73,7 @@ export default function LessonPage({
     );
   }
 
-  const { lesson, materials } = detail;
+  const { lesson, materials, quizMinutes } = detail;
   const title = pick(lang, lesson.titleIt, lesson.titleEn);
   const subtitle = pick(lang, lesson.subtitleIt, lesson.subtitleEn);
   const done = lesson.status === "fatto";
@@ -125,13 +129,31 @@ export default function LessonPage({
             </Link>
           </>
         ) : (
-          <Link
-            href={`/corso/${slug}/lezione/${clId}/quiz`}
-            className="press lift inline-flex items-center gap-2 rounded-full bg-gold px-8 py-3.5 font-medium text-charcoal transition-transform"
-          >
-            {lesson.inProgress ? t.resume : t.start}
-            <ArrowRightIcon className="h-4 w-4" />
-          </Link>
+          <>
+            <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs text-cream/70">
+              <span className="rounded-full border border-gold/25 bg-gold/8 px-3 py-1.5">
+                {lesson.questionCount} {lesson.questionCount === 1 ? "domanda" : "domande"}
+              </span>
+              <span className="rounded-full border border-gold/25 bg-gold/8 px-3 py-1.5">
+                {quizMinutes} min
+              </span>
+              <span className="rounded-full border border-gold/25 bg-gold/8 px-3 py-1.5">
+                {lesson.points} {t.points}
+              </span>
+            </div>
+            <p className="mt-3 max-w-md text-sm text-cream/60">
+              {lesson.inProgress
+                ? "Il tempo e le risposte già date restano disponibili: puoi riprendere da dove eri arrivato/a."
+                : "Quando sei pronto/a, avvia il quiz: potrai consultare il materiale della lezione anche dopo."}
+            </p>
+            <Link
+              href={`/corso/${slug}/lezione/${clId}/quiz`}
+              className="press lift mt-5 inline-flex items-center gap-2 rounded-full bg-gold px-8 py-3.5 font-medium text-charcoal transition-transform"
+            >
+              {lesson.inProgress ? t.resume : t.start}
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          </>
         )}
       </section>
 
