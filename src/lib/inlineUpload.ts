@@ -1,8 +1,10 @@
 // Lato client: nessun import da qui verso Prisma o altro codice server-only.
 // Il numero deve restare uguale a `MAX_INLINE_BYTES` in `src/lib/materials.ts`
 // — quello lato server è la verifica che conta davvero, questo è solo per
-// dare un errore chiaro prima di provare a caricare.
-export const MAX_UPLOAD_MB = 3;
+// dare un errore chiaro prima di provare a caricare (il file grezzo, prima
+// della codifica base64 che lo gonfia di circa un terzo nel corpo della
+// richiesta).
+export const MAX_UPLOAD_MB = 2;
 export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 /** Legge un file scelto dall'utente come base64, senza il prefisso data URL. */

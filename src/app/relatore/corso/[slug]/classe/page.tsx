@@ -340,6 +340,11 @@ function EnrollmentCard({
   }
 
   async function saveNote() {
+    // Evita due richieste in volo insieme se il campo perde e riprende il
+    // fuoco più in fretta di quanto il server risponda: senza questo, la
+    // risposta che arriva per ultima vince a caso, non per forza quella
+    // del testo più recente.
+    if (busy === "note") return;
     if (note === (student.adminNotes ?? "")) return;
     await save({ adminNotes: note }, "note");
   }

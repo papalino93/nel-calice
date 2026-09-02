@@ -74,9 +74,18 @@ export async function createMaterial(input: {
   });
 }
 
-/** Come sopra il vincolo di dimensione lato client (§MaterialsSection): qui
- * è la verifica che conta davvero, perché il client non è mai fidato. */
-export const MAX_INLINE_BYTES = 3 * 1024 * 1024;
+/**
+ * Come sopra il vincolo di dimensione lato client (§MaterialsSection): qui
+ * è la verifica che conta davvero, perché il client non è mai fidato.
+ *
+ * Il file viaggia in base64 dentro al corpo della richiesta (~+33% di
+ * dimensione) più l'overhead JSON — e le funzioni serverless di Vercel
+ * rifiutano un corpo oltre 4.5MB prima ancora che questo codice giri, con
+ * un errore di piattaforma anziché il messaggio pulito sotto. 2MB grezzi
+ * restano comunque sotto i 2.7MB codificati: margine reale, non solo sulla
+ * carta.
+ */
+export const MAX_INLINE_BYTES = 2 * 1024 * 1024;
 
 /**
  * Salva un materiale con il file dentro alla riga stessa, invece che su

@@ -162,6 +162,10 @@ function UploadForm({
       } else {
         const file = fileRef.current?.files?.[0];
         if (!file) throw new Error("Scegli un file.");
+        // Controllato prima di leggerlo: un file da 0 byte produce una
+        // base64 vuota, indistinguibile lato server da "nessun file scelto"
+        // — l'errore giusto va dato qui, non lasciato indovinare dopo.
+        if (file.size === 0) throw new Error("Il file scelto è vuoto.");
         if (file.size > MAX_UPLOAD_BYTES) {
           throw new Error(`File troppo grande: massimo ${MAX_UPLOAD_MB}MB.`);
         }

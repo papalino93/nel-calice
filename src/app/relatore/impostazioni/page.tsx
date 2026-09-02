@@ -55,6 +55,24 @@ export default function SettingsPage() {
   }, [t]);
 
   async function saveMember() {
+    // Se questa e-mail è già un proprietario e la si sta per rendere
+    // Relatore, è una modifica che si può ritrovare a fare per sbaglio
+    // (lo stesso campo serve sia per aggiungere sia per modificare) — merita
+    // la stessa conferma esplicita che ha già la rimozione.
+    const normalized = email.trim().toLowerCase();
+    const existing = data?.members.find((m) => m.email === normalized);
+    if (existing?.role === "OWNER" && role !== "OWNER") {
+      const isSelf = normalized === data?.currentEmail.toLowerCase();
+      const question = isSelf
+        ? (lang === "en"
+            ? "You are removing your own owner access. If you are the only owner left, you will lose access to this page. Continue?"
+            : "Stai togliendo l'accesso da proprietario a te stesso. Se sei l'ultimo, perderai l'accesso a questa pagina. Continuare?")
+        : (lang === "en"
+            ? `Make ${existing.email} a host instead of an owner?`
+            : `Rendere ${existing.email} relatore invece che proprietario?`);
+      if (!window.confirm(question)) return;
+    }
+
     setBusy(true);
     setMessage(null);
     const result = await post("/api/admin/settings", { email, role });
