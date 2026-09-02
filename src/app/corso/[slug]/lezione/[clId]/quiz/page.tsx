@@ -40,14 +40,25 @@ export default function QuizPage({
   const [selected, setSelected] = useState<number | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [savingAnswer, setSavingAnswer] = useState(false);
 
   // Evita doppie consegne se il timer scade mentre l'utente preme "Consegna".
   const submittedRef = useRef(false);
+  // Il salvataggio della risposta corrente, se ancora in volo: "Avanti" (e
+  // quindi "Consegna" sull'ultima domanda) lo aspetta prima di proseguire,
+  // altrimenti su una rete lenta si può consegnare prima che il server
+  // abbia registrato l'ultima scelta (§7.16).
+  const pendingSaveRef = useRef<Promise<unknown> | null>(null);
 
   const submit = useCallback(async () => {
     if (submittedRef.current || !attempt) return;
     submittedRef.current = true;
     setSubmitting(true);
+
+    // Copre anche la consegna automatica allo scadere del timer: se il
+    // tempo finisce mentre l'ultima risposta è ancora in volo, si aspetta
+    // comunque che arrivi prima di chiedere al server di chiudere.
+    if (pendingSaveRef.current) await pendingSaveRef.current;
 
     // Il client non manda punteggi: chiede solo di chiudere. Il server
     // corregge da sé, con le risposte già salvate (§7.4).
@@ -145,13 +156,20 @@ export default function QuizPage({
     setSelected(optionId);
     // Salvataggio immediato: allo scadere del tempo il server ha già in mano
     // le risposte date entro il termine.
-    await post(`/api/courses/${slug}/attempts/${attempt!.attemptId}/answer`, {
-      questionId: question.id,
-      selectedOptionId: optionId,
-    });
+    setSavingAnswer(true);
+    const request = post(
+      `/api/courses/${slug}/attempts/${attempt!.attemptId}/answer`,
+      { questionId: question.id, selectedOptionId: optionId },
+    ).finally(() => setSavingAnswer(false));
+    pendingSaveRef.current = request;
+    await request;
   }
 
-  function next() {
+  async function next() {
+    // Aspetta che la risposta corrente sia arrivata al server prima di
+    // avanzare — è il punto in cui, senza questa attesa, un tocco veloce su
+    // rete lenta poteva consegnare senza l'ultima scelta.
+    if (pendingSaveRef.current) await pendingSaveRef.current;
     if (isLast) {
       void submit();
       return;
@@ -269,8 +287,8 @@ export default function QuizPage({
           generoso tiene il pulsante donazione fuori dai piedi. */}
       <div className="sticky bottom-0 z-20 -mx-5 mt-auto bg-charcoal/95 px-5 pt-4 pb-20 backdrop-blur sm:-mx-8 sm:px-8">
         <button
-          onClick={next}
-          disabled={selected === null || submitting}
+          onClick={() => void next()}
+          disabled={selected === null || submitting || savingAnswer}
           className="press lift flex w-full items-center justify-center gap-2 rounded-full bg-gold px-6 py-3.5 font-medium text-charcoal transition-all disabled:cursor-not-allowed disabled:opacity-35"
         >
           {isLast ? t.finish : t.next}
