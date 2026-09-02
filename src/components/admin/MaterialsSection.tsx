@@ -43,7 +43,16 @@ export type MaterialsOwner =
  * account esterno, niente costo. Per questo il limite di dimensione è più
  * stretto di quando si passava dallo store — vedi `MAX_UPLOAD_MB`.
  */
-export function MaterialsSection({ owner }: { owner: MaterialsOwner }) {
+export function MaterialsSection({
+  owner,
+  onChanged,
+}: {
+  owner: MaterialsOwner;
+  /** Chi mostra un conteggio dispense altrove (es. l'elenco a sinistra del
+      master-detail del catalogo) va avvisato quando cambia, altrimenti resta
+      fermo al valore di quando questo pannello si è aperto. */
+  onChanged?: () => void;
+}) {
   const { t } = useLanguage();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [reloads, setReloads] = useState(0);
@@ -70,6 +79,7 @@ export function MaterialsSection({ owner }: { owner: MaterialsOwner }) {
       return;
     await api(`/api/admin/materials/${id}`, { method: "DELETE" });
     reload();
+    onChanged?.();
   }
 
   return (
@@ -129,7 +139,14 @@ export function MaterialsSection({ owner }: { owner: MaterialsOwner }) {
         </p>
       )}
 
-      <UploadForm owner={owner} onDone={reload} t={t} />
+      <UploadForm
+        owner={owner}
+        onDone={() => {
+          reload();
+          onChanged?.();
+        }}
+        t={t}
+      />
     </AdminSection>
   );
 }

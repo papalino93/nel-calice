@@ -73,6 +73,13 @@ export function CatalogueMasterDetail({
   const [active, setActive] = useState(selectedId);
 
   function choose(id: number, event: MouseEvent) {
+    // Un clic con modificatore (aprire in una scheda nuova, scaricare, ecc.)
+    // o con un tasto del mouse diverso dal principale deve restare una
+    // navigazione vera: è lo stesso motivo per cui <Link> di Next non la
+    // intercetta nemmeno lui in questi casi.
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
     // Sotto i 1024px il clic resta una navigazione vera: è la pila lineare,
     // un solo schermo alla volta, con la cronologia del browser che si
     // comporta come ci si aspetta premendo "indietro".
@@ -132,6 +139,7 @@ export function CatalogueMasterDetail({
                 key={active}
                 lessonId={active}
                 backHref="/relatore/catalogo"
+                onChanged={reload}
               />
             ) : (
               <div className="card hidden h-full min-h-[16rem] place-items-center p-8 text-center lg:grid">

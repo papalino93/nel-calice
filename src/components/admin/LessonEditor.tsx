@@ -92,17 +92,26 @@ type Selection = number | "new";
 export function LessonEditor({
   lessonId,
   backHref,
+  onChanged,
 }: {
   lessonId: number;
   /** Mostrato solo sotto i 1024px: su desktop l'elenco resta già visibile
       accanto, e un "indietro" in più sarebbe ridondante. */
   backHref?: string;
+  /** L'elenco a sinistra del master-detail mostra quante domande e dispense
+      ha questa stessa lezione: senza avvisarlo, quei conteggi restano fermi
+      al valore di quando la lezione è stata scelta, anche dopo modifiche
+      fatte proprio qui. */
+  onChanged?: () => void;
 }) {
   const { t } = useLanguage();
 
   const [lesson, setLesson] = useState<LessonDetail | null>(null);
   const [reloads, setReloads] = useState(0);
-  const reload = useCallback(() => setReloads((n) => n + 1), []);
+  const reload = useCallback(() => {
+    setReloads((n) => n + 1);
+    onChanged?.();
+  }, [onChanged]);
 
   // Nessuna domanda selezionata finché non arrivano i dati: si parte dalla
   // prima già scritta, o dal modulo di creazione se la lezione è ancora vuota.
@@ -190,14 +199,24 @@ export function LessonEditor({
                 lessonId={lesson.id}
                 question={selectedQuestion}
                 onChanged={reload}
-                onDeleted={() => setSelected(null)}
+                onDeleted={() => {
+                  // Senza questo, la domanda appena cancellata restava nello
+                  // stato locale: la lista la mostrava ancora, e la
+                  // selezione poteva ricadere su di lei, aprendo l'editor di
+                  // una domanda che sul server non esiste più.
+                  reload();
+                  setSelected(null);
+                }}
               />
             )
           )}
         </div>
       </AdminSection>
 
-      <MaterialsSection owner={{ kind: "lesson", lessonId: lesson.id }} />
+      <MaterialsSection
+        owner={{ kind: "lesson", lessonId: lesson.id }}
+        onChanged={onChanged}
+      />
     </div>
   );
 }
