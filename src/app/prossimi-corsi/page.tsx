@@ -11,6 +11,12 @@ export const metadata: Metadata = {
 };
 
 type UpcomingCourse = {
+  /** Slug reale del corso: è ciò che porta "Iscriviti" dritto al corso
+      giusto invece che alla home generica — decisivo appena un secondo
+      corso parte in parallelo, perché a quel punto la home da sola non
+      saprebbe più a quale dei due si riferisce il codice che l'iscritto
+      ha in mano prima ancora di digitarlo. */
+  slug: string;
   kicker: string;
   subtitle: string;
   price: string;
@@ -31,6 +37,7 @@ type UpcomingCourse = {
  */
 const courses: UpcomingCourse[] = [
   {
+    slug: "avvicinamento-2026",
     kicker: "Prima edizione",
     subtitle: "Un percorso pratico per assaggiare, capire e scegliere meglio.",
     price: "120 €",
@@ -157,7 +164,7 @@ export default function UpcomingCoursesPage() {
       <div className="mt-2">
         {courses.map((course, i) => (
           <section
-            key={course.kicker}
+            key={course.slug}
             className={`mt-9 ${i > 0 ? "border-t border-gold/22 pt-[30px]" : ""}`}
           >
             <div className="flex flex-wrap items-start justify-between gap-5">
@@ -227,7 +234,7 @@ export default function UpcomingCoursesPage() {
                 {course.quote}
               </p>
               <Link
-                href="/"
+                href={`/corso/${course.slug}`}
                 className="press lift inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-medium text-charcoal transition-transform"
               >
                 Iscriviti a questo corso <span aria-hidden>→</span>
