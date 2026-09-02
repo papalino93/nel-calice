@@ -1,4 +1,4 @@
-import { AttemptStatus } from "@prisma/client";
+import { AttemptStatus, Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { computeBudgets, type LessonForScoring } from "./scoring";
 import type { EnrollmentRef } from "./enrollment";
@@ -68,6 +68,16 @@ export type Grade = {
 /**
  * Correzione: confronta le risposte salvate con quelle corrette e assegna i
  * punti. Una domanda lasciata in bianco vale zero e non è un errore (§3.5).
+ *
+ * `score` **non** è la somma di `pointsAwarded`: con molte domande e un
+ * budget piccolo, dividere i punti uno per uno fa arrotondare a zero la
+ * maggior parte delle domande (8 domande, 3 punti → 5 domande su 8 valgono
+ * letteralmente nulla, indovinarle o no non cambia il voto). Qui si
+ * arrotonda una volta sola, sulla quota di risposte giuste sul totale della
+ * lezione — ogni domanda pesa quindi sempre qualcosa, anche quando i punti
+ * non bastano per darne uno intero a ciascuna. `pointsAwarded` resta un
+ * valore per domanda, solo informativo (non è mai mostrato al corsista, §
+ * "I punti per domanda... la pagina del risultato non li mostra mai").
  */
 export function grade(
   questions: GradableQuestion[],
@@ -84,11 +94,14 @@ export function grade(
     };
   });
 
-  return {
-    answers,
-    score: answers.reduce((sum, a) => sum + a.pointsAwarded, 0),
-    maxScore: questions.reduce((sum, q) => sum + q.points, 0),
-  };
+  const maxScore = questions.reduce((sum, q) => sum + q.points, 0);
+  const correctCount = answers.filter((a) => a.isCorrect).length;
+  const score =
+    questions.length > 0
+      ? Math.round((correctCount / questions.length) * maxScore)
+      : 0;
+
+  return { answers, score, maxScore };
 }
 
 // ---------------------------------------------------------------------------
@@ -222,22 +235,55 @@ export async function startAttempt(
     : courseLesson.course.lessonTimerMinutes;
 
   const startedAt = new Date();
-  const attempt = await prisma.quizAttempt.create({
-    data: {
-      courseId: enrollment.courseId,
-      enrollmentId: enrollment.id,
-      courseLessonId,
-      startedAt,
-      expiresAt: attemptDeadline(startedAt, minutes),
-    },
-  });
+  // Due tocchi quasi simultanei su "Inizia" possono superare entrambi il
+  // controllo `existing` qui sopra: il vincolo di unicità sul database
+  // ferma la seconda `create`, che altrimenti risponderebbe con un 500
+  // generico invece di riprendere il tentativo che l'altro tocco ha già
+  // creato.
+  try {
+    const attempt = await prisma.quizAttempt.create({
+      data: {
+        courseId: enrollment.courseId,
+        enrollmentId: enrollment.id,
+        courseLessonId,
+        startedAt,
+        expiresAt: attemptDeadline(startedAt, minutes),
+      },
+    });
 
-  return {
-    ok: true,
-    attemptId: attempt.id,
-    expiresAt: attempt.expiresAt,
-    resumed: false,
-  };
+    return {
+      ok: true,
+      attemptId: attempt.id,
+      expiresAt: attempt.expiresAt,
+      resumed: false,
+    };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const already = await prisma.quizAttempt.findUnique({
+        where: {
+          enrollmentId_courseLessonId: {
+            enrollmentId: enrollment.id,
+            courseLessonId,
+          },
+        },
+      });
+      if (already) {
+        if (already.status !== AttemptStatus.IN_PROGRESS) {
+          return { ok: false, reason: "already_done" };
+        }
+        return {
+          ok: true,
+          attemptId: already.id,
+          expiresAt: already.expiresAt,
+          resumed: true,
+        };
+      }
+    }
+    throw error;
+  }
 }
 
 export type AnswerOutcome =

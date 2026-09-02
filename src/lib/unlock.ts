@@ -1,4 +1,4 @@
-import { UnlockMethod } from "@prisma/client";
+import { Prisma, UnlockMethod } from "@prisma/client";
 import { prisma } from "./prisma";
 import { verifyCode } from "./codes";
 import type { EnrollmentRef } from "./enrollment";
@@ -84,13 +84,27 @@ export async function unlockWithCode(
 
   if (!succeeded) return { ok: false, reason: "wrong_code" };
 
-  await prisma.lessonUnlock.create({
-    data: {
-      courseId: enrollment.courseId,
-      enrollmentId: enrollment.id,
-      courseLessonId,
-      method: UnlockMethod.CODE,
-    },
-  });
-  return { ok: true, alreadyUnlocked: false };
+  // Due invii quasi simultanei del codice giusto possono superare entrambi
+  // il controllo `isLessonUnlockedFor` qui sopra: il vincolo di unicità sul
+  // database ferma il secondo `create`, che altrimenti risponderebbe con un
+  // 500 generico a uno sblocco in realtà riuscito.
+  try {
+    await prisma.lessonUnlock.create({
+      data: {
+        courseId: enrollment.courseId,
+        enrollmentId: enrollment.id,
+        courseLessonId,
+        method: UnlockMethod.CODE,
+      },
+    });
+    return { ok: true, alreadyUnlocked: false };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return { ok: true, alreadyUnlocked: true };
+    }
+    throw error;
+  }
 }

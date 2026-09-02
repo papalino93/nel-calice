@@ -1,4 +1,4 @@
-import { CourseStatus } from "@prisma/client";
+import { CourseStatus, Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { codeLookup, verifyCode } from "./codes";
 
@@ -146,16 +146,41 @@ export async function enrollWithCode(
 
   if (!succeeded) return { ok: false, reason: "wrong_code" };
 
-  const enrollment = await prisma.enrollment.create({
-    data: { userId, courseId: course.id },
-    select: { id: true, courseId: true },
-  });
-  return {
-    ok: true,
-    enrollment,
-    courseSlug: course.slug,
-    alreadyEnrolled: false,
-  };
+  // Due richieste quasi simultanee con lo stesso codice giusto possono
+  // passare entrambe il controllo `existing` qui sopra: il vincolo di
+  // unicità sul database ferma la seconda `create`, che altrimenti
+  // risponderebbe con un 500 generico a un'iscrizione in realtà riuscita.
+  try {
+    const enrollment = await prisma.enrollment.create({
+      data: { userId, courseId: course.id },
+      select: { id: true, courseId: true },
+    });
+    return {
+      ok: true,
+      enrollment,
+      courseSlug: course.slug,
+      alreadyEnrolled: false,
+    };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const already = await prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId, courseId: course.id } },
+        select: { id: true, courseId: true },
+      });
+      if (already) {
+        return {
+          ok: true,
+          enrollment: already,
+          courseSlug: course.slug,
+          alreadyEnrolled: true,
+        };
+      }
+    }
+    throw error;
+  }
 }
 
 /** I corsi a cui questa persona è iscritta, per l'elenco dopo il login. */
