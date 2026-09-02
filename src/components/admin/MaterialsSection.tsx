@@ -211,6 +211,7 @@ function UploadForm({
           <input
             value={titleIt}
             onChange={(e) => setTitleIt(e.target.value)}
+            placeholder="Es. Scheda di degustazione"
             className={inputClass}
           />
         </Field>
@@ -250,17 +251,15 @@ function UploadForm({
         ))}
       </div>
 
+      <p className="mt-2 text-xs leading-relaxed text-cream/50">
+        Puoi cambiare tipo in qualunque momento: titolo, note e file scelto
+        restano qui finché non carichi la dispensa.
+      </p>
+
       <div className="mt-4">
-        {isVideo ? (
-          <Field label="Link del video (YouTube, Vimeo…)">
-            <input
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://…"
-              className={inputClass}
-            />
-          </Field>
-        ) : (
+        {/* I due campi restano montati: cambiare PDF/immagine/video non deve
+            mai far perdere una scelta già fatta nel browser. */}
+        <div hidden={isVideo}>
           <Field label="File (PDF, immagine o slide — fino a 50MB)">
             <input
               ref={fileRef}
@@ -269,7 +268,17 @@ function UploadForm({
               className={`${inputClass} file:mr-3 file:rounded-full file:border-0 file:bg-gold/20 file:px-3 file:py-1 file:text-xs file:text-gold`}
             />
           </Field>
-        )}
+        </div>
+        <div hidden={!isVideo}>
+          <Field label="Link del video (YouTube, Vimeo…)">
+            <input
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://…"
+              className={inputClass}
+            />
+          </Field>
+        </div>
       </div>
 
       <div className="mt-4 flex items-center gap-3">

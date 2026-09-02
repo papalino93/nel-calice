@@ -973,6 +973,7 @@ function LessonRow({
   const [code, setCode] = useState(lesson.unlockCode ?? "");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
@@ -999,6 +1000,18 @@ function LessonRow({
     });
     setBusy(false);
     onChanged();
+  }
+
+  async function copyCode() {
+    const value = code.trim().toUpperCase();
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setMsg("Non riesco a copiare il codice da qui.");
+    }
   }
 
   return (
@@ -1028,21 +1041,30 @@ function LessonRow({
       </div>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
-        <Field label="Codice della serata">
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            onBlur={() => {
-              const next = code.trim().toUpperCase();
-              if (next && next !== (lesson.unlockCode ?? "")) {
-                void patch({ unlockCode: next });
-              }
-            }}
-            className={`${inputClass} w-44 font-serif tracking-[0.15em] uppercase`}
-            autoCapitalize="characters"
-            spellCheck={false}
-          />
-        </Field>
+        <div>
+          <Field label="Codice della serata">
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              onBlur={() => {
+                const next = code.trim().toUpperCase();
+                if (next && next !== (lesson.unlockCode ?? "")) {
+                  void patch({ unlockCode: next });
+                }
+              }}
+              className={`${inputClass} w-44 font-serif tracking-[0.15em] uppercase`}
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+          </Field>
+          <button
+            onClick={() => void copyCode()}
+            disabled={!code.trim()}
+            className="press mt-1.5 min-h-8 px-1 text-xs text-gold/85 underline underline-offset-4 disabled:text-cream/30"
+          >
+            {copied ? "Copiato" : "Copia codice"}
+          </button>
+        </div>
 
         <label className="mb-2 inline-flex items-center gap-2 text-sm text-cream/70">
           <input
