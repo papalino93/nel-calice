@@ -323,16 +323,6 @@ function EnrollmentCard({
   const [busy, setBusy] = useState<"payment" | "note" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Riallinea `note` quando il salvataggio ricarica la lista e questa scheda
-  // riceve dati più recenti: aggiustato durante il render invece che in un
-  // effetto, come consigliato per sincronizzare lo stato locale a un prop
-  // che cambia (evita il giro extra di render dell'effetto).
-  const [trackedNotes, setTrackedNotes] = useState(student.adminNotes);
-  if (student.adminNotes !== trackedNotes) {
-    setTrackedNotes(student.adminNotes);
-    setNote(student.adminNotes ?? "");
-  }
-
   async function save(body: Record<string, unknown>, kind: "payment" | "note") {
     setBusy(kind);
     setMessage(null);
