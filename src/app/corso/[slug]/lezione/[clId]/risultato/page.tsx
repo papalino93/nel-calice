@@ -160,6 +160,13 @@ export default function ResultPage({
         </div>
 
         <ul className="flex flex-col gap-3">
+          {shown.length === 0 && (
+            <li className="card p-5 text-center text-sm text-cream/65">
+              {lang === "en"
+                ? "No incorrect answers here - excellent work."
+                : "Nessuna risposta sbagliata qui: ottimo lavoro."}
+            </li>
+          )}
           {shown.map((question) => {
             const correct = question.options.find(
               (o) => o.id === question.correctOptionId,
@@ -217,14 +224,22 @@ export default function ResultPage({
         </ul>
       </section>
 
-      <div className="mt-8 text-center">
+      <section className="card mt-8 p-5 text-center">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
+          {lang === "en" ? "What now?" : "E ora?"}
+        </p>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-cream/65">
+          {lang === "en"
+            ? "Go back to your course: it will show the one lesson or material that makes sense to open next."
+            : "Torna al corso: troverai subito la lezione o il materiale che ha senso aprire adesso."}
+        </p>
         <Link
           href={`/corso/${slug}`}
-          className="press lift inline-block rounded-full border border-gold/40 px-6 py-3 text-sm text-gold transition-transform"
+          className="press lift mt-4 inline-block rounded-full bg-gold px-6 py-3 text-sm font-medium text-charcoal transition-transform"
         >
-          {t.backToLessons}
+          {lang === "en" ? "Return to my course" : "Torna al mio corso"}
         </Link>
-      </div>
+      </section>
     </main>
   );
 }

@@ -9,7 +9,7 @@ import "./globals.css";
 const DONATION_URL = "https://buymeacoffee.com/papalino";
 const SITE_URL = `https://${siteHost()}`;
 const DESCRIPTION =
-  "L'Angolo del Vino — corso amatoriale di avvicinamento al vino, serata dopo serata: degustazioni guidate, quiz e attestato finale.";
+  "L'Angolo del Vino — corso amatoriale di avvicinamento al vino, serata dopo serata: degustazioni guidate, quiz e attestato di partecipazione.";
 
 // Serif elegante per titoli, numeri di lezione e nome sull'attestato;
 // sans geometrica per tutto il resto (§6). I font vengono impacchettati nel
