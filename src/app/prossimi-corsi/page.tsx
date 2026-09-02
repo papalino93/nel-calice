@@ -44,7 +44,8 @@ const courses: UpcomingCourse[] = [
     title: "Corso di Avvicinamento al Vino",
     kicker: "Prima edizione",
     enrollmentLabel: "Iscrizioni aperte · posti limitati",
-    subtitle: "Un percorso pratico per assaggiare, capire e scegliere meglio.",
+    subtitle:
+      "Le basi del vino spiegate per bene, senza fare i sommelier: capisci davvero cosa stai bevendo, assaggi vini diversi ogni sera guidato passo passo e ti porti a casa qualche trucco per scegliere e ordinare con più sicurezza. Nozioni serie, ma tra un bicchiere e l'altro si ride parecchio.",
     price: "120 €",
     listPrice: "150 €",
     quote:
@@ -129,7 +130,7 @@ export default function UpcomingCoursesPage() {
             Corsi in partenza
           </p>
           <h1 className="mt-2.5 font-serif text-[30px] leading-[1.05] font-normal text-cream sm:text-[38px]">
-            I prossimi corsi nel calice
+            I prossimi corsi «Nel Calice»
           </h1>
           <p className="mt-3 font-serif text-lg italic leading-[1.3] text-gold-light sm:text-[21px]">
             Percorsi per assaggiare, capire e scegliere meglio.
