@@ -17,7 +17,18 @@ type CourseRow = {
   titleEn: string;
   subtitleIt: string | null;
   subtitleEn: string | null;
+  status: string;
+  enrolledAt: string;
 };
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 type MyCourses = {
   user: { name: string; email: string; role: "relatore" | "corsista" };
@@ -28,8 +39,8 @@ type MyCourses = {
  * Smistamento dopo il login.
  *
  * - relatore  → area riservata (da lì può comunque passare alla vista corsista)
- * - un corso  → dentro, senza far scegliere fra un'opzione sola
- * - più corsi → elenco
+ * - uno o più corsi → area personale, da cui riprendere senza dover
+ *   ricordare un link o "dove si era rimasti"
  * - nessuno   → campo del codice
  */
 export default function Home() {
@@ -64,10 +75,6 @@ export default function Home() {
 
       if (result.data.user.role === "relatore" && !asStudent) {
         router.replace("/relatore");
-        return;
-      }
-      if (result.data.courses.length === 1) {
-        router.replace(`/corso/${result.data.courses[0].slug}`);
         return;
       }
       setData(result.data);
@@ -115,39 +122,79 @@ export default function Home() {
     );
   }
 
+  const currentCourse = data.courses[0];
+
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-10 pb-28 sm:px-8">
-      <header className="mb-10 flex items-center justify-between gap-4">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pt-8 pb-28 sm:px-8">
+      <header className="mb-8 flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Seal size={40} />
-          <span className="font-serif text-lg text-cream/90">
-            {t.courseTitle}
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-bordeaux font-serif text-base text-cream ring-2 ring-gold/60">
+            {initials(data.user.name)}
           </span>
+          <div className="min-w-0">
+            <p className="text-[0.65rem] font-medium uppercase tracking-[0.18em] text-gold/75">
+              {lang === "en" ? "Your personal area" : "La tua area personale"}
+            </p>
+            <p className="truncate font-serif text-xl leading-tight text-cream">
+              {data.user.name}
+            </p>
+            <p className="truncate text-xs text-cream/55">{data.user.email}</p>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="press -ml-1 mt-1 inline-flex min-h-9 items-center px-1 text-xs text-cream/60 underline underline-offset-2 hover:text-cream"
+            >
+              {t.signOut}
+            </button>
+          </div>
         </div>
         <LanguageToggle />
       </header>
 
-      <div className="rise-in flex flex-1 flex-col items-center">
-        <p className="text-sm text-cream/60">
-          {t.signedInAs} {data.user.email} ·{" "}
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="underline underline-offset-2 hover:text-cream/70"
-          >
-            {t.signOut}
-          </button>
-        </p>
-
+      <div className="rise-in flex flex-1 flex-col">
         {data.courses.length === 0 ? (
-          <div className="mt-10 flex w-full flex-col items-center">
-            <p className="mb-5 text-sm text-cream/60">{t.noCoursesYet}</p>
+          <div className="mt-8 flex w-full flex-col items-center text-center">
+            <Seal size={64} />
+            <h1 className="mt-5 font-serif text-3xl text-cream">
+              {lang === "en" ? "Your wine journey starts here" : "Il tuo percorso comincia qui"}
+            </h1>
+            <p className="mt-2 mb-5 max-w-sm text-sm leading-relaxed text-cream/65">
+              {lang === "en"
+                ? "Your quizzes, results and course materials will always be saved in this personal area."
+                : "Quiz, risultati e materiali del corso resteranno sempre salvati in questa area personale."}
+            </p>
             <EnrollForm onEnrolled={() => setReloads((n) => n + 1)} />
           </div>
         ) : (
-          <div className="mt-10 w-full">
+          <div className="w-full">
+            {currentCourse && (
+              <section className="rounded-card border border-gold/40 bg-bordeaux/35 p-5 shadow-[0_14px_36px_rgba(0,0,0,0.2)]">
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-gold-light/90">
+                  {lang === "en" ? "Continue from here" : "Riprendi da qui"}
+                </p>
+                <h1 className="mt-1 font-serif text-2xl text-cream">
+                  {pick(lang, currentCourse.titleIt, currentCourse.titleEn)}
+                </h1>
+                <p className="mt-1 text-sm text-cream/70">
+                  {pick(lang, currentCourse.subtitleIt, currentCourse.subtitleEn) || (lang === "en" ? "Your course is ready whenever you are." : "Il tuo corso è pronto quando lo sei tu.")}
+                </p>
+                <Link
+                  href={`/corso/${currentCourse.slug}`}
+                  className="press lift mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-charcoal transition-transform"
+                >
+                  {lang === "en" ? "Open my course" : "Apri il mio corso"}
+                  <ArrowRightIcon className="h-4 w-4" />
+                </Link>
+              </section>
+            )}
+
+            <div className="mt-8 flex items-end justify-between gap-4">
             <h1 className="mb-4 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
               {t.myCourses}
             </h1>
+              <span className="mb-4 text-xs text-cream/50">
+                {data.courses.length} {data.courses.length === 1 ? (lang === "en" ? "course" : "corso") : (lang === "en" ? "courses" : "corsi")}
+              </span>
+            </div>
             <ul className="flex flex-col gap-3">
               {data.courses.map((course) => (
                 <li key={course.slug}>
@@ -159,7 +206,7 @@ export default function Home() {
                       <span className="block font-serif text-xl text-cream">
                         {pick(lang, course.titleIt, course.titleEn)}
                       </span>
-                      <span className="block truncate text-xs text-cream/60">
+                      <span className="block truncate text-xs text-cream/55">
                         {pick(lang, course.subtitleIt, course.subtitleEn)}
                       </span>
                     </span>
@@ -169,8 +216,8 @@ export default function Home() {
               ))}
             </ul>
 
-            <details className="mt-8">
-              <summary className="cursor-pointer text-center text-sm text-cream/60 hover:text-cream/70">
+            <details className="mt-8 rounded-card border border-cream/10 p-4">
+              <summary className="cursor-pointer text-center text-sm text-cream/45 hover:text-cream/70">
                 + {t.enrollTitle}
               </summary>
               <div className="mt-4 flex justify-center">

@@ -102,6 +102,11 @@ export default function LessonPage({
       </div>
 
       <section className="card rise-in mt-8 flex flex-col items-center p-6 text-center">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
+          {done
+            ? lang === "en" ? "Step 1 completed" : "Passaggio 1 completato"
+            : lang === "en" ? "Step 1 - quiz" : "Passaggio 1 - quiz"}
+        </p>
         {done ? (
           <>
             <p className="text-xs uppercase tracking-[0.18em] text-gold/80">
@@ -134,8 +139,14 @@ export default function LessonPage({
       <section className="mt-10">
         <h2 className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
           <BookIcon className="h-4 w-4" />
-          {t.materials}
+          {lang === "en" ? "Step 2 - course material" : "Passaggio 2 - materiale didattico"}
         </h2>
+
+        <p className="mb-3 max-w-2xl text-sm leading-relaxed text-cream/60">
+          {lang === "en"
+            ? "These materials belong to this lesson: you can consult them before or after the quiz and find them again from your personal area."
+            : "Questi materiali appartengono a questa lezione: puoi consultarli prima o dopo il quiz e ritrovarli sempre dalla tua area personale."}
+        </p>
 
         {materials.length === 0 ? (
           <p className="card p-5 text-sm text-cream/60">{t.noMaterials}</p>

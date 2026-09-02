@@ -1,24 +1,42 @@
-// Il ruolo "relatore" non è mai un campo salvato su User: sarebbe
-// falsificabile (o modificabile per errore) e andrebbe protetto con la
-// stessa cura di un account admin. Invece è calcolato ad ogni richiesta
-// confrontando l'email dell'account Google con un allowlist server-side.
-//
-// Per aggiungere un socio/relatore: aggiungere la sua email a ADMIN_EMAILS
-// su Vercel (comma-separated), nessun codice da toccare.
-function adminEmails(): string[] {
+import { InstructorRole } from "@prisma/client";
+import { prisma } from "./prisma";
+
+// ADMIN_EMAILS resta la cintura di sicurezza del proprietario iniziale: non
+// sparisce se una migrazione o un dato venisse toccato per errore. Gli altri
+// relatori vivono invece nel database e vengono gestiti dall'app.
+export function bootstrapOwnerEmails(): string[] {
   return (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 }
 
-export function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return adminEmails().includes(email.toLowerCase());
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
 
 export type Role = "relatore" | "corsista";
 
-export function roleForEmail(email: string | null | undefined): Role {
-  return isAdminEmail(email) ? "relatore" : "corsista";
+export async function roleForEmail(
+  email: string | null | undefined,
+): Promise<Role> {
+  if (!email) return "corsista";
+  const normalized = normalizeEmail(email);
+  if (bootstrapOwnerEmails().includes(normalized)) return "relatore";
+
+  const access = await prisma.instructorAccess.findUnique({
+    where: { email: normalized },
+    select: { id: true },
+  });
+  return access ? "relatore" : "corsista";
+}
+
+export async function canManageInstructorAccess(email: string): Promise<boolean> {
+  const normalized = normalizeEmail(email);
+  if (bootstrapOwnerEmails().includes(normalized)) return true;
+  const access = await prisma.instructorAccess.findUnique({
+    where: { email: normalized },
+    select: { role: true },
+  });
+  return access?.role === InstructorRole.OWNER;
 }

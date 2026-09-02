@@ -130,6 +130,14 @@ export default function CoursePage({
     overview.lessons.length > 0 &&
     overview.lessons.every((l) => l.status === "fatto");
 
+  // Una griglia di lezioni è utile per orientarsi, ma non risponde alla
+  // domanda con cui quasi tutti rientrano dopo giorni: «cosa devo fare
+  // adesso?». Il primo blocco non concluso e già predisposto dal relatore è
+  // quindi l'unico prossimo passo proposto, senza nascondere il resto.
+  const nextLesson = overview.lessons.find(
+    (lesson) => lesson.status !== "fatto" && lesson.status !== "vuoto",
+  );
+
   // Un corso da una o due serate non riempie due colonne: la destra
   // resterebbe quasi vuota accanto a una sinistra alta e pesante. Sotto le
   // tre lezioni si passa a una colonna sola, con le lezioni in cima —
@@ -258,6 +266,15 @@ export default function CoursePage({
     </div>
   );
 
+  const nextStepBlock = (
+    <NextStepCard
+      slug={slug}
+      lesson={nextLesson ?? null}
+      courseComplete={allDone}
+      onUnlock={(lesson) => setUnlocking(lesson)}
+    />
+  );
+
   return (
     <>
       {/* Un relatore che guarda un corso dal punto di vista dei corsisti deve
@@ -297,6 +314,8 @@ export default function CoursePage({
           </div>
         </header>
 
+        {nextStepBlock}
+
         {/* I blocchi sono gli stessi nelle due disposizioni: cambia solo
             come vengono impaginati. */}
         {compact ? (
@@ -316,16 +335,14 @@ export default function CoursePage({
         )}
 
         <div className="mt-8 flex justify-center gap-5 text-sm">
-          {/* Solo per chi è iscritto a più corsi: con un corso solo la home
-              rimanda qui, e il collegamento sarebbe un anello chiuso. */}
-          {overview.hasOtherCourses && (
-            <Link
-              href="/"
-              className="text-cream/60 underline underline-offset-4 hover:text-cream/70"
-            >
-              {t.backToCourses}
-            </Link>
-          )}
+          {/* Rientro sempre disponibile nell'area personale: è la bussola del
+              corsista, anche quando segue un solo corso. */}
+          <Link
+            href="/"
+            className="text-cream/55 underline underline-offset-4 hover:text-cream/80"
+          >
+            {lang === "en" ? "My personal area" : "La mia area personale"}
+          </Link>
         </div>
       </main>
 
@@ -342,6 +359,89 @@ export default function CoursePage({
         />
       )}
     </>
+  );
+}
+
+/** La prima cosa che il corsista deve poter capire senza ricordare regole o
+    cercare fra le card. */
+function NextStepCard({
+  slug,
+  lesson,
+  courseComplete,
+  onUnlock,
+}: {
+  slug: string;
+  lesson: LessonCard | null;
+  courseComplete: boolean;
+  onUnlock: (lesson: LessonCard) => void;
+}) {
+  const { lang, t } = useLanguage();
+
+  if (courseComplete) {
+    return (
+      <section className="mb-7 rounded-card border border-gold/40 bg-bordeaux/35 p-5 sm:p-6">
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-gold-light">
+          {lang === "en" ? "Your course is complete" : "Hai completato il percorso"}
+        </p>
+        <h1 className="mt-1 font-serif text-2xl text-cream">
+          {lang === "en" ? "Well done - your results are all here." : "Ottimo: qui trovi tutti i tuoi risultati."}
+        </h1>
+      </section>
+    );
+  }
+
+  if (!lesson) {
+    return (
+      <section className="mb-7 rounded-card border border-gold/20 bg-charcoal-soft/70 p-5">
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-gold/80">
+          {lang === "en" ? "Your next step" : "Il tuo prossimo passo"}
+        </p>
+        <p className="mt-1 font-serif text-xl text-cream">
+          {lang === "en" ? "The next lesson is being prepared." : "La prossima lezione è in preparazione."}
+        </p>
+        <p className="mt-2 text-sm text-cream/60">
+          {lang === "en" ? "Come back here when your host has made it available." : "Torna qui quando il relatore l'avrà resa disponibile."}
+        </p>
+      </section>
+    );
+  }
+
+  const title = pick(lang, lesson.titleIt, lesson.titleEn);
+  const label = lesson.status === "bloccata"
+    ? lang === "en" ? "Enter the lesson code" : "Inserisci il codice della lezione"
+    : lesson.inProgress ? t.resume : lang === "en" ? "Open the lesson" : "Apri la lezione";
+  const helper = lesson.status === "bloccata"
+    ? lang === "en"
+      ? "Ask your host for the code given during the evening. It unlocks both the quiz and the course material."
+      : "Chiedi al relatore il codice comunicato durante la serata: sblocca insieme quiz e materiale didattico."
+    : lesson.inProgress
+      ? lang === "en" ? "Your quiz is still open: you can pick up where you stopped." : "Il tuo quiz è ancora aperto: puoi riprendere da dove eri arrivato/a."
+      : lang === "en" ? "The lesson is ready: begin with the quiz and then consult its material." : "La lezione è pronta: inizia dal quiz e poi consulta i suoi materiali.";
+
+  const actionClass = "press lift mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-medium text-charcoal transition-transform";
+  return (
+    <section className="mb-7 rounded-card border border-gold/40 bg-bordeaux/35 p-5 shadow-[0_14px_36px_rgba(0,0,0,0.2)] sm:flex sm:items-end sm:justify-between sm:gap-8 sm:p-6">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-gold-light/90">
+          {lang === "en" ? "Continue from here" : "Riprendi da qui"}
+        </p>
+        <h1 className="mt-1 font-serif text-2xl text-cream sm:text-3xl">
+          {lesson.isExam ? t.finalExam : `${t.lesson} ${lesson.position}`} · {title}
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cream/70">{helper}</p>
+      </div>
+      {lesson.status === "bloccata" ? (
+        <button onClick={() => onUnlock(lesson)} className={actionClass}>
+          <LockIcon className="h-4 w-4" />
+          {label}
+        </button>
+      ) : (
+        <Link href={`/corso/${slug}/lezione/${lesson.courseLessonId}`} className={actionClass}>
+          {label}
+          <ArrowRightIcon className="h-4 w-4" />
+        </Link>
+      )}
+    </section>
   );
 }
 

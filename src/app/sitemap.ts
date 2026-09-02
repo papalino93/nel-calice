@@ -1,10 +1,8 @@
 import type { MetadataRoute } from "next";
 import { siteHost } from "@/lib/site";
 
-// Una sola voce, non per pigrizia: ogni altra pagina dell'app richiede un
-// accesso (login, iscrizione, codice di sblocco) — Google la vedrebbe
-// comunque solo come una schermata d'ingresso, mai il contenuto vero. La
-// porta d'accesso è "/", ed è la sola pagina che vale la pena elencare.
+// L'app resta privata dopo l'accesso, ma la pagina dei prossimi corsi è una
+// vera pagina pubblica: è la destinazione dei QR su locandine e condivisioni.
 export default function sitemap(): MetadataRoute.Sitemap {
   const host = `https://${siteHost()}`;
   return [
@@ -13,6 +11,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,
+    },
+    {
+      url: `${host}/prossimi-corsi`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
     },
   ];
 }
