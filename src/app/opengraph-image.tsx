@@ -1,35 +1,47 @@
 import { ImageResponse } from "next/og";
 
-// Anteprima quando un link al sito viene condiviso (WhatsApp, social):
-// prima non c'era nessuna immagine, e il link usciva spoglio (§ pulizia,
-// STATO.md). Non riusa l'SVG dell'attestato: quello ha un filtro di
-// texture (`feTurbulence`) che il renderer di questa immagine non sa
-// disegnare — qui sono solo forme semplici, gli stessi colori e lo stesso
-// grappolo del sigillo, ridisegnato senza il filtro.
+// Anteprima quando un link al sito viene condiviso (WhatsApp, social).
+//
+// La prima versione riprendeva lo stile "pergamena" dell'attestato — un
+// cartoncino color crema con cornice dorata e un grappolo che non compare da
+// nessun'altra parte del sito. Nella miniatura vera di WhatsApp (segnalato
+// dal committente) risultava spenta: un rettangolo beige su beige, senza
+// legame visibile col resto del prodotto, che è sempre a fondo scuro
+// (`html { color-scheme: dark }`, globals.css). Questa versione riusa lo
+// stesso sigillo dentellato dell'intestazione (`Seal`, src/components/icons)
+// e lo stesso fondo radiale carbone del sito — la prima cosa che chi apre
+// l'app vede è già questa, quindi l'anteprima ora la promette per davvero.
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Corso di Avvicinamento al Vino — L'Angolo del Vino";
+export const alt = "Nel Calice — Corso di Avvicinamento al Vino";
 
 const GOLD = "#D4AF37";
 const GOLD_DEEP = "#A9822A";
 const GOLD_LIGHT = "#E9CE7E";
-const BORDEAUX = "#722F37";
 const BORDEAUX_DEEP = "#48181D";
 const CREAM = "#F6F0E5";
-const INK = "#3A3128";
+const CHARCOAL = "#1E1F21";
+const CHARCOAL_SOFT = "#2C2D30";
 
-const BERRIES: [number, number][] = [
-  [-11, -6], [0, -6], [11, -6],
-  [-16.5, 3], [-5.5, 3], [5.5, 3], [16.5, 3],
-  [-11, 12], [0, 12], [11, 12],
-  [-5.5, 21], [5.5, 21],
-  [0, 29.5],
-];
+/** Lo stesso sigillo dentellato di `Seal` (src/components/icons.tsx),
+    ridisegnato qui perché next/og non può importare quel componente React —
+    Satori vuole SVG puro, calcolato allo stesso modo. */
+function sealPoints() {
+  const teeth = 40;
+  const outer = 49;
+  const inner = 44;
+  return Array.from({ length: teeth * 2 }, (_, i) => {
+    const r = i % 2 === 0 ? outer : inner;
+    const a = (Math.PI * i) / teeth - Math.PI / 2;
+    return `${(50 + r * Math.cos(a)).toFixed(2)},${(50 + r * Math.sin(a)).toFixed(2)}`;
+  }).join(" ");
+}
 
-async function loadGoogleFont(family: string, weight: number) {
+async function loadGoogleFont(family: string, weight: number, italic = false) {
+  const axis = italic ? `ital,wght@1,${weight}` : `wght@${weight}`;
   const css = await fetch(
-    `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${weight}&display=swap`,
+    `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:${axis}&display=swap`,
   ).then((r) => r.text());
   const match = css.match(/src: url\(([^)]+)\) format\('(opentype|truetype)'\)/);
   if (!match) throw new Error(`Font non trovato: ${family}`);
@@ -38,8 +50,9 @@ async function loadGoogleFont(family: string, weight: number) {
 }
 
 export default async function OpengraphImage() {
-  const [cormorant, jost] = await Promise.all([
-    loadGoogleFont("Cormorant Garamond", 700),
+  const [cormorant, cormorantItalic, jost] = await Promise.all([
+    loadGoogleFont("Cormorant Garamond", 600),
+    loadGoogleFont("Cormorant Garamond", 500, true),
     loadGoogleFont("Jost", 500),
   ]);
 
@@ -53,57 +66,77 @@ export default async function OpengraphImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: CREAM,
+          background: `radial-gradient(120% 90% at 50% 0%, ${CHARCOAL_SOFT} 0%, ${CHARCOAL} 65%)`,
           fontFamily: "Jost",
           position: "relative",
         }}
       >
+        {/* Bagliore bordeaux dietro il sigillo, come le card in evidenza del
+            sito (`bg-bordeaux/35`), per dare peso al centro senza un bordo
+            netto — sfuma da sé grazie al gradiente, non serve un blur. */}
         <div
           style={{
             position: "absolute",
-            top: 28,
-            left: 28,
-            right: 28,
-            bottom: 28,
-            border: `3px solid ${GOLD}`,
-            borderRadius: 6,
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: 44,
-            left: 44,
-            right: 44,
-            bottom: 44,
-            border: `1px dashed ${GOLD_DEEP}`,
-            borderRadius: 4,
+            top: -260,
+            width: 900,
+            height: 900,
+            borderRadius: 900,
+            background: `radial-gradient(circle, ${BORDEAUX_DEEP} 0%, rgba(72,24,29,0.35) 55%, rgba(72,24,29,0) 75%)`,
           }}
         />
 
-        <svg width="112" height="112" viewBox="0 0 112 112">
-          <circle cx="56" cy="56" r="52" fill={GOLD} />
-          <circle cx="56" cy="56" r="41" fill={BORDEAUX_DEEP} />
-          <g transform="translate(56 56)">
-            <path d="M0 -14 v-8" fill="none" stroke={GOLD_LIGHT} strokeWidth={2.4} strokeLinecap="round" />
-            <path
-              d="M-2 -19 C -10 -27, -22 -25, -25 -18 C -28 -11, -20 -5, -12 -8 C -6 -10, -3 -15, -2 -19 Z"
-              fill={GOLD_LIGHT}
-            />
-            {BERRIES.map(([x, y]) => (
-              <circle key={`${x}-${y}`} cx={x} cy={y} r={5.6} fill={GOLD_LIGHT} />
-            ))}
+        <svg width="108" height="108" viewBox="0 0 100 100" style={{ position: "relative" }}>
+          <defs>
+            <linearGradient id="seal-gold" x1="0" y1="0" x2="0.6" y2="1">
+              <stop offset="0%" stopColor={GOLD_LIGHT} />
+              <stop offset="45%" stopColor={GOLD} />
+              <stop offset="100%" stopColor={GOLD_DEEP} />
+            </linearGradient>
+          </defs>
+          <polygon points={sealPoints()} fill="url(#seal-gold)" />
+          <circle cx="50" cy="50" r="44" fill="url(#seal-gold)" />
+          <circle cx="50" cy="50" r="35" fill={BORDEAUX_DEEP} />
+          <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(212,175,55,0.35)" strokeWidth="0.8" />
+          {/* Stesso calice di GlassIcon (src/components/icons.tsx), solo
+              riportato dal suo viewBox 24×24 al centro del sigillo. */}
+          <g
+            transform="translate(50 50) scale(1.35) translate(-12 -11.25)"
+            stroke={GOLD_LIGHT}
+            strokeWidth={1.6}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          >
+            <path d="M7 3h10v4c0 2.8-2.2 5-5 5s-5-2.2-5-5z" />
+            <path d="M12 12v7" />
+            <path d="M8.5 19.5h7" />
           </g>
         </svg>
 
         <div
           style={{
-            marginTop: 40,
+            marginTop: 18,
             fontFamily: "Cormorant Garamond",
-            fontSize: 64,
-            fontWeight: 700,
-            color: BORDEAUX,
+            fontWeight: 600,
+            fontStyle: "normal",
+            fontSize: 28,
+            color: CREAM,
+            letterSpacing: 1,
+          }}
+        >
+          Nel Calice
+        </div>
+
+        <div
+          style={{
+            marginTop: 30,
+            fontFamily: "Cormorant Garamond",
+            fontWeight: 600,
+            fontSize: 68,
+            lineHeight: 1.05,
+            color: CREAM,
             textAlign: "center",
+            padding: "0 80px",
           }}
         >
           Corso di Avvicinamento al Vino
@@ -111,42 +144,48 @@ export default async function OpengraphImage() {
 
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            marginTop: 26,
+            marginTop: 20,
+            fontFamily: "Cormorant Garamond",
+            fontStyle: "italic",
+            fontSize: 32,
+            color: GOLD_LIGHT,
+            textAlign: "center",
           }}
         >
-          <div style={{ width: 90, height: 1, background: GOLD }} />
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 8,
-              background: GOLD,
-            }}
-          />
-          <div style={{ width: 90, height: 1, background: GOLD }} />
+          Capire il vino, senza il tecnicismo del sommelier.
         </div>
 
         <div
           style={{
-            marginTop: 22,
-            fontSize: 26,
-            letterSpacing: 4,
-            textTransform: "uppercase",
-            color: INK,
-            opacity: 0.7,
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            marginTop: 44,
           }}
         >
-          L&apos;Angolo del Vino
+          <div style={{ width: 70, height: 1, background: `rgba(212,175,55,0.4)` }} />
+          <div style={{ width: 6, height: 6, borderRadius: 6, background: GOLD }} />
+          <div style={{ width: 70, height: 1, background: `rgba(212,175,55,0.4)` }} />
+        </div>
+
+        <div
+          style={{
+            marginTop: 18,
+            fontSize: 20,
+            letterSpacing: 2,
+            textTransform: "uppercase",
+            color: "rgba(246,240,229,0.55)",
+          }}
+        >
+          L&apos;Angolo del Vino — Scandicci
         </div>
       </div>
     ),
     {
       ...size,
       fonts: [
-        { name: "Cormorant Garamond", data: cormorant, weight: 700, style: "normal" },
+        { name: "Cormorant Garamond", data: cormorant, weight: 600, style: "normal" },
+        { name: "Cormorant Garamond", data: cormorantItalic, weight: 500, style: "italic" },
         { name: "Jost", data: jost, weight: 500, style: "normal" },
       ],
     },
