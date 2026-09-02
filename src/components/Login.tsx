@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { GoogleG, Seal } from "@/components/icons";
 import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
 
@@ -38,6 +39,13 @@ export function Login() {
         <p className="mt-5 max-w-xs text-xs leading-relaxed text-cream/60">
           {t.signInHint}
         </p>
+
+        <Link
+          href="/prossimi-corsi"
+          className="press mt-6 text-sm text-gold/85 underline underline-offset-4 hover:text-gold"
+        >
+          {lang === "en" ? "Discover upcoming courses" : "Scopri i prossimi corsi"}
+        </Link>
       </div>
     </main>
   );
