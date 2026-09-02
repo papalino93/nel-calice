@@ -323,10 +323,6 @@ function EnrollmentCard({
   const [busy, setBusy] = useState<"payment" | "note" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    setNote(student.adminNotes ?? "");
-  }, [student.adminNotes]);
-
   async function save(body: Record<string, unknown>, kind: "payment" | "note") {
     setBusy(kind);
     setMessage(null);
