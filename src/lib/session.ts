@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { prisma } from "./prisma";
+import { roleForEmail } from "./roles";
 
 export type SessionUser = {
   id: string;
@@ -35,8 +36,9 @@ export async function currentUser(): Promise<SessionUser | null> {
     id: user.id,
     email: user.email,
     name: user.name,
-    // Il ruolo resta calcolato dall'allowlist, non letto dal database.
-    role: session.user.role,
+    // Ricalcolato a ogni richiesta: togliere un relatore ha effetto subito,
+    // anche se quel browser ha ancora una sessione Google valida.
+    role: await roleForEmail(user.email),
   };
 }
 

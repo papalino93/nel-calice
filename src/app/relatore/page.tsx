@@ -19,6 +19,7 @@ type AdminCourse = {
   subtitleEn: string | null;
   status: string;
   enrollmentOpen: boolean;
+  enrollmentCode: string;
   lessonCount: number;
   enrolledCount: number;
 };
@@ -42,6 +43,7 @@ export default function AdminHomePage() {
   const [error, setError] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
   const reload = useCallback(() => setReloads((n) => n + 1), []);
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -87,6 +89,18 @@ export default function AdminHomePage() {
     );
   }
 
+  const currentCourse =
+    data.courses.find((course) => course.status === "ACTIVE") ?? data.courses[0];
+  const copyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(code);
+      window.setTimeout(() => setCopied(null), 1800);
+    } catch {
+      setCopied(null);
+    }
+  };
+
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8 sm:px-8">
       <header className="mb-8 flex items-center justify-between gap-4">
@@ -114,7 +128,62 @@ export default function AdminHomePage() {
         </button>
       </p>
 
-      <section className="mt-8">
+      {currentCourse && (
+        <section className="mt-7" aria-labelledby="riprendi-da-qui">
+          <h2
+            id="riprendi-da-qui"
+            className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-gold/80"
+          >
+            {lang === "en" ? "Pick up from here" : "Ricomincia da qui"}
+          </h2>
+          <div className="rounded-card border border-gold/40 bg-bordeaux/35 p-5 shadow-[0_14px_36px_rgba(0,0,0,0.2)]">
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-gold-light/90">
+              {currentCourse.status === "ACTIVE"
+                ? lang === "en" ? "Course in progress" : "Corso attivo"
+                : lang === "en" ? "Course to prepare" : "Corso da preparare"}
+            </p>
+            <h2 className="mt-1 font-serif text-2xl text-cream">
+              {pick(lang, currentCourse.titleIt, currentCourse.titleEn)}
+            </h2>
+            <p className="mt-1 text-sm text-cream/70">
+              {currentCourse.lessonCount} {lang === "en" ? "lessons" : "lezioni"} · {currentCourse.enrolledCount} {lang === "en" ? "enrolled" : "iscritti"}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href={`/relatore/corso/${currentCourse.slug}`}
+                className="press inline-flex min-h-10 items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-sm font-medium text-charcoal"
+              >
+                {lang === "en" ? "Manage this course" : "Gestisci questo corso"}
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href={`/relatore/corso/${currentCourse.slug}/classe`}
+                className="press inline-flex min-h-10 items-center rounded-full border border-cream/25 px-4 py-2 text-sm text-cream/85"
+              >
+                {lang === "en" ? "Class progress" : "Andamento classe"}
+              </Link>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-cream/15 pt-4">
+              <span className="text-xs text-cream/70">
+                {lang === "en" ? "Enrollment code:" : "Codice iscrizione:"}
+              </span>
+              <code className="rounded-lg bg-charcoal/45 px-2.5 py-1.5 font-serif text-sm tracking-[0.14em] text-gold-light">
+                {currentCourse.enrollmentCode}
+              </code>
+              <button
+                onClick={() => void copyCode(currentCourse.enrollmentCode)}
+                className="press min-h-10 rounded-full px-3 text-xs text-gold underline underline-offset-4"
+              >
+                {copied === currentCourse.enrollmentCode
+                  ? lang === "en" ? "Copied" : "Copiato"
+                  : lang === "en" ? "Copy" : "Copia"}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="mt-9">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
           {lang === "en" ? "Courses" : "Corsi"}
         </h2>
@@ -197,28 +266,42 @@ export default function AdminHomePage() {
         </Link>
       </div>
 
-      <section className="mt-8">
-        <h2 className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
-          {lang === "en" ? "Lesson catalogue" : "Catalogo lezioni"}
-        </h2>
+      <section className="mt-8 grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/relatore/impostazioni"
+          className="card lift press flex items-center justify-between gap-4 p-5 transition-transform"
+        >
+          <span>
+            <span className="block font-serif text-lg text-cream">
+              {lang === "en" ? "Settings" : "Impostazioni"}
+            </span>
+            <span className="block text-xs text-cream/55">
+              {lang === "en"
+                ? "People, access and the things you should not have to remember"
+                : "Persone, accessi e tutto ciò che non devi ricordare a memoria"}
+            </span>
+          </span>
+          <ArrowRightIcon className="h-5 w-5 shrink-0 text-gold" />
+        </Link>
+
         <Link
           href="/relatore/catalogo"
           className="card lift press flex items-center justify-between gap-4 p-5 transition-transform"
         >
           <span>
             <span className="block font-serif text-lg text-cream">
-              {data.catalogueSize}{" "}
-              {lang === "en" ? "lessons available" : "lezioni disponibili"}
+              {data.catalogueSize} {lang === "en" ? "lessons available" : "lezioni disponibili"}
             </span>
-            <span className="block text-xs text-cream/60">
+            <span className="block text-xs text-cream/55">
               {lang === "en"
-                ? "Written once, reusable in any course"
-                : "Scritte una volta, riusabili in qualsiasi corso"}
+                ? "Reusable content, questions and handouts"
+                : "Contenuti, domande e dispense riusabili"}
             </span>
           </span>
           <ArrowRightIcon className="h-5 w-5 shrink-0 text-gold" />
         </Link>
       </section>
+
     </main>
   );
 }

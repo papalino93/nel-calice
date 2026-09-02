@@ -296,6 +296,16 @@ Rosati 9, Grandi Rossi 8, Bollicine 10, Vini Dolci 8, Esame Finale 30 (vedi
 `scripts/data/2026-08-10-catalogo.json`). Restano da scrivere le dispense
 per le lezioni che non ne hanno.
 
+In lavorazione: la nuova esperienza guidata per relatore e corsista. Include
+un'area personale sempre raggiungibile per chi segue il corso, una home del
+relatore con il prossimo passo chiaro, impostazioni per gli accessi dei
+relatori e guide contestuali su iscrizione, codici e svolgimento delle serate.
+
+Fa eccezione una cosa, scritta ma **mai provata dal vivo**: dalla pagina del
+corso il relatore può ora scrivere una lezione nuova sul posto, senza passare
+dal catalogo (resta comunque riusabile, e l'interfaccia lo dice). Test, lint e
+build sono verdi, ma nessuno l'ha ancora cliccata con un database vero.
+
 **L'attestato è bilingue anche nel contenuto**, non solo nell'interfaccia
 attorno: titolo del corso, titolo di merito e data cambiano davvero con il
 commutatore IT/EN (prima restavano fissi in italiano). Il campo titolo

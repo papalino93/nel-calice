@@ -56,7 +56,7 @@ export const authOptions: NextAuthOptions = {
           token.language = dbUser.language;
         }
       }
-      token.role = roleForEmail(token.email);
+      token.role = await roleForEmail(token.email);
       return token;
     },
 

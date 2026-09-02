@@ -17,7 +17,7 @@ export function AdminShell({
   backLabel: string;
   children: ReactNode;
 }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-5 pb-24 pt-8 sm:px-8">
@@ -43,6 +43,24 @@ export function AdminShell({
             </h1>
           </div>
         </div>
+
+        {/* Orientamento costante: dopo giorni lontano dal sito il relatore
+            non deve ricordare in quale pagina vivono corsi, contenuti e
+            configurazione. */}
+        <nav
+          aria-label={t.adminArea}
+          className="mt-5 flex flex-wrap gap-2 border-y border-gold/15 py-3 text-sm"
+        >
+          <Link href="/relatore" className="press rounded-full px-3 py-1.5 text-cream/70 hover:bg-cream/8 hover:text-cream">
+            {t.adminArea}
+          </Link>
+          <Link href="/relatore/catalogo" className="press rounded-full px-3 py-1.5 text-cream/70 hover:bg-cream/8 hover:text-cream">
+            {lang === "en" ? "Lesson catalogue" : "Catalogo lezioni"}
+          </Link>
+          <Link href="/relatore/impostazioni" className="press rounded-full px-3 py-1.5 text-cream/70 hover:bg-cream/8 hover:text-cream">
+            {lang === "en" ? "Settings" : "Impostazioni"}
+          </Link>
+        </nav>
       </header>
 
       {children}

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { decryptCode } from "@/lib/codes";
 import { isDenied, requireAdmin } from "@/lib/guard";
 import { prisma } from "@/lib/prisma";
 
@@ -18,6 +19,7 @@ export async function GET() {
         subtitleEn: true,
         status: true,
         enrollmentOpen: true,
+        enrollmentCodeEncrypted: true,
         _count: { select: { lessons: true, enrollments: true } },
       },
     }),
@@ -35,6 +37,7 @@ export async function GET() {
       subtitleEn: c.subtitleEn,
       status: c.status,
       enrollmentOpen: c.enrollmentOpen,
+      enrollmentCode: decryptCode(c.enrollmentCodeEncrypted),
       lessonCount: c._count.lessons,
       enrolledCount: c._count.enrollments,
     })),

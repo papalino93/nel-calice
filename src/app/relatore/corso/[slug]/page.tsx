@@ -145,16 +145,48 @@ export default function ManageCoursePage({
 
       <CourseTitles detail={detail} onSaved={reload} />
 
+      <section className="card mt-6 border-gold/25 bg-bordeaux/15 p-5" aria-label="Azioni del corso">
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-gold/85">
+          Da qui gestisci tutta la serata
+        </p>
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-cream/70">
+          Prima fai iscrivere le persone al corso; poi, a ogni incontro,
+          comunichi il codice della lezione. Quiz e materiali si sbloccano insieme.
+        </p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <a href="#impostazioni" className="press rounded-xl border border-cream/10 bg-charcoal/25 p-3 text-left text-sm text-cream/75 hover:border-gold/35 hover:text-cream">
+            <span className="block text-gold">1. Iscrizioni</span>
+            <span className="mt-0.5 block text-xs text-cream/50">Codice del corso e tempi</span>
+          </a>
+          <a href="#lezioni" className="press rounded-xl border border-cream/10 bg-charcoal/25 p-3 text-left text-sm text-cream/75 hover:border-gold/35 hover:text-cream">
+            <span className="block text-gold">2. Lezioni</span>
+            <span className="mt-0.5 block text-xs text-cream/50">Codici, quiz e dispense</span>
+          </a>
+          <Link href={`/relatore/corso/${detail.slug}/classe`} className="press rounded-xl border border-cream/10 bg-charcoal/25 p-3 text-left text-sm text-cream/75 hover:border-gold/35 hover:text-cream">
+            <span className="block text-gold">3. Classe</span>
+            <span className="mt-0.5 block text-xs text-cream/50">Risultati e presenza</span>
+          </Link>
+          <Link href={`/corso/${detail.slug}`} className="press rounded-xl border border-cream/10 bg-charcoal/25 p-3 text-left text-sm text-cream/75 hover:border-gold/35 hover:text-cream">
+            <span className="block text-gold">4. Vista corsista</span>
+            <span className="mt-0.5 block text-xs text-cream/50">Controlla cosa vedono</span>
+          </Link>
+        </div>
+      </section>
+
+      <div id="impostazioni">
+        <CourseSettings detail={detail} onSaved={reload} />
+      </div>
+
       <CertificateSection slug={slug} detail={detail} onSaved={reload} />
 
-      <CourseSettings detail={detail} onSaved={reload} />
-
-      <LessonsSection
-        slug={slug}
-        detail={detail}
-        available={available}
-        onChanged={reload}
-      />
+      <div id="lezioni">
+        <LessonsSection
+          slug={slug}
+          detail={detail}
+          available={available}
+          onChanged={reload}
+        />
+      </div>
     </AdminShell>
   );
 }
@@ -675,7 +707,7 @@ function CourseSettings({
   return (
     <AdminSection
       title="Impostazioni del corso"
-      hint="Il codice d'iscrizione è quello che comunichi alla prima serata: è unico fra tutti i corsi, quindi chi lo digita finisce qui e non altrove. Le durate valgono per ogni tentativo di questo corso."
+      hint="Per iscriversi, il corsista entra prima con Google e poi inserisce questo codice nella sua area personale. Attiva le iscrizioni solo quando il codice è pronto da comunicare. Le durate valgono per ogni tentativo di questo corso."
       defaultOpen={false}
     >
       <div className="card p-5">

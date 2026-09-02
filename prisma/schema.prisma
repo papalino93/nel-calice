@@ -91,6 +91,24 @@ model User {
   enrollmentAttempts EnrollmentAttempt[]
 }
 
+// Persone autorizzate a entrare nell'Area Relatore. L'indirizzo e-mail è
+// l'identità: quando la persona accede con Google non deve ricordare né PIN
+// né codici condivisi. Gli indirizzi indicati in ADMIN_EMAILS restano
+// proprietari tecnici di emergenza, ma da qui in poi il proprietario può
+// gestire gli altri accessi direttamente dall'app.
+enum InstructorRole {
+  OWNER
+  RELATORE
+}
+
+model InstructorAccess {
+  id        String         @id @default(cuid())
+  email     String         @unique
+  role      InstructorRole @default(RELATORE)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
 // ===========================================================================
 // 1. CATALOGO — contenuto didattico, indipendente da corsi e corsisti
 // ===========================================================================
