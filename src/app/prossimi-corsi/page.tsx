@@ -45,7 +45,7 @@ const courses: UpcomingCourse[] = [
     kicker: "Prima edizione",
     enrollmentLabel: "Iscrizioni aperte · posti limitati",
     subtitle:
-      "Le basi del vino spiegate per bene, senza fare i sommelier: capisci davvero cosa stai bevendo, assaggi vini diversi ogni sera guidato passo passo e ti porti a casa qualche trucco per scegliere e ordinare con più sicurezza. Nozioni serie, ma tra un bicchiere e l'altro si ride parecchio.",
+      "Un corso dove si beve, si impara, si ride e — va detto — qualche volta si sbaglia pure. Sei serate conviviali per scoprire davvero cosa c'è in un bicchiere, tra degustazioni guidate, aneddoti e qualche trucco del mestiere. Alla fine sarai capace di entrare in enoteca e dire con sicurezza esattamente che vino vuoi.",
     price: "120 €",
     listPrice: "150 €",
     quote:
