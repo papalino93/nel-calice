@@ -586,6 +586,9 @@ export type ClassOverview = {
     name: string;
     email: string;
     enrolledAt: string;
+    paymentStatus: "TO_VERIFY" | "PAID";
+    paidAt: string | null;
+    adminNotes: string | null;
     totalScore: number;
     doneCount: number;
     /**
@@ -655,10 +658,15 @@ export async function classOverview(
         },
       },
       enrollments: {
-        orderBy: { enrolledAt: "asc" },
+        // Nell'elenco operativo servono prima le nuove iscrizioni, quelle
+        // che il relatore deve ancora verificare e segnare come pagate.
+        orderBy: { enrolledAt: "desc" },
         select: {
           id: true,
           enrolledAt: true,
+          paymentStatus: true,
+          paidAt: true,
+          adminNotes: true,
           user: { select: { name: true, email: true } },
           attempts: {
             select: {
@@ -717,6 +725,9 @@ export async function classOverview(
       name: e.user.name,
       email: e.user.email,
       enrolledAt: e.enrolledAt.toISOString(),
+      paymentStatus: e.paymentStatus,
+      paidAt: e.paidAt?.toISOString() ?? null,
+      adminNotes: e.adminNotes,
       // Stessa cautela di courseOverview: un corso allargato dopo che
       // qualcuno ha già finito può sommare oltre il massimo attuale.
       totalScore: clampToCourseTotal(totalScore),

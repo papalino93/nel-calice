@@ -3,7 +3,12 @@
 import { use, useCallback, useEffect, useState } from "react";
 import { api, errorMessage } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
-import { AdminSection, AdminShell } from "@/components/admin/AdminShell";
+import {
+  AdminSection,
+  AdminShell,
+  ghostButtonClass,
+  inputClass,
+} from "@/components/admin/AdminShell";
 
 type ClassOverview = {
   totalPoints: number;
@@ -11,6 +16,10 @@ type ClassOverview = {
     enrollmentId: string;
     name: string;
     email: string;
+    enrolledAt: string;
+    paymentStatus: "TO_VERIFY" | "PAID";
+    paidAt: string | null;
+    adminNotes: string | null;
     totalScore: number;
     doneCount: number;
     byLesson: Record<string, Cell>;
@@ -40,6 +49,14 @@ function formatViewedAt(iso: string): string {
   return new Date(iso).toLocaleString("it-IT", {
     dateStyle: "short",
     timeStyle: "short",
+  });
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("it-IT", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 }
 
@@ -80,12 +97,55 @@ export default function ClassPage({
     );
   }
 
+  const paidCount = data.students.filter((s) => s.paymentStatus === "PAID").length;
+  const toVerifyCount = data.students.length - paidCount;
+
   return (
     <AdminShell
-      title="Andamento della classe"
+      title="Classe: iscritti e andamento"
       backHref={`/relatore/corso/${slug}`}
       backLabel="Corso"
     >
+      <AdminSection
+        title="Iscritti, pagamenti e note"
+        hint="Le nuove iscrizioni e l'attività del corso arrivano automaticamente. Il pagamento resta una scelta del relatore, perché può avvenire anche fuori dalla piattaforma. Le note sono private: il corsista non le vede mai."
+      >
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2 text-sm">
+            <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1.5 text-gold">
+              {data.students.length} iscritti
+            </span>
+            <span className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1.5 text-emerald-200">
+              {paidCount} pagati
+            </span>
+            <span className="rounded-full border border-cream/15 px-3 py-1.5 text-cream/65">
+              {toVerifyCount} da verificare
+            </span>
+          </div>
+          <button onClick={reload} className={ghostButtonClass}>
+            Aggiorna elenco
+          </button>
+        </div>
+
+        {data.students.length === 0 ? (
+          <p className="card p-5 text-sm text-cream/60">
+            Nessun iscritto, per ora. Quando una persona entra con Google e
+            inserisce il codice del corso, apparirà qui automaticamente.
+          </p>
+        ) : (
+          <div className="grid gap-3">
+            {data.students.map((student) => (
+              <EnrollmentCard
+                key={student.enrollmentId}
+                slug={slug}
+                student={student}
+                onSaved={reload}
+              />
+            ))}
+          </div>
+        )}
+      </AdminSection>
+
       <AdminSection
         title="Chi ha fatto cosa"
         hint="Una riga per iscritto, una colonna per lezione. Il punteggio compare solo per le lezioni già consegnate. Su un tentativo — in corso o già consegnato — puoi azzerarlo perché lo rifaccia: serve per un click su «inizia» per sbaglio, o un tentativo mai davvero svolto. Il corsista non può farlo da solo."
@@ -242,6 +302,129 @@ export default function ClassPage({
         )}
       </AdminSection>
     </AdminShell>
+  );
+}
+
+type EnrollmentStudent = ClassOverview["students"][number];
+
+/** Scheda amministrativa di un iscritto: dati che non devono mai comparire
+    nell'area personale del corsista. */
+function EnrollmentCard({
+  slug,
+  student,
+  onSaved,
+}: {
+  slug: string;
+  student: EnrollmentStudent;
+  onSaved: () => void;
+}) {
+  const { t } = useLanguage();
+  const [note, setNote] = useState(student.adminNotes ?? "");
+  const [busy, setBusy] = useState<"payment" | "note" | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNote(student.adminNotes ?? "");
+  }, [student.adminNotes]);
+
+  async function save(body: Record<string, unknown>, kind: "payment" | "note") {
+    setBusy(kind);
+    setMessage(null);
+    const result = await api<{ paidAt: string | null; adminNotes: string | null }>(
+      `/api/admin/courses/${slug}/class/${student.enrollmentId}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    );
+    setBusy(null);
+    if (result.ok) {
+      setMessage(kind === "payment" ? "Pagamento aggiornato." : "Nota salvata.");
+      onSaved();
+    } else {
+      setMessage(errorMessage(result, t));
+    }
+  }
+
+  async function saveNote() {
+    if (note === (student.adminNotes ?? "")) return;
+    await save({ adminNotes: note }, "note");
+  }
+
+  const paid = student.paymentStatus === "PAID";
+
+  return (
+    <article className="card p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="font-serif text-xl text-cream">{student.name}</h3>
+          <a
+            href={`mailto:${student.email}`}
+            className="mt-0.5 block break-all text-sm text-cream/60 underline decoration-gold/30 underline-offset-4 hover:text-cream"
+          >
+            {student.email}
+          </a>
+          <p className="mt-2 text-xs text-cream/45">
+            Iscritto il {formatDate(student.enrolledAt)}
+          </p>
+        </div>
+
+        <div className="min-w-44 rounded-xl border border-cream/10 bg-charcoal/25 p-3">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-cream/50">
+            Pagamento
+          </p>
+          <p className={`mt-1 text-sm font-medium ${paid ? "text-emerald-200" : "text-gold"}`}>
+            {paid ? "Pagato" : "Da verificare"}
+          </p>
+          {paid && student.paidAt && (
+            <p className="mt-0.5 text-xs text-cream/45">
+              Confermato il {formatDate(student.paidAt)}
+            </p>
+          )}
+          <button
+            onClick={() =>
+              void save(
+                { paymentStatus: paid ? "TO_VERIFY" : "PAID" },
+                "payment",
+              )
+            }
+            disabled={busy !== null}
+            className={`press mt-3 w-full rounded-full px-3 py-2 text-xs font-medium transition-opacity disabled:opacity-40 ${
+              paid
+                ? "border border-cream/20 text-cream/70 hover:text-cream"
+                : "bg-gold text-charcoal"
+            }`}
+          >
+            {busy === "payment"
+              ? "Salvataggio…"
+              : paid
+                ? "Rimetti da verificare"
+                : "Segna come pagato"}
+          </button>
+        </div>
+      </div>
+
+      <label className="mt-4 block">
+        <span className="mb-1.5 block text-xs font-medium uppercase tracking-[0.14em] text-cream/50">
+          Nota interna
+        </span>
+        <textarea
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          onBlur={() => void saveNote()}
+          maxLength={2000}
+          rows={3}
+          placeholder="Es. bonifico da controllare, posto riservato, telefonare prima…"
+          className={`${inputClass} resize-y leading-relaxed`}
+        />
+        <span className="mt-1.5 block text-xs text-cream/45">
+          Si salva quando esci dal campo. Solo i relatori possono leggerla.
+        </span>
+      </label>
+
+      {message && (
+        <p className={`mt-3 text-xs ${message.includes("salvat") || message.includes("aggiornat") ? "text-emerald-200" : "text-red-300"}`}>
+          {message}
+        </p>
+      )}
+    </article>
   );
 }
 

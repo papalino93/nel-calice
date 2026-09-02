@@ -420,6 +420,14 @@ model Enrollment {
 
   enrolledAt DateTime @default(now())
 
+  /// La piattaforma sa chi si è iscritto, ma non può sapere se il pagamento
+  /// è avvenuto in contanti o fuori dal sito. Questo stato resta quindi una
+  /// scelta esplicita del relatore, visibile solo nella gestione della classe.
+  paymentStatus PaymentStatus @default(TO_VERIFY)
+  paidAt        DateTime?
+  /// Appunto interno del relatore (mai inviato al corsista).
+  adminNotes    String?
+
   unlocks       LessonUnlock[]
   attempts      QuizAttempt[]
   materialViews MaterialView[]
@@ -429,6 +437,11 @@ model Enrollment {
   /// Bersaglio delle chiavi esterne composite (vedi QuizAttempt).
   @@unique([id, courseId])
   @@index([courseId])
+}
+
+enum PaymentStatus {
+  TO_VERIFY
+  PAID
 }
 
 /// Tentativi di inserimento del codice d'iscrizione, per limitare la forza

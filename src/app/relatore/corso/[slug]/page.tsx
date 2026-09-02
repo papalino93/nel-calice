@@ -139,7 +139,7 @@ export default function ManageCoursePage({
           href={`/relatore/corso/${detail.slug}/classe`}
           className="text-gold/80 underline underline-offset-4 hover:text-gold"
         >
-          Andamento della classe
+          Classe, iscritti e pagamenti
         </Link>
       </div>
 
@@ -164,7 +164,7 @@ export default function ManageCoursePage({
           </a>
           <Link href={`/relatore/corso/${detail.slug}/classe`} className="press rounded-xl border border-cream/10 bg-charcoal/25 p-3 text-left text-sm text-cream/75 hover:border-gold/35 hover:text-cream">
             <span className="block text-gold">3. Classe</span>
-            <span className="mt-0.5 block text-xs text-cream/50">Risultati e presenza</span>
+            <span className="mt-0.5 block text-xs text-cream/50">Iscritti, pagamenti e andamento</span>
           </Link>
           <Link href={`/corso/${detail.slug}`} className="press rounded-xl border border-cream/10 bg-charcoal/25 p-3 text-left text-sm text-cream/75 hover:border-gold/35 hover:text-cream">
             <span className="block text-gold">4. Vista corsista</span>
