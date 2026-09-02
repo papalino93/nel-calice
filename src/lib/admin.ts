@@ -1,4 +1,4 @@
-import { AttemptStatus } from "@prisma/client";
+import { AttemptStatus, Prisma, UnlockMethod } from "@prisma/client";
 import { prisma } from "./prisma";
 import { codeLookup, decryptCode, encryptCode, normalizeCode } from "./codes";
 import { isStoredFile, pathnameOf } from "./materials";
@@ -17,6 +17,7 @@ import {
 // È l'unico posto dell'applicazione dove i codici vengono decifrati.
 
 export type AdminCourseDetail = {
+  id: string;
   slug: string;
   titleIt: string;
   titleEn: string;
@@ -66,6 +67,7 @@ export async function courseDetail(
   const course = await prisma.course.findUnique({
     where: { slug },
     select: {
+      id: true,
       slug: true,
       titleIt: true,
       titleEn: true,
@@ -115,6 +117,7 @@ export async function courseDetail(
   const budgetById = new Map(budgets.map((b) => [b.lessonId, b]));
 
   return {
+    id: course.id,
     slug: course.slug,
     titleIt: course.titleIt,
     titleEn: course.titleEn,
@@ -592,17 +595,19 @@ export type ClassOverview = {
     totalScore: number;
     doneCount: number;
     /**
-     * Per lezione, indicizzato per courseLessonId. `null` significa che non
-     * esiste alcun tentativo — non c'è niente da azzerare. Un tentativo
-     * aperto (`inProgress: true`, senza punteggio) è quello che nasce da un
-     * click su "inizia" per sbaglio: senza questo campo restava indistinguibile
-     * da "non ancora iniziato", e il relatore non aveva modo di accorgersene.
+     * Per lezione, indicizzato per courseLessonId. Senza tentativo, `locked`
+     * dice se questo iscritto può ancora aprirla da sé (globalmente, o con
+     * uno sblocco già suo) o se serve un intervento del relatore — è ciò che
+     * permette alla tabella di offrire "Sblocca" solo dove ha senso. Un
+     * tentativo aperto (`inProgress: true`, senza punteggio) è quello che
+     * nasce da un click su "inizia" per sbaglio: senza questo campo restava
+     * indistinguibile da "non ancora iniziato".
      */
     byLesson: Record<
       string,
       | { inProgress: true; score: null; maxScore: null }
       | { inProgress: false; score: number; maxScore: number }
-      | null
+      | { inProgress: false; score: null; maxScore: null; locked: boolean }
     >;
   }[];
   lessons: {
@@ -652,6 +657,7 @@ export async function classOverview(
           position: true,
           isExam: true,
           lessonId: true,
+          globallyUnlocked: true,
           lesson: {
             select: { titleIt: true, _count: { select: { questions: true } } },
           },
@@ -676,6 +682,7 @@ export async function classOverview(
               maxScore: true,
             },
           },
+          unlocks: { select: { courseLessonId: true } },
         },
       },
     },
@@ -697,6 +704,7 @@ export async function classOverview(
 
   const students = course.enrollments.map((e) => {
     const byLesson: ClassOverview["students"][number]["byLesson"] = {};
+    const unlockedIds = new Set(e.unlocks.map((u) => u.courseLessonId));
     let totalScore = 0;
     let doneCount = 0;
 
@@ -705,7 +713,13 @@ export async function classOverview(
       const currentBudget = budgetById.get(cl.id)?.budget ?? 0;
 
       if (!attempt) {
-        byLesson[cl.id] = null;
+        const locked = !cl.globallyUnlocked && !unlockedIds.has(cl.id);
+        byLesson[cl.id] = {
+          inProgress: false,
+          score: null,
+          maxScore: null,
+          locked,
+        };
       } else if (attempt.status === AttemptStatus.IN_PROGRESS) {
         byLesson[cl.id] = { inProgress: true, score: null, maxScore: null };
       } else {
@@ -839,6 +853,60 @@ export async function resetAttempt(
     where: { courseId: course.id, enrollmentId, courseLessonId },
   });
   return count > 0;
+}
+
+/**
+ * Sblocca una serata per un singolo iscritto che l'ha persa — senza aprirla
+ * per tutta la classe (quello è `setGlobalUnlock`, un'azione diversa).
+ * `UnlockMethod.ADMIN` distingue nel registro questo sblocco da uno con
+ * codice detto in aula.
+ *
+ * `courseId` nel filtro, come in `resetAttempt`: senza, un `enrollmentId` o
+ * un `courseLessonId` scambiato per errore sbloccherebbe la lezione
+ * sbagliata in tutt'altro corso.
+ */
+export async function adminUnlockLesson(
+  slug: string,
+  enrollmentId: string,
+  courseLessonId: string,
+): Promise<boolean> {
+  const course = await prisma.course.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!course) return false;
+
+  const enrollment = await prisma.enrollment.findFirst({
+    where: { id: enrollmentId, courseId: course.id },
+    select: { id: true },
+  });
+  const courseLesson = await prisma.courseLesson.findFirst({
+    where: { id: courseLessonId, courseId: course.id },
+    select: { id: true },
+  });
+  if (!enrollment || !courseLesson) return false;
+
+  try {
+    await prisma.lessonUnlock.create({
+      data: {
+        courseId: course.id,
+        enrollmentId,
+        courseLessonId,
+        method: UnlockMethod.ADMIN,
+      },
+    });
+  } catch (error) {
+    // Già sbloccata (da un codice, o da un click precedente): non un errore.
+    if (
+      !(
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      )
+    ) {
+      throw error;
+    }
+  }
+  return true;
 }
 
 /**

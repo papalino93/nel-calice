@@ -63,7 +63,7 @@ function formatDate(iso: string): string {
 type Cell =
   | { inProgress: true; score: null; maxScore: null }
   | { inProgress: false; score: number; maxScore: number }
-  | null;
+  | { inProgress: false; score: null; maxScore: null; locked: boolean };
 
 export default function ClassPage({
   params,
@@ -471,6 +471,44 @@ function StudentCell({
     }
   }
 
+  async function unlock() {
+    setBusy(true);
+    setMsg(null);
+    const result = await api(`/api/admin/courses/${slug}/class/unlock`, {
+      method: "POST",
+      body: JSON.stringify({ enrollmentId, courseLessonId }),
+    });
+    setBusy(false);
+    if (result.ok) {
+      onReset();
+    } else {
+      setMsg(errorMessage(result, t));
+    }
+  }
+
+  if (cell !== null && !cell.inProgress && cell.score === null) {
+    // Nessun tentativo: o l'iscritto può ancora aprirla da sé (globalmente,
+    // o con un suo sblocco), o serve un intervento del relatore — un caso
+    // per volta, chi ha già perso la serata.
+    return (
+      <td className="p-2 text-center">
+        {cell.locked ? (
+          <button
+            onClick={unlock}
+            disabled={busy}
+            title="Sblocca questa serata solo per questo iscritto"
+            className="press rounded-full border border-gold/30 px-2.5 py-1.5 text-xs text-gold/80 hover:bg-gold/10 disabled:opacity-40"
+          >
+            {busy ? "…" : "Sblocca"}
+          </button>
+        ) : (
+          <span className="text-cream/20">—</span>
+        )}
+        {msg && <p className="mt-1 text-[0.65rem] text-red-300">{msg}</p>}
+      </td>
+    );
+  }
+
   if (confirming) {
     return (
       <td className="p-2 text-center">
@@ -498,9 +536,7 @@ function StudentCell({
   return (
     <td className="p-3 text-center tabular-nums">
       <span className="inline-flex items-center gap-1.5">
-        {cell === null ? (
-          <span className="text-cream/20">—</span>
-        ) : cell.inProgress ? (
+        {cell.inProgress ? (
           <span className="text-xs text-gold/70">in corso</span>
         ) : (
           <span className="text-cream/85">
@@ -508,19 +544,17 @@ function StudentCell({
             <span className="text-cream/30">/{cell.maxScore}</span>
           </span>
         )}
-        {cell !== null && (
-          // Sempre visibile, non solo al passaggio del mouse: su tablet e
-          // telefono non esiste un hover da cui farlo comparire, e sarebbe
-          // altrimenti irraggiungibile col tocco.
-          <button
-            onClick={() => setConfirming(true)}
-            title="Azzera il tentativo, perché lo rifaccia"
-            aria-label="Azzera il tentativo"
-            className="press grid min-h-8 min-w-8 place-items-center rounded-full text-sm text-cream/25 transition-colors hover:text-red-300"
-          >
-            ↺
-          </button>
-        )}
+        {/* Sempre visibile, non solo al passaggio del mouse: su tablet e
+            telefono non esiste un hover da cui farlo comparire, e sarebbe
+            altrimenti irraggiungibile col tocco. */}
+        <button
+          onClick={() => setConfirming(true)}
+          title="Azzera il tentativo, perché lo rifaccia"
+          aria-label="Azzera il tentativo"
+          className="press grid min-h-8 min-w-8 place-items-center rounded-full text-sm text-cream/25 transition-colors hover:text-red-300"
+        >
+          ↺
+        </button>
       </span>
     </td>
   );
