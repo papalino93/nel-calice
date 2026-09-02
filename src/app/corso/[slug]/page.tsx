@@ -290,6 +290,8 @@ export default function CoursePage({
       slug={slug}
       lesson={nextLesson ?? null}
       courseComplete={allDone}
+      lessonNumber={nextLesson ? overview.lessons.indexOf(nextLesson) + 1 : 0}
+      lessonTotal={overview.lessons.length}
       onUnlock={(lesson) => setUnlocking(lesson)}
     />
   );
@@ -428,11 +430,15 @@ function NextStepCard({
   slug,
   lesson,
   courseComplete,
+  lessonNumber,
+  lessonTotal,
   onUnlock,
 }: {
   slug: string;
   lesson: LessonCard | null;
   courseComplete: boolean;
+  lessonNumber: number;
+  lessonTotal: number;
   onUnlock: (lesson: LessonCard) => void;
 }) {
   const { lang, t } = useLanguage();
@@ -489,6 +495,18 @@ function NextStepCard({
           {lesson.isExam ? t.finalExam : `${t.lesson} ${lesson.position}`} · {title}
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cream/70">{helper}</p>
+        <div className="mt-4 max-w-md">
+          <div className="flex items-center justify-between text-xs text-cream/60">
+            <span>{lang === "en" ? "Your course progress" : "Il tuo percorso"}</span>
+            <span>{lessonNumber}/{lessonTotal} {lang === "en" ? "lessons" : "lezioni"}</span>
+          </div>
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-cream/15">
+            <div
+              className="progress-fill h-full rounded-full"
+              style={{ width: `${(lessonNumber / lessonTotal) * 100}%` }}
+            />
+          </div>
+        </div>
       </div>
       {lesson.status === "bloccata" ? (
         <button onClick={() => onUnlock(lesson)} className={actionClass}>

@@ -40,6 +40,8 @@ export type LessonCard = {
   unlocked: boolean;
   /** Punti in palio per questa lezione in questo corso. */
   points: number;
+  /** Quante domande aspettarsi prima di iniziare il quiz. */
+  questionCount: number;
   score: number | null;
   maxScore: number | null;
   attemptId: string | null;
@@ -55,6 +57,8 @@ export type CourseOverview = {
     subtitleEn: string | null;
     location: string | null;
     certificateIssuer: string | null;
+    lessonTimerMinutes: number;
+    examTimerMinutes: number;
     /** Solo l'indirizzo interno (o il testo): il byte del logo si legge solo
         se serve davvero costruire un attestato, non a ogni apertura del
         corso. */
@@ -87,6 +91,8 @@ export async function courseOverview(
       subtitleEn: true,
       location: true,
       certificateIssuer: true,
+      lessonTimerMinutes: true,
+      examTimerMinutes: true,
       logos: {
         select: {
           url: true,
@@ -197,6 +203,7 @@ export async function courseOverview(
       status,
       unlocked,
       points: budget?.budget ?? 0,
+      questionCount: cl.lesson._count.questions,
       // Il punteggio mostrato qui è quello di OGGI, non quello congelato
       // alla consegna: se il corso è cresciuto nel frattempo, il budget di
       // questa lezione può essere cambiato, e mostrare il numero di allora
@@ -232,6 +239,8 @@ export async function courseOverview(
       subtitleEn: course.subtitleEn,
       location: course.location,
       certificateIssuer: course.certificateIssuer,
+      lessonTimerMinutes: course.lessonTimerMinutes,
+      examTimerMinutes: course.examTimerMinutes,
     logos: course.logos.map((l) => ({
       url: l.url,
       text: l.text,
