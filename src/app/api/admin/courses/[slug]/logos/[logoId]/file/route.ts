@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isDenied, requireAdmin } from "@/lib/guard";
 import { courseLogoFor } from "@/lib/admin";
-import { readStoredFile } from "@/lib/materials";
+import { isDbStored, readStoredFile } from "@/lib/materials";
 
 /** Il logo, per l'anteprima del relatore nel pannello del corso. */
 export async function GET(
@@ -17,16 +17,36 @@ export async function GET(
     return NextResponse.json({ error: "logo inesistente" }, { status: 404 });
   }
 
-  const file = await readStoredFile(logo.url);
-  if (!file) {
-    return NextResponse.json({ error: "file inesistente" }, { status: 404 });
+  if (isDbStored(logo.url)) {
+    if (!logo.content) {
+      return NextResponse.json({ error: "file inesistente" }, { status: 404 });
+    }
+    return new NextResponse(logo.content as BodyInit, {
+      headers: {
+        "Cache-Control": "private, no-store",
+        "Content-Type": logo.contentType ?? "application/octet-stream",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   }
 
-  return new NextResponse(file.stream, {
-    headers: {
-      "Cache-Control": "private, no-cache",
-      "Content-Type": file.blob.contentType ?? "application/octet-stream",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+  try {
+    const file = await readStoredFile(logo.url);
+    if (!file) {
+      return NextResponse.json({ error: "file inesistente" }, { status: 404 });
+    }
+    return new NextResponse(file.stream, {
+      headers: {
+        "Cache-Control": "private, no-store",
+        "Content-Type": file.blob.contentType ?? "application/octet-stream",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch (error) {
+    console.error("[logo/file] file Blob non disponibile", error);
+    return NextResponse.json(
+      { error: "Logo non disponibile: ricaricalo dal pannello del corso." },
+      { status: 404 },
+    );
+  }
 }

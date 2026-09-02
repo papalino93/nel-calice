@@ -4,6 +4,7 @@ import { AuthSessionProvider } from "@/components/AuthSessionProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { DonationButton } from "@/components/DonationButton";
 import { siteHost } from "@/lib/site";
+import packageInfo from "../../package.json";
 import "./globals.css";
 
 const DONATION_URL = "https://buymeacoffee.com/papalino";
@@ -60,6 +61,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AuthSessionProvider>
           <LanguageProvider>
             {children}
+            <footer className="no-print px-4 pb-3 text-center text-[10px] tracking-[0.08em] text-cream/25">
+              Nel Calice · v{packageInfo.version}
+            </footer>
             {/* Sempre presente, in ogni pagina (§3.9). */}
             <DonationButton href={DONATION_URL} />
           </LanguageProvider>

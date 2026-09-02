@@ -350,10 +350,13 @@ model CourseLogo {
   courseId String
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  /// Stesso schema di Material.url ("blob:<percorso>"): stesso store privato,
-  /// stessa funzione per leggerlo (src/lib/materials.ts).
-  url  String?
-  text String?
+  /// Le immagini nuove sono salvate inline come i materiali didattici:
+  /// lo store Blob del piano Hobby può essere sospeso e rendere illeggibili
+  /// anche file già caricati. I vecchi record `blob:` restano compatibili.
+  url         String?
+  content     Bytes?
+  contentType String?
+  text        String?
 
   size LogoSize @default(MEDIUM)
 

@@ -953,10 +953,21 @@ async function assertRoomForLogo(slug: string) {
 }
 
 /** Aggiunge un logo-immagine all'attestato del corso. */
-export async function addCourseLogoImage(slug: string, url: string) {
+export async function addCourseLogoImage(
+  slug: string,
+  content: Buffer,
+  contentType: string,
+) {
   const course = await assertRoomForLogo(slug);
   if (!course) return null;
-  return prisma.courseLogo.create({ data: { courseId: course.id, url } });
+  return prisma.courseLogo.create({
+    data: {
+      courseId: course.id,
+      url: "db:inline",
+      content: Uint8Array.from(content),
+      contentType,
+    },
+  });
 }
 
 /**
@@ -978,7 +989,13 @@ export async function addCourseLogoText(slug: string, text: string) {
 export async function courseLogoFor(slug: string, logoId: string) {
   return prisma.courseLogo.findFirst({
     where: { id: logoId, course: { slug } },
-    select: { id: true, url: true, text: true },
+    select: {
+      id: true,
+      url: true,
+      text: true,
+      content: true,
+      contentType: true,
+    },
   });
 }
 

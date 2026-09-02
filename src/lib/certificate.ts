@@ -1,7 +1,7 @@
 import type { CertificateData, LogoItem, LogoSize } from "@/components/Certificate";
 import { courseOverview } from "./course";
 import type { EnrollmentRef } from "./enrollment";
-import { readStoredFile } from "./materials";
+import { loadMaterialBytes } from "./materials";
 import { prisma } from "./prisma";
 import { siteHost } from "./site";
 import {
@@ -63,11 +63,13 @@ export type CourseLogoInput = {
   url: string | null;
   text: string | null;
   size: LogoSize;
+  content: Uint8Array | null;
+  contentType: string | null;
 };
 
 /**
  * Trasforma i loghi del corso in ciò che l'SVG sa disegnare: un'immagine
- * letta dallo store e convertita in `data:` URI, o un testo passato tale e
+ * letta dallo store o dal database e convertita in `data:` URI, o un testo passato tale e
  * quale — non ha bisogno di essere letto da nessuna parte.
  *
  * Per le immagini, non basterebbe un indirizzo qualunque: l'attestato si
@@ -88,14 +90,17 @@ async function resolveLogos(logos: CourseLogoInput[]): Promise<LogoItem[]> {
       if (logo.text !== null) {
         return { kind: "text", text: logo.text, size: logo.size };
       }
-      if (logo.url === null) return null;
-      const file = await readStoredFile(logo.url);
+      const url = logo.url;
+      if (url === null) return null;
+      const file = await loadMaterialBytes({
+        url,
+        content: logo.content,
+        contentType: logo.contentType,
+      });
       if (!file) return null;
-      const bytes = Buffer.from(await new Response(file.stream).arrayBuffer());
-      const contentType = file.blob.contentType || "image/png";
       return {
         kind: "image",
-        src: `data:${contentType};base64,${bytes.toString("base64")}`,
+        src: `data:${file.contentType};base64,${Buffer.from(file.bytes).toString("base64")}`,
         size: logo.size,
       };
     }),

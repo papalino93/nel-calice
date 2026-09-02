@@ -23,6 +23,11 @@ import { ArrowRightIcon, EyeIcon, LockIcon, RefreshIcon } from "@/components/ico
 import type { CertificateData } from "@/components/Certificate";
 import { CertificateView } from "@/components/CertificateView";
 import { MaterialsSection } from "@/components/admin/MaterialsSection";
+import {
+  fileToBase64,
+  MAX_UPLOAD_BYTES,
+  MAX_UPLOAD_MB,
+} from "@/lib/inlineUpload";
 
 type LogoSize = "SMALL" | "MEDIUM" | "LARGE";
 
@@ -426,6 +431,7 @@ function LogosSection({
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [unavailableLogoIds, setUnavailableLogoIds] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function uploadImage() {
@@ -435,23 +441,14 @@ function LogosSection({
     setBusy(true);
     setMsg(null);
     try {
-      const permesso = await post<{ presignedUrl: string; pathname: string }>(
-        `/api/admin/courses/${slug}/logos/upload`,
-        { contentType: file.type },
-      );
-      if (!permesso.ok) throw new Error(errorMessage(permesso, t));
-
-      const caricamento = await fetch(permesso.data.presignedUrl, {
-        method: "PUT",
-        body: file,
-        headers: { "content-type": file.type },
-      });
-      if (!caricamento.ok) {
-        throw new Error("Il file non è stato accettato dallo storage.");
+      if (file.size === 0) throw new Error("Il file selezionato è vuoto.");
+      if (file.size > MAX_UPLOAD_BYTES) {
+        throw new Error(`Il logo supera il limite di ${MAX_UPLOAD_MB}MB.`);
       }
 
       const result = await post(`/api/admin/courses/${slug}/logos`, {
-        pathname: permesso.data.pathname,
+        content: await fileToBase64(file),
+        contentType: file.type,
       });
       if (!result.ok) throw new Error(errorMessage(result, t));
 
@@ -503,16 +500,21 @@ function LogosSection({
             {logos.map((logo) => (
               <li key={logo.id} className="card flex flex-col gap-2 p-3">
                 <div className="flex items-center gap-3">
-                  {logo.url ? (
+                  {logo.url && !unavailableLogoIds.includes(logo.id) ? (
                     // eslint-disable-next-line @next/next/no-img-element -- immagine autenticata, non ottimizzabile da next/image
                     <img
                       src={logo.url}
                       alt=""
+                      onError={() =>
+                        setUnavailableLogoIds((ids) =>
+                          ids.includes(logo.id) ? ids : [...ids, logo.id],
+                        )
+                      }
                       className={`${LOGO_PREVIEW_HEIGHT[logo.size]} w-auto max-w-[9rem] object-contain`}
                     />
                   ) : (
-                    <span className="max-w-[9rem] truncate font-serif text-sm text-gold">
-                      {logo.text}
+                    <span className="max-w-[9rem] text-sm text-gold">
+                      {logo.text ?? "Logo non disponibile: ricaricalo"}
                     </span>
                   )}
                   <button

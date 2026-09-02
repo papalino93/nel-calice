@@ -148,6 +148,12 @@ export default function UpcomingCoursesPage() {
               Enoteca L&apos;Angolo del Vino — Via dei Rossi 53C, Scandicci
             </span>
           </a>
+          <Link
+            href={`/corso/${courses[0].slug}`}
+            className="press lift mt-5 inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-medium text-charcoal transition-transform"
+          >
+            Vedi il corso e iscriviti <span aria-hidden>→</span>
+          </Link>
         </div>
         <div className="relative h-[230px] overflow-hidden rounded-[10px]">
           <Image
@@ -202,9 +208,9 @@ export default function UpcomingCoursesPage() {
               ))}
             </div>
 
-            <p className="mt-[26px] mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-cream/50">
+            <h2 className="mt-[26px] mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-cream/50">
               Le sei serate
-            </p>
+            </h2>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {course.lessons.map((l) => (
                 <div

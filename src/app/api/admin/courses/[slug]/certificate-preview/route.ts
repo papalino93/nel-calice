@@ -23,7 +23,13 @@ export async function GET(
       location: true,
       certificateIssuer: true,
       logos: {
-        select: { url: true, text: true, size: true },
+        select: {
+          url: true,
+          text: true,
+          size: true,
+          content: true,
+          contentType: true,
+        },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -41,6 +47,8 @@ export async function GET(
       url: l.url,
       text: l.text,
       size: l.size as "SMALL" | "MEDIUM" | "LARGE",
+      content: l.content,
+      contentType: l.contentType,
     })),
   );
   return NextResponse.json({ data });
