@@ -180,7 +180,7 @@ export default function LessonEditorPage({
         </div>
       </AdminSection>
 
-      <MaterialsSection lessonId={lesson.id} />
+      <MaterialsSection owner={{ kind: "lesson", lessonId: lesson.id }} />
     </AdminShell>
   );
 }

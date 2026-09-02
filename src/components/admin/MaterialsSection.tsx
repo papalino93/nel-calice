@@ -29,32 +29,41 @@ const TYPES = [
   { value: "SCROLL", label: "Pergamena" },
 ] as const;
 
+/** A chi appartiene questa dispensa: una lezione del catalogo, o il corso
+    intero (§ dispense generali, non legate a una singola serata). */
+export type MaterialsOwner =
+  | { kind: "lesson"; lessonId: number }
+  | { kind: "course"; slug: string; courseId: string };
+
 /**
- * Gestione dispense di una lezione del catalogo.
+ * Gestione dispense di una lezione del catalogo, o del corso intero.
  *
  * Il file viaggia nel corpo della richiesta e finisce dentro alla riga del
  * database (§ store Blob sospeso per limite del piano Hobby): niente
  * account esterno, niente costo. Per questo il limite di dimensione è più
  * stretto di quando si passava dallo store — vedi `MAX_UPLOAD_MB`.
  */
-export function MaterialsSection({ lessonId }: { lessonId: number }) {
+export function MaterialsSection({ owner }: { owner: MaterialsOwner }) {
   const { t } = useLanguage();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [reloads, setReloads] = useState(0);
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
+  const listUrl =
+    owner.kind === "lesson"
+      ? `/api/admin/catalogue/${owner.lessonId}/materials`
+      : `/api/admin/courses/${owner.slug}/materials`;
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const result = await api<{ materials: Material[] }>(
-        `/api/admin/catalogue/${lessonId}/materials`,
-      );
+      const result = await api<{ materials: Material[] }>(listUrl);
       if (!cancelled && result.ok) setMaterials(result.data.materials);
     })();
     return () => {
       cancelled = true;
     };
-  }, [lessonId, reloads]);
+  }, [listUrl, reloads]);
 
   async function remove(id: string, title: string) {
     if (!window.confirm(`Eliminare "${title}"? Anche il file verrà rimosso.`))
@@ -65,8 +74,12 @@ export function MaterialsSection({ lessonId }: { lessonId: number }) {
 
   return (
     <AdminSection
-      title="Dispense"
-      hint="Restano legate alla lezione, quindi la seguono in ogni corso che la usa. I file sono protetti: non hanno un indirizzo pubblico, e ogni apertura ripassa dal controllo di chi sei. Un link copiato e girato non serve quindi a nulla a chi non è iscritto o non ha ancora sbloccato la serata. Attenzione però: chi la serata l'ha già sbloccata continua ad accedervi anche se poi togli lo sblocco a tutti."
+      title={owner.kind === "lesson" ? "Dispense" : "Dispense generali del corso"}
+      hint={
+        owner.kind === "lesson"
+          ? "Restano legate alla lezione, quindi la seguono in ogni corso che la usa. I file sono protetti: non hanno un indirizzo pubblico, e ogni apertura ripassa dal controllo di chi sei. Un link copiato e girato non serve quindi a nulla a chi non è iscritto o non ha ancora sbloccato la serata. Attenzione però: chi la serata l'ha già sbloccata continua ad accedervi anche se poi togli lo sblocco a tutti."
+          : "Non legate a una singola serata: ogni iscritto le vede appena entra nel corso, senza bisogno di sbloccare nessuna lezione. Utili per il regolamento, il programma completo, o materiale che vale per tutto il percorso. Stessa protezione delle altre: nessun indirizzo pubblico, ogni apertura ripassa dal controllo di chi sei."
+      }
       defaultOpen={false}
     >
       {materials.length > 0 && (
@@ -110,21 +123,23 @@ export function MaterialsSection({ lessonId }: { lessonId: number }) {
 
       {materials.length === 0 && (
         <p className="card mb-4 p-5 text-sm text-cream/60">
-          Nessuna dispensa per questa lezione.
+          {owner.kind === "lesson"
+            ? "Nessuna dispensa per questa lezione."
+            : "Nessuna dispensa generale per questo corso."}
         </p>
       )}
 
-      <UploadForm lessonId={lessonId} onDone={reload} t={t} />
+      <UploadForm owner={owner} onDone={reload} t={t} />
     </AdminSection>
   );
 }
 
 function UploadForm({
-  lessonId,
+  owner,
   onDone,
   t,
 }: {
-  lessonId: number;
+  owner: MaterialsOwner;
   onDone: () => void;
   t: { genericError: string; networkError: string };
 }) {
@@ -148,13 +163,22 @@ function UploadForm({
       // limite del piano Hobby): niente account esterno, niente passaggio a
       // parte, ma per questo resta piccolo — da qui il limite più stretto
       // di prima.
-      const payload: Record<string, unknown> = {
-        lessonId,
-        type,
-        titleIt,
-        titleEn: titleEn || null,
-        notes: notes || null,
-      };
+      const payload: Record<string, unknown> =
+        owner.kind === "lesson"
+          ? {
+              lessonId: owner.lessonId,
+              type,
+              titleIt,
+              titleEn: titleEn || null,
+              notes: notes || null,
+            }
+          : {
+              courseId: owner.courseId,
+              type,
+              titleIt,
+              titleEn: titleEn || null,
+              notes: notes || null,
+            };
 
       if (isVideo) {
         if (!videoUrl.trim()) throw new Error("Serve il link del video.");

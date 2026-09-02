@@ -22,6 +22,7 @@ import {
 import { ArrowRightIcon, EyeIcon, LockIcon, RefreshIcon } from "@/components/icons";
 import type { CertificateData } from "@/components/Certificate";
 import { CertificateView } from "@/components/CertificateView";
+import { MaterialsSection } from "@/components/admin/MaterialsSection";
 
 type LogoSize = "SMALL" | "MEDIUM" | "LARGE";
 
@@ -39,6 +40,7 @@ type CourseLessonRow = {
 };
 
 type Detail = {
+  id: string;
   slug: string;
   titleIt: string;
   titleEn: string;
@@ -187,6 +189,10 @@ export default function ManageCoursePage({
           onChanged={reload}
         />
       </div>
+
+      <MaterialsSection
+        owner={{ kind: "course", slug: detail.slug, courseId: detail.id }}
+      />
     </AdminShell>
   );
 }

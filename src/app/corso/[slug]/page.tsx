@@ -12,6 +12,7 @@ import { UnlockDialog } from "@/components/UnlockDialog";
 import { LanguageToggle, useLanguage } from "@/components/LanguageProvider";
 import {
   ArrowRightIcon,
+  BookIcon,
   CheckIcon,
   EyeIcon,
   LockIcon,
@@ -23,6 +24,15 @@ import {
 type Overview = CourseOverview & {
   hasOtherCourses: boolean;
   user: { name: string; email: string; role: "relatore" | "corsista" };
+};
+
+type CourseMaterial = {
+  id: string;
+  type: string;
+  titleIt: string;
+  titleEn: string | null;
+  url: string;
+  notes: string | null;
 };
 
 function initials(name: string): string {
@@ -44,6 +54,7 @@ export default function CoursePage({
   const { lang, t } = useLanguage();
 
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [courseMaterials, setCourseMaterials] = useState<CourseMaterial[]>([]);
   const [needsEnrollment, setNeedsEnrollment] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unlocking, setUnlocking] = useState<LessonCard | null>(null);
@@ -63,6 +74,14 @@ export default function CoursePage({
         setOverview(result.data);
         setNeedsEnrollment(false);
         setError(null);
+        // Dispense generali del corso: non condizionano il resto della
+        // pagina, quindi un loro eventuale fallimento non deve bloccarla.
+        const materials = await api<{ materials: CourseMaterial[] }>(
+          `/api/courses/${slug}/materials`,
+        );
+        if (!cancelled && materials.ok) {
+          setCourseMaterials(materials.data.materials);
+        }
         return;
       }
       // Chi non è iscritto non riceve un errore, ma la porta d'ingresso.
@@ -275,6 +294,43 @@ export default function CoursePage({
     />
   );
 
+  // Dispense non legate a una serata: niente sblocco, visibili appena si
+  // entra. Il blocco non compare affatto se il relatore non ne ha caricate.
+  const courseMaterialsBlock = courseMaterials.length > 0 && (
+    <div>
+      <h2 className="mb-3 flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-[0.18em] text-gold/80">
+        <BookIcon className="h-4 w-4" />
+        {lang === "en" ? "Course material" : "Materiale del corso"}
+      </h2>
+      <ul className="flex flex-col gap-2">
+        {courseMaterials.map((material) => (
+          <li key={material.id}>
+            <a
+              href={material.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="card lift press flex items-center justify-between gap-3 p-4 transition-transform"
+            >
+              <span className="min-w-0">
+                <span className="block line-clamp-2 text-cream sm:truncate">
+                  {pick(lang, material.titleIt, material.titleEn)}
+                </span>
+                {material.notes && (
+                  <span className="block truncate text-xs text-cream/60">
+                    {material.notes}
+                  </span>
+                )}
+              </span>
+              <span className="pill shrink-0 bg-cream/8 text-cream/50">
+                {material.type}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
   return (
     <>
       {/* Un relatore che guarda un corso dal punto di vista dei corsisti deve
@@ -321,6 +377,7 @@ export default function CoursePage({
         {compact ? (
           <div className="mx-auto flex max-w-xl flex-col gap-5">
             {lessonsBlock}
+            {courseMaterialsBlock}
             {pointsBlock}
             {sorsoBlock}
           </div>
@@ -330,7 +387,10 @@ export default function CoursePage({
               {pointsBlock}
               {sorsoBlock}
             </div>
-            <div>{lessonsBlock}</div>
+            <div className="flex flex-col gap-5">
+              {lessonsBlock}
+              {courseMaterialsBlock}
+            </div>
           </div>
         )}
 
