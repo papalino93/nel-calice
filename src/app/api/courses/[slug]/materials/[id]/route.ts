@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isDenied, requireEnrollment } from "@/lib/guard";
 import { courseOverview } from "@/lib/course";
 import { prisma } from "@/lib/prisma";
-import { readStoredFile } from "@/lib/materials";
+import { loadMaterialBytes } from "@/lib/materials";
 import { readerLabel, stampPdf } from "@/lib/watermark";
 
 /**
@@ -24,7 +24,7 @@ export async function GET(
 
   const material = await prisma.material.findUnique({
     where: { id },
-    select: { url: true, lessonId: true, courseId: true },
+    select: { url: true, content: true, contentType: true, lessonId: true, courseId: true },
   });
   if (!material) {
     return NextResponse.json({ error: "dispensa inesistente" }, { status: 404 });
@@ -63,7 +63,7 @@ export async function GET(
     return NextResponse.json({ error: "non disponibile" }, { status: 403 });
   }
 
-  const file = await readStoredFile(material.url);
+  const file = await loadMaterialBytes(material);
   if (!file) {
     return NextResponse.json({ error: "file inesistente" }, { status: 404 });
   }
@@ -78,7 +78,7 @@ export async function GET(
     .create({ data: { materialId: id, enrollmentId: ctx.enrollment.id } })
     .catch(() => {});
 
-  const contentType = file.blob.contentType ?? "application/octet-stream";
+  const contentType = file.contentType;
 
   const headers = {
     // `no-store` e non `no-cache`: quest'ultimo lascia comunque il file sul
@@ -97,10 +97,9 @@ export async function GET(
   // src/lib/watermark.ts). Se la firma non riesce si serve l'originale:
   // meglio una dispensa senza firma che un corsista senza dispensa.
   if (contentType === "application/pdf") {
-    const original = new Uint8Array(await new Response(file.stream).arrayBuffer());
     const label = readerLabel(ctx.user, new Date());
-    const stamped = await stampPdf(original, label);
-    const body = stamped ?? original;
+    const stamped = await stampPdf(file.bytes, label);
+    const body = stamped ?? file.bytes;
 
     return new NextResponse(
       body.buffer.slice(
@@ -111,5 +110,5 @@ export async function GET(
     );
   }
 
-  return new NextResponse(file.stream, { headers });
+  return new NextResponse(file.bytes as BodyInit, { headers });
 }

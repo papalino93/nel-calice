@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorMessage, post } from "@/lib/api";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, fileToBase64 } from "@/lib/inlineUpload";
 import { useLanguage } from "@/components/LanguageProvider";
 import {
   AdminSection,
@@ -31,9 +32,10 @@ const TYPES = [
 /**
  * Gestione dispense di una lezione del catalogo.
  *
- * Il file non passa dal server: il browser lo carica direttamente sullo
- * store con un permesso a tempo. È ciò che toglie il limite dei 4MB
- * dell'app attuale (§7.14) — qui si arriva a 50MB.
+ * Il file viaggia nel corpo della richiesta e finisce dentro alla riga del
+ * database (§ store Blob sospeso per limite del piano Hobby): niente
+ * account esterno, niente costo. Per questo il limite di dimensione è più
+ * stretto di quando si passava dallo store — vedi `MAX_UPLOAD_MB`.
  */
 export function MaterialsSection({ lessonId }: { lessonId: number }) {
   const { t } = useLanguage();
@@ -142,50 +144,32 @@ function UploadForm({
     setMsg(null);
 
     try {
-      let url: string;
-
-      if (isVideo) {
-        if (!videoUrl.trim()) throw new Error("Serve il link del video.");
-        url = videoUrl.trim();
-      } else {
-        const file = fileRef.current?.files?.[0];
-        if (!file) throw new Error("Scegli un file.");
-
-        // Il server firma un indirizzo su cui si può scrivere una volta
-        // sola; il file ci va direttamente dal browser, senza passare dalla
-        // funzione serverless — è così che cade il limite dei 4MB (§7.14).
-        // Nome unico composto qui: due dispense con lo stesso nome di file
-        // non si sovrascrivono, e il percorso è noto prima del caricamento.
-        const unico = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-        const pathname = `dispense/${lessonId}/${unico}-${file.name}`;
-        const permesso = await post<{ presignedUrl: string }>(
-          "/api/admin/materials/upload",
-          { pathname, contentType: file.type },
-        );
-        if (!permesso.ok) throw new Error(errorMessage(permesso, t));
-
-        const caricamento = await fetch(permesso.data.presignedUrl, {
-          method: "PUT",
-          body: file,
-          headers: { "content-type": file.type },
-        });
-        if (!caricamento.ok) {
-          throw new Error("Il file non è stato accettato dallo storage.");
-        }
-
-        // Si salva il percorso interno, non un indirizzo pubblico: il file
-        // esce solo dalla route che verifica chi lo chiede.
-        url = `blob:${pathname}`;
-      }
-
-      const result = await post("/api/admin/materials", {
+      // Il file va dentro alla riga del database (§ store Blob sospeso per
+      // limite del piano Hobby): niente account esterno, niente passaggio a
+      // parte, ma per questo resta piccolo — da qui il limite più stretto
+      // di prima.
+      const payload: Record<string, unknown> = {
         lessonId,
         type,
         titleIt,
         titleEn: titleEn || null,
-        url,
         notes: notes || null,
-      });
+      };
+
+      if (isVideo) {
+        if (!videoUrl.trim()) throw new Error("Serve il link del video.");
+        payload.url = videoUrl.trim();
+      } else {
+        const file = fileRef.current?.files?.[0];
+        if (!file) throw new Error("Scegli un file.");
+        if (file.size > MAX_UPLOAD_BYTES) {
+          throw new Error(`File troppo grande: massimo ${MAX_UPLOAD_MB}MB.`);
+        }
+        payload.content = await fileToBase64(file);
+        payload.contentType = file.type || "application/octet-stream";
+      }
+
+      const result = await post("/api/admin/materials", payload);
 
       if (!result.ok) throw new Error(errorMessage(result, t));
 
@@ -260,7 +244,7 @@ function UploadForm({
         {/* I due campi restano montati: cambiare PDF/immagine/video non deve
             mai far perdere una scelta già fatta nel browser. */}
         <div hidden={isVideo}>
-          <Field label="File (PDF, immagine o slide — fino a 50MB)">
+          <Field label={`File (PDF, immagine o slide — fino a ${MAX_UPLOAD_MB}MB)`}>
             <input
               ref={fileRef}
               type="file"

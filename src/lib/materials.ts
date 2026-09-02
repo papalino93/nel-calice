@@ -22,6 +22,16 @@ export function isStoredFile(url: string): boolean {
   return url.startsWith("blob:");
 }
 
+/**
+ * true se il file vero sta nella colonna `content` invece che su Blob.
+ * Nato quando lo store Blob è finito sotto il limite del piano Hobby:
+ * per file di poche centinaia di KB come le dispense, il database che già
+ * usiamo basta, senza account esterni né costi.
+ */
+export function isDbStored(url: string): boolean {
+  return url === "db:inline";
+}
+
 /** Il percorso dentro lo store, ricavato dall'indirizzo salvato. */
 export function pathnameOf(url: string): string {
   return url.slice("blob:".length);
@@ -36,7 +46,9 @@ export function withServingUrls<T extends { id: string; url: string }>(
   basePath: string,
 ): T[] {
   return materials.map((m) =>
-    isStoredFile(m.url) ? { ...m, url: `${basePath}/${m.id}` } : m,
+    isStoredFile(m.url) || isDbStored(m.url)
+      ? { ...m, url: `${basePath}/${m.id}` }
+      : m,
   );
 }
 
@@ -57,6 +69,44 @@ export async function createMaterial(input: {
       titleIt: input.titleIt,
       titleEn: input.titleEn || null,
       url: input.url,
+      notes: input.notes || null,
+    },
+  });
+}
+
+/** Come sopra il vincolo di dimensione lato client (§MaterialsSection): qui
+ * è la verifica che conta davvero, perché il client non è mai fidato. */
+export const MAX_INLINE_BYTES = 3 * 1024 * 1024;
+
+/**
+ * Salva un materiale con il file dentro alla riga stessa, invece che su
+ * Blob. Vedi `isDbStored`.
+ */
+export async function createMaterialWithContent(input: {
+  lessonId?: number | null;
+  courseId?: string | null;
+  type: "PDF" | "SLIDE" | "IMAGE" | "VIDEO" | "SCROLL";
+  titleIt: string;
+  titleEn?: string | null;
+  content: Buffer;
+  contentType: string;
+  notes?: string | null;
+}) {
+  if (input.content.byteLength > MAX_INLINE_BYTES) {
+    throw new Error(
+      `File troppo grande: massimo ${Math.floor(MAX_INLINE_BYTES / 1024 / 1024)}MB.`,
+    );
+  }
+  return prisma.material.create({
+    data: {
+      lessonId: input.lessonId ?? null,
+      courseId: input.courseId ?? null,
+      type: input.type,
+      titleIt: input.titleIt,
+      titleEn: input.titleEn || null,
+      url: "db:inline",
+      content: Uint8Array.from(input.content),
+      contentType: input.contentType,
       notes: input.notes || null,
     },
   });
@@ -90,6 +140,30 @@ export async function readStoredFile(url: string) {
   if (!isStoredFile(url)) return null;
   const { get } = await import("@vercel/blob");
   return get(pathnameOf(url), { access: "private" });
+}
+
+/**
+ * Come `readStoredFile`, ma copre anche i materiali salvati nel database:
+ * unico punto da cui le route che servono un file leggono, così non devono
+ * sapere se quel materiale vive su Blob o in una colonna. Restituisce
+ * sempre i byte interi, mai `null` per un materiale che esiste davvero.
+ */
+export async function loadMaterialBytes(material: {
+  url: string;
+  content: Uint8Array | null;
+  contentType: string | null;
+}): Promise<{ contentType: string; bytes: Uint8Array } | null> {
+  if (isDbStored(material.url)) {
+    if (!material.content) return null;
+    return {
+      contentType: material.contentType ?? "application/octet-stream",
+      bytes: material.content,
+    };
+  }
+  const file = await readStoredFile(material.url);
+  if (!file) return null;
+  const bytes = new Uint8Array(await new Response(file.stream).arrayBuffer());
+  return { contentType: file.blob.contentType ?? "application/octet-stream", bytes };
 }
 
 const MATERIAL_FIELDS = {

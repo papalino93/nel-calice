@@ -206,6 +206,15 @@ model Material {
   url     String
   notes   String?
 
+  /// File salvato direttamente nel database invece che nello store Blob
+  /// (§ store Blob sospeso per limite del piano Hobby). Quando presente,
+  /// `url` vale il segnale fisso "db:inline" e il contenuto vero sta qui:
+  /// niente account esterno, niente costo, adatto a file di poche centinaia
+  /// di KB come le nostre dispense. `content` e `contentType` sono entrambi
+  /// null per i materiali su Blob o per i video esterni.
+  content     Bytes?
+  contentType String?
+
   viewCount Int      @default(0)
   createdAt DateTime @default(now())
 

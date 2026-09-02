@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isDenied, requireAdmin } from "@/lib/guard";
 import { prisma } from "@/lib/prisma";
-import { readStoredFile } from "@/lib/materials";
+import { loadMaterialBytes } from "@/lib/materials";
 
 /** La stessa dispensa, ma per il relatore: nessun vincolo di sblocco. */
 export async function GET(
@@ -13,21 +13,21 @@ export async function GET(
 
   const material = await prisma.material.findUnique({
     where: { id: (await params).id },
-    select: { url: true },
+    select: { url: true, content: true, contentType: true },
   });
   if (!material) {
     return NextResponse.json({ error: "dispensa inesistente" }, { status: 404 });
   }
 
-  const file = await readStoredFile(material.url);
+  const file = await loadMaterialBytes(material);
   if (!file) {
     return NextResponse.json({ error: "file inesistente" }, { status: 404 });
   }
 
-  return new NextResponse(file.stream, {
+  return new NextResponse(file.bytes as BodyInit, {
     headers: {
       "Cache-Control": "private, no-cache",
-      "Content-Type": file.blob.contentType ?? "application/octet-stream",
+      "Content-Type": file.contentType,
       "X-Content-Type-Options": "nosniff",
     },
   });
