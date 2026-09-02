@@ -57,13 +57,11 @@ export type CourseOverview = {
     certificateIssuer: string | null;
     /** Solo l'indirizzo interno (o il testo): il byte del logo si legge solo
         se serve davvero costruire un attestato, non a ogni apertura del
-        corso. */
+        corso (`certificateFor` lo legge a parte, con una query sua). */
     logos: {
       url: string | null;
       text: string | null;
       size: "SMALL" | "MEDIUM" | "LARGE";
-      content: Uint8Array | null;
-      contentType: string | null;
     }[];
   };
   lessons: LessonCard[];
@@ -88,13 +86,7 @@ export async function courseOverview(
       location: true,
       certificateIssuer: true,
       logos: {
-        select: {
-          url: true,
-          text: true,
-          size: true,
-          content: true,
-          contentType: true,
-        },
+        select: { url: true, text: true, size: true },
         orderBy: { createdAt: "asc" },
       },
       lessons: {
@@ -236,8 +228,6 @@ export async function courseOverview(
       url: l.url,
       text: l.text,
       size: l.size as "SMALL" | "MEDIUM" | "LARGE",
-      content: l.content,
-      contentType: l.contentType,
     })),
     },
     lessons: cards,

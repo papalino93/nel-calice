@@ -138,6 +138,15 @@ export async function certificateFor(
   });
   const completedOn = last?.submittedAt ?? new Date();
 
+  // `courseOverview` non porta più i byte dei loghi (§ leak nella dashboard
+  // del corsista, che chiama la stessa funzione a ogni apertura): qui, dove
+  // servono davvero per costruire l'attestato, si leggono a parte.
+  const logos = await prisma.courseLogo.findMany({
+    where: { courseId: enrollment.courseId },
+    select: { url: true, text: true, size: true, content: true, contentType: true },
+    orderBy: { createdAt: "asc" },
+  });
+
   return {
     earned: true,
     data: {
@@ -152,7 +161,9 @@ export async function certificateFor(
       dateIt: formatDate(completedOn, "it-IT"),
       dateEn: formatDate(completedOn, "en-US"),
       issuer: overview.course.certificateIssuer,
-      logos: await resolveLogos(overview.course.logos),
+      logos: await resolveLogos(
+        logos.map((l) => ({ ...l, size: l.size as LogoSize })),
+      ),
       // Ricavato dall'iscrizione, non salvato: vedi src/lib/verification.ts.
       // Vale anche per gli attestati già scaricati prima che esistesse.
       verificationCode: formatVerificationCode(verificationCode(enrollment.id)),
