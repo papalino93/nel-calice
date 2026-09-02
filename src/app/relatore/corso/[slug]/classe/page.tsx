@@ -76,6 +76,13 @@ export default function ClassPage({
   const [reloads, setReloads] = useState(0);
   const reload = useCallback(() => setReloads((n) => n + 1), []);
 
+  // Ricerca e filtro pagamento: gli stessi in entrambe le sezioni sotto, così
+  // "Iscritti" e "Chi ha fatto cosa" non mostrano mai due elenchi diversi
+  // per la stessa ricerca — utile solo da una classe che comincia a crescere,
+  // con 5-6 iscritti scorrere tutti a occhio bastava già.
+  const [query, setQuery] = useState("");
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "toVerify">("all");
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -99,6 +106,17 @@ export default function ClassPage({
 
   const paidCount = data.students.filter((s) => s.paymentStatus === "PAID").length;
   const toVerifyCount = data.students.length - paidCount;
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredStudents = data.students.filter((s) => {
+    if (paymentFilter === "paid" && s.paymentStatus !== "PAID") return false;
+    if (paymentFilter === "toVerify" && s.paymentStatus !== "TO_VERIFY") return false;
+    if (!normalizedQuery) return true;
+    return (
+      s.name.toLowerCase().includes(normalizedQuery) ||
+      s.email.toLowerCase().includes(normalizedQuery)
+    );
+  });
 
   return (
     <AdminShell
@@ -127,14 +145,51 @@ export default function ClassPage({
           </button>
         </div>
 
+        {data.students.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cerca per nome o email…"
+              className={`${inputClass} max-w-xs`}
+            />
+            <div className="flex gap-1.5 text-xs">
+              {(
+                [
+                  ["all", "Tutti"],
+                  ["toVerify", "Da verificare"],
+                  ["paid", "Pagati"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setPaymentFilter(value)}
+                  aria-pressed={paymentFilter === value}
+                  className={`press min-h-9 rounded-full border px-3 transition-colors ${
+                    paymentFilter === value
+                      ? "border-gold/60 bg-gold/15 text-gold"
+                      : "border-cream/15 text-cream/60 hover:text-cream/85"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {data.students.length === 0 ? (
           <p className="card p-5 text-sm text-cream/60">
             Nessun iscritto, per ora. Quando una persona entra con Google e
             inserisce il codice del corso, apparirà qui automaticamente.
           </p>
+        ) : filteredStudents.length === 0 ? (
+          <p className="card p-5 text-sm text-cream/60">
+            Nessun iscritto corrisponde alla ricerca.
+          </p>
         ) : (
           <div className="grid gap-3">
-            {data.students.map((student) => (
+            {filteredStudents.map((student) => (
               <EnrollmentCard
                 key={student.enrollmentId}
                 slug={slug}
@@ -148,11 +203,15 @@ export default function ClassPage({
 
       <AdminSection
         title="Chi ha fatto cosa"
-        hint="Una riga per iscritto, una colonna per lezione. Il punteggio compare solo per le lezioni già consegnate. Su un tentativo — in corso o già consegnato — puoi azzerarlo perché lo rifaccia: serve per un click su «inizia» per sbaglio, o un tentativo mai davvero svolto. Il corsista non può farlo da solo."
+        hint="Una riga per iscritto, una colonna per lezione. Il punteggio compare solo per le lezioni già consegnate. Su un tentativo — in corso o già consegnato — puoi azzerarlo perché lo rifaccia: serve per un click su «inizia» per sbaglio, o un tentativo mai davvero svolto. Il corsista non può farlo da solo. La ricerca sopra filtra anche questa tabella."
       >
         {data.students.length === 0 ? (
           <p className="card p-5 text-sm text-cream/60">
             Nessun iscritto, per ora.
+          </p>
+        ) : filteredStudents.length === 0 ? (
+          <p className="card p-5 text-sm text-cream/60">
+            Nessun iscritto corrisponde alla ricerca.
           </p>
         ) : (
           <div className="card overflow-x-auto p-0">
@@ -177,7 +236,7 @@ export default function ClassPage({
                 </tr>
               </thead>
               <tbody>
-                {data.students.map((s) => (
+                {filteredStudents.map((s) => (
                   <tr
                     key={s.enrollmentId}
                     className="border-b border-cream/5 last:border-0"
