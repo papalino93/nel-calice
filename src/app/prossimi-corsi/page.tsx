@@ -290,15 +290,17 @@ export default function UpcomingCoursesPage() {
             WhatsApp: i posti sono venti e si assegnano in ordine di
             prenotazione.
           </p>
-          {/* Stacco orizzontale generoso, verticale no: i bersagli sono
-              alti 44px, e con lo stesso gap su entrambi gli assi i numeri
-              andati a capo sul telefono restavano lontanissimi fra loro. */}
-          <div className="mt-2.5 flex flex-wrap gap-x-[22px] gap-y-0.5">
+          {/* Ognuno è un pulsante vero, non testo colorato: da telefono —
+              cioè da chi inquadra il QR sulla locandina — questi tre sono
+              l'azione della pagina, e prima non si distinguevano dal testo
+              intorno. Il bordo li rende toccabili a vista, senza rubare la
+              scena con tre pieni bordeaux uno accanto all'altro. */}
+          <div className="mt-3 flex flex-wrap gap-2">
             {contacts.map((contact) => (
               <a
                 key={contact.href}
                 href={contact.href}
-                className="press inline-flex min-h-11 items-center gap-1.5 py-1 text-sm font-medium text-charcoal"
+                className="press lift inline-flex min-h-11 items-center gap-1.5 rounded-full border border-bordeaux/35 bg-bordeaux/[0.06] px-4 py-2 text-sm font-medium text-charcoal transition-transform hover:border-bordeaux/60"
               >
                 <span>{contact.name}</span>
                 <span className="font-serif text-[17px] text-bordeaux">
@@ -308,11 +310,16 @@ export default function UpcomingCoursesPage() {
             ))}
           </div>
         </div>
+        {/* Secondario rispetto ai numeri, e apposta: questa sezione è dove
+            atterra chi deve ancora prenotare, e per lui l'azione sono i
+            contatti qui sopra. In pieno bordeaux era l'elemento più
+            vistoso del riquadro pur portando al login, che serve a chi è
+            già iscritto. Resta un bersaglio da 44px, solo più discreto. */}
         <Link
           href="/"
-          className="press lift inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-bordeaux px-6 py-3 text-sm font-medium text-cream transition-transform"
+          className="press inline-flex min-h-11 shrink-0 items-center gap-2 text-sm font-medium text-bordeaux underline decoration-bordeaux/40 underline-offset-4 hover:decoration-bordeaux"
         >
-          Vai alla piattaforma <span aria-hidden>→</span>
+          Sei già iscritto? Vai alla piattaforma <span aria-hidden>→</span>
         </Link>
       </section>
     </main>
