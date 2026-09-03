@@ -248,23 +248,52 @@ export default function UpcomingCoursesPage() {
               <p className="max-w-[420px] font-serif text-[17px] italic leading-[1.4] text-gold-light">
                 {course.quote}
               </p>
-              <Link
-                href={`/corso/${course.slug}`}
-                className="press lift inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-medium text-charcoal transition-transform"
-              >
-                Iscriviti a questo corso <span aria-hidden>→</span>
-              </Link>
+              {/* Chi arriva dalla locandina non ha il codice detto in aula,
+                  quindi il pulsante principale non può portare al corso: lì
+                  troverebbe prima Google e poi un campo che non sa
+                  riempire. Porta dove ci si iscrive davvero, cioè ai
+                  contatti. Il corso resta raggiungibile dal collegamento
+                  sotto, per chi il codice ce l'ha già. */}
+              <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+                <a
+                  href="#iscrizioni"
+                  className="press lift inline-flex min-h-11 items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-medium text-charcoal transition-transform"
+                >
+                  Come iscriversi <span aria-hidden>↓</span>
+                </a>
+                <Link
+                  href={`/corso/${course.slug}`}
+                  className="press inline-flex min-h-10 items-center text-[13px] text-cream/70 underline underline-offset-4 hover:text-cream"
+                >
+                  Hai già il codice? Entra nel corso
+                </Link>
+              </div>
             </div>
           </section>
         ))}
       </div>
 
-      <section className="mt-10 flex flex-wrap items-center justify-between gap-6 rounded-[12px] border border-gold/40 bg-cream-soft px-7 py-[26px] text-charcoal">
+      <section
+        id="iscrizioni"
+        className="mt-10 flex scroll-mt-6 flex-wrap items-center justify-between gap-6 rounded-[12px] border border-gold/40 bg-cream-soft px-7 py-[26px] text-charcoal"
+      >
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-bordeaux">
             Informazioni e iscrizioni
           </p>
-          <div className="mt-2.5 flex flex-wrap gap-[22px]">
+          {/* Detto per esteso: è il punto in cui atterra «Come iscriversi»,
+              e un elenco di numeri senza una riga sopra non spiega da sé
+              che è così che ci si iscrive. Quando ci sarà una mail, va
+              accanto ai numeri qui sotto. */}
+          <p className="mt-2 max-w-[440px] text-sm leading-[1.5] text-charcoal/75">
+            Per iscriverti o chiedere qualsiasi cosa, chiamaci o scrivici su
+            WhatsApp: i posti sono venti e si assegnano in ordine di
+            prenotazione.
+          </p>
+          {/* Stacco orizzontale generoso, verticale no: i bersagli sono
+              alti 44px, e con lo stesso gap su entrambi gli assi i numeri
+              andati a capo sul telefono restavano lontanissimi fra loro. */}
+          <div className="mt-2.5 flex flex-wrap gap-x-[22px] gap-y-0.5">
             {contacts.map((contact) => (
               <a
                 key={contact.href}

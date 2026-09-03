@@ -760,12 +760,21 @@ non salta un giro se il precedente è ancora in volo; `POST
 /api/admin/materials` accetta `url` verbatim, quindi si può creare una
 dispensa il cui file risponde sempre 404.
 
-**Non risolto e da decidere, non un bug:** su `/prossimi-corsi` il pulsante
-principale «Iscriviti a questo corso» porta a `/corso/<slug>`, che a chi
-non è iscritto chiede prima Google e poi **il codice detto in aula** — un
-codice che chi arriva dalla locandina non può avere. Le vie d'iscrizione
-vere sono i tre numeri di telefono più in basso. Non toccato apposta:
-cambiare il pulsante principale di quella pagina è una scelta di prodotto.
+**Risolto, era una scelta di prodotto:** su `/prossimi-corsi` il pulsante
+principale diceva «Iscriviti a questo corso» e portava a `/corso/<slug>`,
+che a chi non è iscritto chiede prima Google e poi **il codice detto in
+aula** — un codice che chi arriva dalla locandina non può avere. Il
+committente ha confermato la direzione: il pulsante principale è ora «Come
+iscriversi ↓» e porta alla sezione contatti (`#iscrizioni`, che ha una riga
+che spiega cosa fare e i tre numeri), mentre `/corso/<slug>` resta
+raggiungibile dal collegamento secondario «Hai già il codice? Entra nel
+corso» — perché per chi il codice ce l'ha quella era e resta la strada
+giusta. Verificato in un browser vero a 390px e 1440px: il pulsante punta a
+`#iscrizioni` e il click porta davvero la sezione sotto gli occhi.
+
+**In arrivo:** il committente creerà una casella di posta da aggiungere
+accanto ai numeri in quella sezione (e sulle locandine). Il posto dove
+metterla è `contacts` in `src/app/prossimi-corsi/page.tsx`.
 
 ### Punteggi e attestato — risolti
 
